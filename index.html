@@ -33,7 +33,6 @@
     .epc-tag { font-family: monospace; font-size: 0.88rem; background: #0f172a; padding: 8px 10px; border-radius: 8px; color: #38bdf8; word-break: break-all; width: 100%; }
     .peso-valor { font-size: 2.3rem; font-weight: 900; color: #facc15; margin: 2px 0; }
     
-    /* CARDS DE FARDOS NO CARREGAMENTO COM BOTÃO ELIMINAR INDIVIDUAL */
     .fardo-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px; width: 100%; display: flex; justify-content: space-between; align-items: center; text-align: left; gap: 8px; }
     .fardo-card.invalido { border-color: #ef4444; background: #450a0a; }
     .fardo-info { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
@@ -45,7 +44,7 @@
     .btn-remover-item:active { background: #b91c1c; }
 
     .alerta-erro { background: #7f1d1d; border: 2px solid #ef4444; color: #fecaca; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.92rem; width: 100%; }
-    .alerta-ok { background: #14532d; border: 2px solid #22c55e; color: #bbf7d0; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; width: 100%; }
+    .alerta-ok { background: #14532d; border: 2px solid #22c55e; color: #bbf7d0; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 1.05rem; width: 100%; }
     .acoes-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 8px; }
     .btn-acao { padding: 16px; font-size: 1.05rem; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; width: 100%; }
     .btn-confirmar { background: #22c55e; color: #052e16; }
@@ -100,7 +99,7 @@
     <div id="areaConteudo" class="status-box"></div>
   </div>
 
-  <!-- JANELA 4: PÓS-ACEITE NO CARREGAMENTO (CONTINUAR OU RETORNAR AO MENU) -->
+  <!-- JANELA 4: PÓS-ACEITE NO CARREGAMENTO -->
   <div id="win-pos-carga" class="janela">
     <div class="header-bar bg-azul">
       <span>CARREGAMENTO REGISTRADO</span>
@@ -146,16 +145,25 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let modoAtual = null;           // 'PRENSA' ou 'CARREGAMENTO'
-    let materialPrensa = null;      // Material exato escolhido na PRENSA
+    let modoAtual = null;
+    let materialPrensa = null;
     let idCargaAtual = null;
     let qtdFardosCarga = 0;
     let pesoTotalCarga = 0;
-    let fardosValidados = [];       // Lista atual de fardos válidos na tela de confirmação
-    let fardosInvalidos = [];       // Lista atual de fardos bloqueados na leitura
+    let fardosValidados = [];
+    let fardosInvalidos = [];
     let processando = false;
+    let timerRetornoPrensa = null;
+
+    function limparTimerPrensa() {
+      if (timerRetornoPrensa) {
+        clearTimeout(timerRetornoPrensa);
+        timerRetornoPrensa = null;
+      }
+    }
 
     function mostrarJanela(idJanela) {
+      limparTimerPrensa();
       document.querySelectorAll(".janela").forEach(j => j.classList.remove("ativa"));
       document.getElementById(idJanela).classList.add("ativa");
     }
@@ -164,8 +172,13 @@
       fardosValidados = [];
       fardosInvalidos = [];
       processando = false;
-      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.liberarProximaEtiqueta === "function") {
-        window.AndroidSingleTag.liberarProximaEtiqueta();
+      if (window.AndroidSingleTag) {
+        if (modoAtual && typeof window.AndroidSingleTag.configurarModo === "function") {
+          window.AndroidSingleTag.configurarModo(modoAtual);
+        }
+        if (typeof window.AndroidSingleTag.liberarProximaEtiqueta === "function") {
+          window.AndroidSingleTag.liberarProximaEtiqueta();
+        }
       }
     }
 
@@ -194,7 +207,6 @@
       `;
     }
 
-    // REGISTRO COMPLETO DE EVENTOS / LOGS NO FIRESTORE (AUDITORIA)
     async function registrarLogAuditoria(epc, tipoEvento, detalhes, material = "—", peso = 0) {
       try {
         await addDoc(collection(db, "logs_bloqueios"), {
@@ -211,7 +223,6 @@
       }
     }
 
-    // NAVEGAÇÃO ENTRE JANELAS
     window.irParaInicio = function() {
       modoAtual = null;
       materialPrensa = null;
@@ -227,9 +238,6 @@
     window.iniciarPrensa = function(materialExato) {
       modoAtual = "PRENSA";
       materialPrensa = materialExato;
-      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.configurarModo === "function") {
-        window.AndroidSingleTag.configurarModo("PRENSA");
-      }
       const header = document.getElementById("headerOperacao");
       header.className = "header-bar bg-verde";
       document.getElementById("tituloOperacao").textContent = `PRENSA: ${materialExato.toUpperCase()}`;
@@ -244,9 +252,6 @@
       idCargaAtual = "CARGA-" + Date.now();
       qtdFardosCarga = 0;
       pesoTotalCarga = 0;
-      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.configurarModo === "function") {
-        window.AndroidSingleTag.configurarModo("CARREGAMENTO");
-      }
       const header = document.getElementById("headerOperacao");
       header.className = "header-bar bg-azul";
       document.getElementById("tituloOperacao").textContent = "CARREGAMENTO";
@@ -268,6 +273,7 @@
     };
 
     window.continuarCarregando = function() {
+      modoAtual = "CARREGAMENTO";
       mostrarJanela("win-operacao");
       renderizarTelaEspera();
     };
@@ -298,7 +304,6 @@
       return Number((180 + Math.random() * 65).toFixed(2));
     }
 
-    // RENDERIZA A LISTA DE FARDOS DO CARREGAMENTO (PERMITE ELIMINAR INDIVIDUALMENTE)
     function renderizarListaCarregamento() {
       const area = document.getElementById("areaConteudo");
       const totalLidos = fardosValidados.length + fardosInvalidos.length;
@@ -361,7 +366,6 @@
       `;
     }
 
-    // ELIMINAR APENAS 1 FARDO DA LISTA DE 2 OU 3 LIDOS
     window.eliminarFardoIndividual = async function(index) {
       const removido = fardosValidados[index];
       if (!removido) return;
@@ -406,7 +410,6 @@
       renderizarTelaEspera();
     };
 
-    // RECEBIMENTO DO RFID VINDO DO ANDROID
     window.receberLoteRFID = async function(listaEpcs) {
       const epcs = (Array.isArray(listaEpcs) ? listaEpcs : [listaEpcs])
         .map(e => (e || "").trim().toUpperCase())
@@ -418,7 +421,6 @@
       }
 
       if (!modoAtual || (modoAtual === "PRENSA" && !materialPrensa)) {
-        alert("Selecione a operação antes de ler.");
         liberarColetor();
         return;
       }
@@ -537,7 +539,17 @@
           item.peso_kg
         );
 
-        renderizarTelaEspera(`<div class="alerta-ok">GRAVADO: ${item.material} (${item.peso_kg.toFixed(2)} kg)</div>`);
+        document.getElementById("areaConteudo").innerHTML = `
+          <div class="alerta-ok">
+            GRAVADO: ${item.material} (${item.peso_kg.toFixed(2)} kg)<br>
+            <span style="font-size:0.85rem;font-weight:500;">Voltando para seleção de material em 3 segundos...</span>
+          </div>
+        `;
+
+        limparTimerPrensa();
+        timerRetornoPrensa = setTimeout(() => {
+          abrirSelecaoPrensa();
+        }, 3000);
       } catch (err) {
         alert("Erro ao gravar entrada: " + err.message);
         if (btn) btn.disabled = false;
