@@ -13,12 +13,12 @@
     .janela.ativa { display: flex; }
 
     .menu-inicial { justify-content: center; gap: 16px; }
-    .btn-op { padding: 28px 20px; font-size: 1.4rem; font-weight: 800; border: none; border-radius: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
+    .btn-op { padding: 28px 20px; font-size: 1.35rem; font-weight: 800; border: none; border-radius: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
     .btn-prensa { background: #16a34a; color: #fff; }
     .btn-carregamento { background: #2563eb; color: #fff; }
     .btn-massa { background: #7c3aed; color: #fff; }
 
-    .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; font-weight: 800; font-size: 1rem; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; font-weight: 800; font-size: 0.98rem; }
     .bg-verde { background: #16a34a; color: #fff; }
     .bg-azul { background: #2563eb; color: #fff; }
     .bg-roxo { background: #7c3aed; color: #fff; }
@@ -28,6 +28,8 @@
     .grid-materiais-prensa { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 1; }
     .btn-mat-prensa { background: #1e293b; color: #f8fafc; border: 2px solid #22c55e; border-radius: 12px; font-weight: 800; font-size: 1rem; padding: 16px 8px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     .btn-mat-prensa:active { background: #16a34a; }
+    .btn-mat-massa { background: #1e293b; color: #f8fafc; border: 2px solid #a855f7; border-radius: 12px; font-weight: 800; font-size: 1rem; padding: 16px 8px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .btn-mat-massa:active { background: #7c3aed; }
 
     .status-box { background: #1e293b; border: 2px dashed #475569; border-radius: 16px; padding: 16px 12px; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
     .resumo-carga { background: #0f172a; border: 1px solid #3b82f6; border-radius: 10px; padding: 10px 14px; width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; font-weight: 700; color: #93c5fd; margin-bottom: 8px; }
@@ -38,12 +40,20 @@
     /* TELA DE SENHA */
     .input-senha { width: 100%; max-width: 240px; padding: 16px; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 8px; border-radius: 12px; border: 2px solid #7c3aed; background: #0f172a; color: #fff; margin: 8px 0; }
 
-    /* CONTADOR GIGANTE DA LEITURA EM MASSA */
-    .contador-massa-box { background: #0f172a; border: 2px solid #7c3aed; border-radius: 14px; padding: 18px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .contador-massa-numero { font-size: 3.2rem; font-weight: 900; color: #facc15; line-height: 1; }
-    .contador-massa-label { font-size: 0.88rem; font-weight: 700; color: #c4b5fd; text-transform: uppercase; }
-    .ultimas-tags-box { width: 100%; max-height: 22vh; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; background: #0f172a; padding: 8px; border-radius: 10px; border: 1px solid #334155; }
-    .tag-linha-massa { font-family: monospace; font-size: 0.78rem; color: #38bdf8; text-align: left; word-break: break-all; padding: 3px 6px; border-bottom: 1px solid #1e293b; }
+    /* CONTADOR DA LEITURA EM MASSA */
+    .contador-massa-box { background: #0f172a; border: 2px solid #7c3aed; border-radius: 14px; padding: 14px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .contador-massa-numero { font-size: 3rem; font-weight: 900; color: #facc15; line-height: 1; }
+    .contador-massa-label { font-size: 0.85rem; font-weight: 700; color: #c4b5fd; text-transform: uppercase; }
+    .sub-contadores-massa { display: flex; gap: 10px; width: 100%; }
+    .sub-box { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; }
+    .sub-box.alerta { border-color: #ef4444; background: #450a0a; }
+    .sub-num { font-size: 1.4rem; font-weight: 900; color: #22c55e; }
+    .sub-box.alerta .sub-num { color: #fca5a5; }
+    .sub-lbl { font-size: 0.72rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; }
+
+    .ultimas-tags-box { width: 100%; max-height: 18vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #0f172a; padding: 8px; border-radius: 10px; border: 1px solid #334155; }
+    .tag-linha-massa { font-family: monospace; font-size: 0.76rem; color: #38bdf8; text-align: left; word-break: break-all; padding: 3px 6px; border-bottom: 1px solid #1e293b; }
+    .tag-linha-massa.sem-reg { color: #fca5a5; }
 
     .fardo-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px; width: 100%; display: flex; justify-content: space-between; align-items: center; text-align: left; gap: 8px; }
     .fardo-card.invalido { border-color: #ef4444; background: #450a0a; }
@@ -95,6 +105,39 @@
     </div>
   </div>
 
+  <!-- JANELA 1C: ESCOLHA DO TIPO DE LEITURA EM MASSA -->
+  <div id="win-tipo-massa" class="janela">
+    <div class="header-bar bg-roxo">
+      <span>MODO DE LEITURA EM MASSA</span>
+      <button class="btn-topo" onclick="irParaInicio()">SAIR</button>
+    </div>
+    <div class="menu-inicial" style="display:flex; flex-direction:column; flex:1; justify-content:center; gap:18px;">
+      <button class="btn-op btn-roxo" onclick="iniciarMassaTodos()">LER TODOS OS FARDOS</button>
+      <button class="btn-op btn-continuar" onclick="abrirSelecaoMaterialMassa()">LER UM MATERIAL ESPECÍFICO</button>
+    </div>
+  </div>
+
+  <!-- JANELA 1D: ESCOLHA DO MATERIAL ESPECÍFICO NA LEITURA EM MASSA -->
+  <div id="win-sel-mat-massa" class="janela">
+    <div class="header-bar bg-roxo">
+      <span>MASSA — ESCOLHA O MATERIAL</span>
+      <button class="btn-topo" onclick="voltarTipoMassa()">VOLTAR</button>
+    </div>
+    <div id="statusCarregandoBaseMassa" style="text-align:center; color:#c4b5fd; font-weight:700; margin-bottom:8px; min-height:20px;"></div>
+    <div class="grid-materiais-prensa">
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('Pet Cristal')">Pet Cristal</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('Pet Azul')">Pet Azul</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('Pet Verde')">Pet Verde</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('Pet Cor')">Pet Cor</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('PP Cor')">PP Cor</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('PP Bandeja')">PP Bandeja</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('Pead BR')">Pead BR</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('Pead Cor')">Pead Cor</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('Flexivel')">Flexivel</button>
+      <button class="btn-mat-massa" onclick="iniciarMassaMaterialEspecifico('Lata')">Lata</button>
+    </div>
+  </div>
+
   <!-- JANELA 2: ESCOLHA DO MATERIAL EXATO (SOMENTE PRENSA) -->
   <div id="win-sel-prensa" class="janela">
     <div class="header-bar bg-verde">
@@ -130,21 +173,33 @@
     <div id="areaConteudo" class="status-box"></div>
   </div>
 
-  <!-- JANELA 3B: OPERAÇÃO DE LEITURA EM MASSA (SOMENTE COLETA BRUTA) -->
+  <!-- JANELA 3B: OPERAÇÃO DE LEITURA EM MASSA -->
   <div id="win-massa" class="janela">
     <div class="header-bar bg-roxo">
-      <span>LEITURA EM MASSA</span>
-      <span style="font-size:0.8rem;opacity:0.85;">COLETA CONTÍNUA</span>
+      <span id="tituloHeaderMassa">MASSA: TODOS</span>
+      <span style="font-size:0.78rem;opacity:0.9;">CONTÍNUA</span>
     </div>
 
     <div class="status-box" style="justify-content: flex-start;">
       <div class="contador-massa-box">
         <div id="numTotalMassa" class="contador-massa-numero">0</div>
-        <div class="contador-massa-label">Etiquetas Únicas Capturadas</div>
+        <div id="lblTotalMassa" class="contador-massa-label">Etiquetas Únicas Capturadas</div>
       </div>
 
-      <div style="font-size: 0.85rem; color: #cbd5e1;">
-        Ande pelo galpão e aperte o gatilho quantas vezes precisar. Quando parar de apitar, tudo ao redor já foi lido.
+      <!-- SUB-CONTADORES QUANDO FOR MATERIAL ESPECÍFICO -->
+      <div id="boxSubContadoresMassa" class="sub-contadores-massa" style="display:none;">
+        <div class="sub-box">
+          <span id="numMatEncontrado" class="sub-num">0</span>
+          <span id="lblMatEncontrado" class="sub-lbl">Do Material</span>
+        </div>
+        <div class="sub-box alerta">
+          <span id="numSemRegistroMassa" class="sub-num">0</span>
+          <span class="sub-lbl">Sem Registro</span>
+        </div>
+      </div>
+
+      <div id="instrucaoMassa" style="font-size: 0.83rem; color: #cbd5e1;">
+        Ande pelo galpão e aperte o gatilho quantas vezes precisar.
       </div>
 
       <div id="listaUltimasMassa" class="ultimas-tags-box">
@@ -209,7 +264,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, deleteDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
@@ -233,8 +288,11 @@
     let processando = false;
     let timerRetornoPrensa = null;
 
-    // SET PURO DE EPCS LIDOS EM MASSA (SEM CONFERÊNCIA LOCAL NO CELULAR)
-    let epcsLidosMassa = new Set();
+    // VARIÁVEIS DA LEITURA EM MASSA
+    let submodoMassa = "TODOS";        // 'TODOS' ou 'MATERIAL'
+    let materialFiltroMassa = null;    // Ex: 'Pet Cristal' quando submodoMassa == 'MATERIAL'
+    let estoqueNuvemMassa = {};        // EPC -> { material, peso_kg } carregado da nuvem apenas no modo 'MATERIAL'
+    let epcsLidosMassa = new Map();    // EPC -> { epc, status_leitura }
 
     function limparTimerPrensa() {
       if (timerRetornoPrensa) {
@@ -307,7 +365,9 @@
     window.irParaInicio = function() {
       modoAtual = null;
       materialPrensa = null;
+      materialFiltroMassa = null;
       epcsLidosMassa.clear();
+      estoqueNuvemMassa = {};
       liberarColetor();
       mostrarJanela("win-inicio");
     };
@@ -330,9 +390,28 @@
         document.getElementById("inputSenhaMassa").focus();
         return;
       }
+      mostrarJanela("win-tipo-massa");
+    };
 
+    window.voltarTipoMassa = function() {
+      modoAtual = null;
+      liberarColetor();
+      mostrarJanela("win-tipo-massa");
+    };
+
+    window.abrirSelecaoMaterialMassa = function() {
+      document.getElementById("statusCarregandoBaseMassa").textContent = "";
+      mostrarJanela("win-sel-mat-massa");
+    };
+
+    // OPÇÃO 1 DA MASSA: LER TODOS OS FARDOS (SEM FILTRO)
+    window.iniciarMassaTodos = function() {
+      submodoMassa = "TODOS";
+      materialFiltroMassa = null;
+      estoqueNuvemMassa = {};
       epcsLidosMassa.clear();
       modoAtual = "MASSA";
+
       if (window.AndroidSingleTag) {
         if (typeof window.AndroidSingleTag.configurarModo === "function") {
           window.AndroidSingleTag.configurarModo("MASSA");
@@ -341,6 +420,55 @@
           window.AndroidSingleTag.limparMemoriaMassa();
         }
       }
+
+      document.getElementById("tituloHeaderMassa").textContent = "MASSA: TODOS OS FARDOS";
+      document.getElementById("boxSubContadoresMassa").style.display = "none";
+      document.getElementById("instrucaoMassa").textContent = "Ande pelo galpão e aperte o gatilho quantas vezes precisar. Quando parar de apitar, tudo ao redor já foi lido.";
+      renderizarTelaMassa();
+      mostrarJanela("win-massa");
+    };
+
+    // OPÇÃO 2 DA MASSA: LER UM MATERIAL ESPECÍFICO + SEM REGISTRO (VERIFICANDO COM O ESTOQUE DA NUVEM)
+    window.iniciarMassaMaterialEspecifico = async function(materialEscolhido) {
+      const statusEl = document.getElementById("statusCarregandoBaseMassa");
+      statusEl.textContent = `Sincronizando estoque da nuvem para filtrar ${materialEscolhido}...`;
+
+      try {
+        const snap = await getDocs(collection(db, "estoque_atual"));
+        estoqueNuvemMassa = {};
+        snap.forEach(d => {
+          const dados = d.data();
+          const epc = (dados.epc || d.id).trim().toUpperCase();
+          estoqueNuvemMassa[epc] = {
+            material: (dados.material || "").trim(),
+            peso_kg: Number(dados.peso_kg || 0)
+          };
+        });
+      } catch (err) {
+        statusEl.textContent = "";
+        alert("Erro ao consultar estoque na nuvem: " + err.message);
+        return;
+      }
+
+      statusEl.textContent = "";
+      submodoMassa = "MATERIAL";
+      materialFiltroMassa = materialEscolhido;
+      epcsLidosMassa.clear();
+      modoAtual = "MASSA";
+
+      if (window.AndroidSingleTag) {
+        if (typeof window.AndroidSingleTag.configurarModo === "function") {
+          window.AndroidSingleTag.configurarModo("MASSA");
+        }
+        if (typeof window.AndroidSingleTag.limparMemoriaMassa === "function") {
+          window.AndroidSingleTag.limparMemoriaMassa();
+        }
+      }
+
+      document.getElementById("tituloHeaderMassa").textContent = `MASSA: ${materialEscolhido.toUpperCase()}`;
+      document.getElementById("boxSubContadoresMassa").style.display = "flex";
+      document.getElementById("lblMatEncontrado").textContent = materialEscolhido;
+      document.getElementById("instrucaoMassa").innerHTML = `Lendo somente <strong>${materialEscolhido}</strong> e fardos <strong>Sem Registro</strong> no estoque.`;
       renderizarTelaMassa();
       mostrarJanela("win-massa");
     };
@@ -350,17 +478,31 @@
       document.getElementById("numTotalMassa").textContent = total;
       document.getElementById("btnEnviarMassa").disabled = total === 0;
 
+      if (submodoMassa === "MATERIAL") {
+        let qtdMat = 0;
+        let qtdSemReg = 0;
+        epcsLidosMassa.forEach(val => {
+          if (val.sem_registro) qtdSemReg++;
+          else qtdMat++;
+        });
+        document.getElementById("numMatEncontrado").textContent = qtdMat;
+        document.getElementById("numSemRegistroMassa").textContent = qtdSemReg;
+      }
+
       const box = document.getElementById("listaUltimasMassa");
       if (total === 0) {
         box.innerHTML = `<div style="color:#64748b; font-size:0.85rem; padding:12px;">Aguardando leitura de etiquetas...</div>`;
         return;
       }
 
-      // Mostra as últimas 25 etiquetas lidas (mais recentes no topo) apenas como retorno visual da captura
-      const listaReversa = Array.from(epcsLidosMassa).reverse().slice(0, 25);
-      box.innerHTML = listaReversa.map((epc, i) => `
-        <div class="tag-linha-massa">#${total - i} — ${epc}</div>
-      `).join("");
+      const listaReversa = Array.from(epcsLidosMassa.values()).reverse().slice(0, 25);
+      box.innerHTML = listaReversa.map((item, i) => {
+        if (item.sem_registro) {
+          return `<div class="tag-linha-massa sem-reg">#${total - i} — ${item.epc} [SEM REGISTRO]</div>`;
+        }
+        const tagMat = submodoMassa === "MATERIAL" ? ` [${materialFiltroMassa}]` : "";
+        return `<div class="tag-linha-massa">#${total - i} — ${item.epc}${tagMat}</div>`;
+      }).join("");
     }
 
     window.continuarLendoMassa = function() {
@@ -385,12 +527,20 @@
       btn.textContent = "ENVIANDO...";
 
       try {
-        const listaItens = Array.from(epcsLidosMassa).map(epc => ({ epc }));
+        const listaItens = Array.from(epcsLidosMassa.values()).map(item => ({
+          epc: item.epc,
+          sem_registro: Boolean(item.sem_registro)
+        }));
         const totalLidos = listaItens.length;
+        const tipoConferencia = submodoMassa === "MATERIAL"
+          ? `MATERIAL ESPECÍFICO: ${materialFiltroMassa}`
+          : "GERAL (TODOS OS FARDOS)";
 
         await addDoc(collection(db, "conferencias_estoque"), {
           criado_em: serverTimestamp(),
           dispositivo: "Bluebird-EF401",
+          tipo_conferencia: tipoConferencia,
+          material_filtrado: materialFiltroMassa || null,
           total_lidos: totalLidos,
           itens_lidos: listaItens
         });
@@ -398,14 +548,15 @@
         await registrarLogAuditoria(
           "INVENTARIO_MASSA",
           "CONFERENCIA_ENVIADA",
-          `Leitura em massa enviada ao ERP para conferência: ${totalLidos} etiqueta(s) coletada(s).`
+          `Conferência enviada (${tipoConferencia}): ${totalLidos} etiqueta(s) coletada(s).`,
+          materialFiltroMassa || "TODOS"
         );
 
         epcsLidosMassa.clear();
         modoAtual = null;
         liberarColetor();
 
-        document.getElementById("resumoEnvioMassa").textContent = `Total de etiquetas enviadas: ${totalLidos} fardo(s).`;
+        document.getElementById("resumoEnvioMassa").textContent = `${tipoConferencia} — Total enviado: ${totalLidos} fardo(s).`;
         mostrarJanela("win-massa-enviada");
       } catch (err) {
         alert("Erro ao enviar leitura: " + err.message);
@@ -609,15 +760,31 @@
 
       if (!modoAtual) return;
 
-      // MODO LEITURA EM MASSA: APENAS ACUMULA TODOS OS EPCS LIDOS (ZERO CONSULTA AO BANCO)
+      // MODO LEITURA EM MASSA
       if (modoAtual === "MASSA") {
         let houveNovo = false;
+
         for (const epc of epcs) {
-          if (!epcsLidosMassa.has(epc)) {
-            epcsLidosMassa.add(epc);
+          if (epcsLidosMassa.has(epc)) continue;
+
+          if (submodoMassa === "TODOS") {
+            epcsLidosMassa.set(epc, { epc: epc, sem_registro: false });
             houveNovo = true;
+          } else if (submodoMassa === "MATERIAL") {
+            const infoNuvem = estoqueNuvemMassa[epc];
+            if (!infoNuvem) {
+              // Fardo sem registro no estoque -> inclui e marca como sem registro
+              epcsLidosMassa.set(epc, { epc: epc, sem_registro: true });
+              houveNovo = true;
+            } else if (infoNuvem.material.toLowerCase() === (materialFiltroMassa || "").toLowerCase()) {
+              // Fardo pertence ao material específico selecionado -> inclui
+              epcsLidosMassa.set(epc, { epc: epc, sem_registro: false });
+              houveNovo = true;
+            }
+            // Se pertence a outro material cadastrado, ignora silenciosamente
           }
         }
+
         if (houveNovo) {
           renderizarTelaMassa();
         }
