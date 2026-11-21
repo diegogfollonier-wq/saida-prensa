@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERP Cloud - Controle de Fardos RFID</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; background: #f1f5f9; color: #0f172a; }
+    .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
+    .login-box { background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); width: 100%; max-width: 380px; }
+    .login-box h2 { margin: 0 0 20px; text-align: center; color: #1e293b; }
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #475569; }
+    .input-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
+    .btn-primary { width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .erro-login { color: #dc2626; font-size: 0.9rem; margin-top: 12px; text-align: center; }
+
+    .erp-container { display: none; max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: #fff; padding: 16px 24px; border-radius: 12px; margin-bottom: 24px; }
+    .topbar h1 { margin: 0; font-size: 1.3rem; }
+    .btn-sair { background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #2563eb; }
+    .card.verde { border-left-color: #16a34a; }
+    .card.vermelho { border-left-color: #dc2626; }
+    .card-titulo { font-size: 0.85rem; color: #64748b; font-weight: 700; text-transform: uppercase; }
+    .card-valor { font-size: 2rem; font-weight: 800; margin-top: 8px; color: #0f172a; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
+    .tab-btn { padding: 10px 20px; border: none; background: transparent; font-weight: 700; font-size: 0.95rem; color: #64748b; cursor: pointer; border-radius: 8px; }
+    .tab-btn.active { background: #2563eb; color: #fff; }
+
+    .panel-tabela { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-size: 0.92rem; }
+    th { background: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 0.8rem; }
+    .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .badge-prensa { background: #dcfce7; color: #166534; }
+    .badge-carregamento { background: #dbeafe; color: #1e40af; }
+    .badge-erro { background: #fee2e2; color: #991b1b; }
+    .mono { font-family: monospace; font-weight: 600; color: #0284c7; }
+  </style>
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <div id="telaLogin" class="login-container">
+    <div class="login-box">
+      <h2>Acesso Restrito - ERP</h2>
+      <div class="input-group">
+        <label>E-mail</label>
+        <input type="email" id="emailInput" placeholder="seu@email.com" />
+      </div>
+      <div class="input-group">
+        <label>Senha</label>
+        <input type="password" id="senhaInput" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" onclick="fazerLogin()">Entrar no ERP</button>
+      <div id="erroLogin" class="erro-login"></div>
+    </div>
+  </div>
+
+  <!-- PAINEL ERP -->
+  <div id="telaErp" class="erp-container">
+    <div class="topbar">
+      <h1>ERP Cloud — Gestão de Fardos RFID</h1>
+      <div>
+        <span id="usuarioLogado" style="margin-right: 16px; font-size: 0.9rem; color: #cbd5e1;"></span>
+        <button class="btn-sair" onclick="fazerLogout()">Sair</button>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card verde">
+        <div class="card-titulo">Fardos em Estoque</div>
+        <div class="card-valor" id="kpiQtdEstoque">0</div>
+      </div>
+      <div class="card">
+        <div class="card-titulo">Peso Total em Estoque</div>
+        <div class="card-valor" id="kpiPesoEstoque">0,00 kg</div>
+      </div>
+      <div class="card vermelho">
+        <div class="card-titulo">Bloqueios Registrados</div>
+        <div class="card-valor" id="kpiBloqueios">0</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="mudarAba('estoque', this)">Estoque Atual</button>
+      <button class="tab-btn" onclick="mudarAba('historico', this)">Histórico (Entradas / Saídas)</button>
+      <button class="tab-btn" onclick="mudarAba('bloqueios', this)">Log de Erros / Bloqueios</button>
+    </div>
+
+    <div id="aba-estoque" class="panel-tabela">
+      <table>
+        <thead>
+          <tr>
+            <th>Etiqueta (EPC)</th>
+            <th>Peso (kg)</th>
+            <th>Data/Hora Entrada (Prensa)</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaEstoque"></tbody>
+      </table>
+    </div>
+
+    <div id="aba-historico" class="panel-tabela" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Operação</th>
+            <th>Etiqueta (EPC)</th>
+            <th>Peso (kg)</th>
+            <th>Coletor</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaHistorico"></tbody>
+      </table>
+    </div>
+
+    <div id="aba-bloqueios" class="panel-tabela" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Operação Tentada</th>
+            <th>Etiqueta (EPC)</th>
+            <th>Motivo do Bloqueio</th>
+            <th>Coletor</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaBloqueios"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
+      authDomain: "controle-fardos-rfid.firebaseapp.com",
+      projectId: "controle-fardos-rfid",
+      storageBucket: "controle-fardos-rfid.firebasestorage.app",
+      messagingSenderId: "811246572619",
+      appId: "1:811246572619:web:ee9fc742ea183bc84d29ce"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let unsubEstoque = null;
+    let unsubHistorico = null;
+    let unsubBloqueios = null;
+
+    function formatarData(ts) {
+      if (!ts || !ts.toDate) return "—";
+      return ts.toDate().toLocaleString("pt-BR");
+    }
+
+    window.fazerLogin = async function() {
+      const email = document.getElementById("emailInput").value.trim();
+      const senha = document.getElementById("senhaInput").value;
+      const erroEl = document.getElementById("erroLogin");
+      erroEl.textContent = "";
+      try {
+        await signInWithEmailAndPassword(auth, email, senha);
+      } catch (e) {
+        erroEl.textContent = "E-mail ou senha inválidos.";
+      }
+    };
+
+    window.fazerLogout = function() {
+      signOut(auth);
+    };
+
+    window.mudarAba = function(aba, btn) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("aba-estoque").style.display = aba === "estoque" ? "block" : "none";
+      document.getElementById("aba-historico").style.display = aba === "historico" ? "block" : "none";
+      document.getElementById("aba-bloqueios").style.display = aba === "bloqueios" ? "block" : "none";
+    };
+
+    function iniciarListeners() {
+      // 1. Estoque Atual
+      const qEstoque = query(collection(db, "estoque_atual"), orderBy("data_entrada", "desc"));
+      unsubEstoque = onSnapshot(qEstoque, (snap) => {
+        let qtd = 0;
+        let pesoTotal = 0;
+        let html = "";
+        snap.forEach((doc) => {
+          const d = doc.data();
+          qtd++;
+          pesoTotal += Number(d.peso_kg || 0);
+          html += `
+            <tr>
+              <td class="mono">${d.epc}</td>
+              <td><strong>${Number(d.peso_kg || 0).toFixed(2)} kg</strong></td>
+              <td>${formatarData(d.data_entrada)}</td>
+            </tr>
+          `;
+        });
+        document.getElementById("kpiQtdEstoque").textContent = qtd;
+        document.getElementById("kpiPesoEstoque").textContent = pesoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kg";
+        document.getElementById("tabelaEstoque").innerHTML = html || `<tr><td colspan="3" style="text-align:center;color:#64748b;">Nenhum fardo em estoque.</td></tr>`;
+      });
+
+      // 2. Histórico
+      const qHist = query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(200));
+      unsubHistorico = onSnapshot(qHist, (snap) => {
+        let html = "";
+        snap.forEach((doc) => {
+          const d = doc.data();
+          const badge = d.operacao === "PRENSA" ? "badge-prensa" : "badge-carregamento";
+          html += `
+            <tr>
+              <td>${formatarData(d.criado_em)}</td>
+              <td><span class="badge ${badge}">${d.operacao}</span></td>
+              <td class="mono">${d.epc}</td>
+              <td>${Number(d.peso_kg || 0).toFixed(2)} kg</td>
+              <td>${d.dispositivo || "—"}</td>
+            </tr>
+          `;
+        });
+        document.getElementById("tabelaHistorico").innerHTML = html || `<tr><td colspan="5" style="text-align:center;color:#64748b;">Nenhuma movimentação registrada.</td></tr>`;
+      });
+
+      // 3. Bloqueios
+      const qBloq = query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(200));
+      unsubBloqueios = onSnapshot(qBloq, (snap) => {
+        document.getElementById("kpiBloqueios").textContent = snap.size;
+        let html = "";
+        snap.forEach((doc) => {
+          const d = doc.data();
+          html += `
+            <tr>
+              <td>${formatarData(d.criado_em)}</td>
+              <td><span class="badge badge-erro">${d.operacao_tentada}</span></td>
+              <td class="mono">${d.epc}</td>
+              <td>${d.motivo_bloqueio}</td>
+              <td>${d.dispositivo || "—"}</td>
+            </tr>
+          `;
+        });
+        document.getElementById("tabelaBloqueios").innerHTML = html || `<tr><td colspan="5" style="text-align:center;color:#64748b;">Nenhum bloqueio registrado.</td></tr>`;
+      });
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("telaLogin").style.display = "none";
+        document.getElementById("telaErp").style.display = "block";
+        document.getElementById("usuarioLogado").textContent = user.email;
+        iniciarListeners();
+      } else {
+        if (unsubEstoque) unsubEstoque();
+        if (unsubHistorico) unsubHistorico();
+        if (unsubBloqueios) unsubBloqueios();
+        document.getElementById("telaErp").style.display = "none";
+        document.getElementById("telaLogin").style.display = "flex";
+      }
+    });
+  </script>
+</body>
+</html>
