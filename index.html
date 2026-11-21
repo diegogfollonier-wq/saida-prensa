@@ -44,6 +44,10 @@
     .contador-massa-box { background: #0f172a; border: 2px solid #7c3aed; border-radius: 14px; padding: 14px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .contador-massa-numero { font-size: 3rem; font-weight: 900; color: #facc15; line-height: 1; }
     .contador-massa-label { font-size: 0.85rem; font-weight: 700; color: #c4b5fd; text-transform: uppercase; }
+    .badge-status-scan { padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; }
+    .scan-ativo { background: #16a34a; color: #fff; }
+    .scan-parado { background: #f59e0b; color: #0f172a; }
+
     .sub-contadores-massa { display: flex; gap: 10px; width: 100%; }
     .sub-box { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; }
     .sub-box.alerta { border-color: #ef4444; background: #450a0a; }
@@ -51,7 +55,7 @@
     .sub-box.alerta .sub-num { color: #fca5a5; }
     .sub-lbl { font-size: 0.72rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; }
 
-    .ultimas-tags-box { width: 100%; max-height: 18vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #0f172a; padding: 8px; border-radius: 10px; border: 1px solid #334155; }
+    .ultimas-tags-box { width: 100%; max-height: 20vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #0f172a; padding: 8px; border-radius: 10px; border: 1px solid #334155; }
     .tag-linha-massa { font-family: monospace; font-size: 0.76rem; color: #38bdf8; text-align: left; word-break: break-all; padding: 3px 6px; border-bottom: 1px solid #1e293b; }
     .tag-linha-massa.sem-reg { color: #fca5a5; }
 
@@ -68,7 +72,7 @@
     .alerta-erro { background: #7f1d1d; border: 2px solid #ef4444; color: #fecaca; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.92rem; width: 100%; }
     .alerta-ok { background: #14532d; border: 2px solid #22c55e; color: #bbf7d0; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 1.05rem; width: 100%; }
     .acoes-grid { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 6px; }
-    .btn-acao { padding: 14px; font-size: 1rem; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; width: 100%; }
+    .btn-acao { padding: 15px; font-size: 1.02rem; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; width: 100%; }
     .btn-confirmar { background: #22c55e; color: #052e16; }
     .btn-continuar { background: #2563eb; color: #fff; }
     .btn-roxo { background: #7c3aed; color: #fff; }
@@ -177,7 +181,7 @@
   <div id="win-massa" class="janela">
     <div class="header-bar bg-roxo">
       <span id="tituloHeaderMassa">MASSA: TODOS</span>
-      <span style="font-size:0.78rem;opacity:0.9;">CONTÍNUA</span>
+      <span id="badgeStatusScanMassa" class="badge-status-scan scan-ativo">LENDO...</span>
     </div>
 
     <div class="status-box" style="justify-content: flex-start;">
@@ -194,23 +198,28 @@
         </div>
         <div class="sub-box alerta">
           <span id="numSemRegistroMassa" class="sub-num">0</span>
-          <span class="sub-lbl">Sem Registro</span>
+          <span id="lblSemRegistroMassa" class="sub-lbl">Sem Registro</span>
         </div>
       </div>
 
       <div id="instrucaoMassa" style="font-size: 0.83rem; color: #cbd5e1;">
-        Ande pelo galpão e aperte o gatilho quantas vezes precisar.
+        Leitura contínua ativa. Percorra o galpão e aperte PARAR quando terminar.
       </div>
 
       <div id="listaUltimasMassa" class="ultimas-tags-box">
-        <div style="color:#64748b; font-size:0.85rem; padding:12px;">Aguardando leitura de etiquetas...</div>
+        <div style="color:#64748b; font-size:0.85rem; padding:12px;">Lendo etiquetas ao redor...</div>
       </div>
 
-      <div class="acoes-grid" style="margin-top: auto;">
+      <!-- BOTÕES ENQUANTO ESTÁ LENDO -->
+      <div id="acoesMassaLendo" class="acoes-grid" style="margin-top: auto;">
+        <button class="btn-acao btn-refazer" style="padding: 20px; font-size: 1.2rem;" onclick="pararLeituraMassa()">PARAR LEITURA</button>
+      </div>
+
+      <!-- BOTÕES APÓS APERTAR PARAR -->
+      <div id="acoesMassaParado" class="acoes-grid" style="margin-top: auto; display: none;">
         <button id="btnEnviarMassa" class="btn-acao btn-confirmar" onclick="enviarLeituraMassa()" disabled>ENVIAR PARA CONFERÊNCIA</button>
-        <button class="btn-acao btn-continuar" onclick="continuarLendoMassa()">CONTINUAR LENDO</button>
         <button class="btn-acao btn-finalizar" onclick="iniciarNovamenteMassa()">INICIAR NOVAMENTE</button>
-        <button class="btn-acao btn-refazer" onclick="irParaInicio()">SAIR</button>
+        <button class="btn-acao btn-neutro" onclick="irParaInicio()">SAIR</button>
       </div>
     </div>
   </div>
@@ -289,10 +298,11 @@
     let timerRetornoPrensa = null;
 
     // VARIÁVEIS DA LEITURA EM MASSA
-    let submodoMassa = "TODOS";        // 'TODOS' ou 'MATERIAL'
-    let materialFiltroMassa = null;    // Ex: 'Pet Cristal' quando submodoMassa == 'MATERIAL'
-    let estoqueNuvemMassa = {};        // EPC -> { material, peso_kg } carregado da nuvem apenas no modo 'MATERIAL'
-    let epcsLidosMassa = new Map();    // EPC -> { epc, status_leitura }
+    let massaLendoAtiva = false;
+    let submodoMassa = "TODOS";
+    let materialFiltroMassa = null;
+    let estoqueNuvemMassa = {};
+    let epcsLidosMassa = new Map();
 
     function limparTimerPrensa() {
       if (timerRetornoPrensa) {
@@ -305,6 +315,13 @@
       limparTimerPrensa();
       document.querySelectorAll(".janela").forEach(j => j.classList.remove("ativa"));
       document.getElementById(idJanela).classList.add("ativa");
+    }
+
+    function encerraAntenaMassaSeAtiva() {
+      massaLendoAtiva = false;
+      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.pararLeituraMassa === "function") {
+        window.AndroidSingleTag.pararLeituraMassa();
+      }
     }
 
     function liberarColetor() {
@@ -363,6 +380,7 @@
     }
 
     window.irParaInicio = function() {
+      encerraAntenaMassaSeAtiva();
       modoAtual = null;
       materialPrensa = null;
       materialFiltroMassa = null;
@@ -374,6 +392,7 @@
 
     // FLUXO SENHA LEITURA EM MASSA (SEMPRE EXIGE 0770)
     window.abrirSenhaMassa = function() {
+      encerraAntenaMassaSeAtiva();
       modoAtual = null;
       liberarColetor();
       document.getElementById("inputSenhaMassa").value = "";
@@ -394,6 +413,7 @@
     };
 
     window.voltarTipoMassa = function() {
+      encerraAntenaMassaSeAtiva();
       modoAtual = null;
       liberarColetor();
       mostrarJanela("win-tipo-massa");
@@ -404,31 +424,43 @@
       mostrarJanela("win-sel-mat-massa");
     };
 
-    // OPÇÃO 1 DA MASSA: LER TODOS OS FARDOS (SEM FILTRO)
+    function ativarEstadoLendoMassa() {
+      massaLendoAtiva = true;
+      modoAtual = "MASSA";
+
+      const badge = document.getElementById("badgeStatusScanMassa");
+      badge.textContent = "LENDO...";
+      badge.className = "badge-status-scan scan-ativo";
+
+      document.getElementById("acoesMassaLendo").style.display = "flex";
+      document.getElementById("acoesMassaParado").style.display = "none";
+
+      if (window.AndroidSingleTag) {
+        if (typeof window.AndroidSingleTag.limparMemoriaMassa === "function") {
+          window.AndroidSingleTag.limparMemoriaMassa();
+        }
+        if (typeof window.AndroidSingleTag.configurarModo === "function") {
+          window.AndroidSingleTag.configurarModo("MASSA");
+        }
+      }
+      renderizarTelaMassa();
+    }
+
+    // OPÇÃO 1 DA MASSA: LER TODOS OS FARDOS
     window.iniciarMassaTodos = function() {
       submodoMassa = "TODOS";
       materialFiltroMassa = null;
       estoqueNuvemMassa = {};
       epcsLidosMassa.clear();
-      modoAtual = "MASSA";
-
-      if (window.AndroidSingleTag) {
-        if (typeof window.AndroidSingleTag.configurarModo === "function") {
-          window.AndroidSingleTag.configurarModo("MASSA");
-        }
-        if (typeof window.AndroidSingleTag.limparMemoriaMassa === "function") {
-          window.AndroidSingleTag.limparMemoriaMassa();
-        }
-      }
 
       document.getElementById("tituloHeaderMassa").textContent = "MASSA: TODOS OS FARDOS";
       document.getElementById("boxSubContadoresMassa").style.display = "none";
-      document.getElementById("instrucaoMassa").textContent = "Ande pelo galpão e aperte o gatilho quantas vezes precisar. Quando parar de apitar, tudo ao redor já foi lido.";
-      renderizarTelaMassa();
+      document.getElementById("instrucaoMassa").textContent = "Leitura contínua ativa. Percorra o galpão e aperte PARAR LEITURA quando terminar.";
       mostrarJanela("win-massa");
+      ativarEstadoLendoMassa();
     };
 
-    // OPÇÃO 2 DA MASSA: LER UM MATERIAL ESPECÍFICO + SEM REGISTRO (VERIFICANDO COM O ESTOQUE DA NUVEM)
+    // OPÇÃO 2 DA MASSA: LER UM MATERIAL ESPECÍFICO + SEM REGISTRO
     window.iniciarMassaMaterialEspecifico = async function(materialEscolhido) {
       const statusEl = document.getElementById("statusCarregandoBaseMassa");
       statusEl.textContent = `Sincronizando estoque da nuvem para filtrar ${materialEscolhido}...`;
@@ -454,23 +486,33 @@
       submodoMassa = "MATERIAL";
       materialFiltroMassa = materialEscolhido;
       epcsLidosMassa.clear();
-      modoAtual = "MASSA";
-
-      if (window.AndroidSingleTag) {
-        if (typeof window.AndroidSingleTag.configurarModo === "function") {
-          window.AndroidSingleTag.configurarModo("MASSA");
-        }
-        if (typeof window.AndroidSingleTag.limparMemoriaMassa === "function") {
-          window.AndroidSingleTag.limparMemoriaMassa();
-        }
-      }
 
       document.getElementById("tituloHeaderMassa").textContent = `MASSA: ${materialEscolhido.toUpperCase()}`;
       document.getElementById("boxSubContadoresMassa").style.display = "flex";
       document.getElementById("lblMatEncontrado").textContent = materialEscolhido;
-      document.getElementById("instrucaoMassa").innerHTML = `Lendo somente <strong>${materialEscolhido}</strong> e fardos <strong>Sem Registro</strong> no estoque.`;
-      renderizarTelaMassa();
+      document.getElementById("instrucaoMassa").innerHTML = `Leitura contínua ativa para <strong>${materialEscolhido}</strong> e <strong>Sem Registro</strong>. Aperte PARAR LEITURA quando terminar.`;
       mostrarJanela("win-massa");
+      ativarEstadoLendoMassa();
+    };
+
+    // BOTÃO PARAR LEITURA
+    window.pararLeituraMassa = function() {
+      encerraAntenaMassaSeAtiva();
+
+      const badge = document.getElementById("badgeStatusScanMassa");
+      badge.textContent = "PARADO";
+      badge.className = "badge-status-scan scan-parado";
+
+      document.getElementById("instrucaoMassa").textContent = "Leitura finalizada. Envie para conferência, inicie novamente ou saia.";
+      document.getElementById("acoesMassaLendo").style.display = "none";
+      document.getElementById("acoesMassaParado").style.display = "flex";
+      document.getElementById("btnEnviarMassa").disabled = epcsLidosMassa.size === 0;
+    };
+
+    // BOTÃO INICIAR NOVAMENTE (ZERA E RECOMEÇA A LER AUTOMATICAMENTE)
+    window.iniciarNovamenteMassa = function() {
+      epcsLidosMassa.clear();
+      ativarEstadoLendoMassa();
     };
 
     function renderizarTelaMassa() {
@@ -491,7 +533,7 @@
 
       const box = document.getElementById("listaUltimasMassa");
       if (total === 0) {
-        box.innerHTML = `<div style="color:#64748b; font-size:0.85rem; padding:12px;">Aguardando leitura de etiquetas...</div>`;
+        box.innerHTML = `<div style="color:#64748b; font-size:0.85rem; padding:12px;">${massaLendoAtiva ? "Lendo etiquetas ao redor..." : "Nenhuma etiqueta capturada."}</div>`;
         return;
       }
 
@@ -504,21 +546,6 @@
         return `<div class="tag-linha-massa">#${total - i} — ${item.epc}${tagMat}</div>`;
       }).join("");
     }
-
-    window.continuarLendoMassa = function() {
-      modoAtual = "MASSA";
-      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.liberarProximaEtiqueta === "function") {
-        window.AndroidSingleTag.liberarProximaEtiqueta();
-      }
-    };
-
-    window.iniciarNovamenteMassa = function() {
-      epcsLidosMassa.clear();
-      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.limparMemoriaMassa === "function") {
-        window.AndroidSingleTag.limparMemoriaMassa();
-      }
-      renderizarTelaMassa();
-    };
 
     window.enviarLeituraMassa = async function() {
       if (epcsLidosMassa.size === 0) return;
@@ -568,6 +595,7 @@
 
     // PRENSA & CARREGAMENTO
     window.abrirSelecaoPrensa = function() {
+      encerraAntenaMassaSeAtiva();
       liberarColetor();
       mostrarJanela("win-sel-prensa");
     };
@@ -584,6 +612,7 @@
     };
 
     window.iniciarCarregamentoDireto = function() {
+      encerraAntenaMassaSeAtiva();
       modoAtual = "CARREGAMENTO";
       materialPrensa = null;
       idCargaAtual = "CARGA-" + Date.now();
@@ -760,10 +789,11 @@
 
       if (!modoAtual) return;
 
-      // MODO LEITURA EM MASSA
+      // MODO LEITURA EM MASSA (SÓ ACEITA SE ESTIVER ATIVO ANTES DE APERTAR PARAR)
       if (modoAtual === "MASSA") {
-        let houveNovo = false;
+        if (!massaLendoAtiva) return;
 
+        let houveNovo = false;
         for (const epc of epcs) {
           if (epcsLidosMassa.has(epc)) continue;
 
@@ -773,15 +803,12 @@
           } else if (submodoMassa === "MATERIAL") {
             const infoNuvem = estoqueNuvemMassa[epc];
             if (!infoNuvem) {
-              // Fardo sem registro no estoque -> inclui e marca como sem registro
               epcsLidosMassa.set(epc, { epc: epc, sem_registro: true });
               houveNovo = true;
             } else if (infoNuvem.material.toLowerCase() === (materialFiltroMassa || "").toLowerCase()) {
-              // Fardo pertence ao material específico selecionado -> inclui
               epcsLidosMassa.set(epc, { epc: epc, sem_registro: false });
               houveNovo = true;
             }
-            // Se pertence a outro material cadastrado, ignora silenciosamente
           }
         }
 
