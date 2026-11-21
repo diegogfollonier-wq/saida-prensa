@@ -38,12 +38,12 @@
     /* TELA DE SENHA */
     .input-senha { width: 100%; max-width: 240px; padding: 16px; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 8px; border-radius: 12px; border: 2px solid #7c3aed; background: #0f172a; color: #fff; margin: 8px 0; }
 
-    /* LISTA DE CONTAGEM EM MASSA */
-    .lista-massa { width: 100%; max-height: 44vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
-    .item-massa { background: #0f172a; border: 1px solid #334155; border-left: 4px solid #a855f7; border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
-    .item-massa.sem-cadastro { border-left-color: #ef4444; background: #450a0a; }
-    .item-massa-nome { font-weight: 800; font-size: 1rem; text-transform: uppercase; }
-    .item-massa-qtd { font-weight: 900; font-size: 1.2rem; color: #facc15; }
+    /* CONTADOR GIGANTE DA LEITURA EM MASSA */
+    .contador-massa-box { background: #0f172a; border: 2px solid #7c3aed; border-radius: 14px; padding: 18px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .contador-massa-numero { font-size: 3.2rem; font-weight: 900; color: #facc15; line-height: 1; }
+    .contador-massa-label { font-size: 0.88rem; font-weight: 700; color: #c4b5fd; text-transform: uppercase; }
+    .ultimas-tags-box { width: 100%; max-height: 22vh; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; background: #0f172a; padding: 8px; border-radius: 10px; border: 1px solid #334155; }
+    .tag-linha-massa { font-family: monospace; font-size: 0.78rem; color: #38bdf8; text-align: left; word-break: break-all; padding: 3px 6px; border-bottom: 1px solid #1e293b; }
 
     .fardo-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px; width: 100%; display: flex; justify-content: space-between; align-items: center; text-align: left; gap: 8px; }
     .fardo-card.invalido { border-color: #ef4444; background: #450a0a; }
@@ -130,20 +130,25 @@
     <div id="areaConteudo" class="status-box"></div>
   </div>
 
-  <!-- JANELA 3B: OPERAÇÃO DE LEITURA EM MASSA (INVENTÁRIO GERAL) -->
+  <!-- JANELA 3B: OPERAÇÃO DE LEITURA EM MASSA (SOMENTE COLETA BRUTA) -->
   <div id="win-massa" class="janela">
     <div class="header-bar bg-roxo">
       <span>LEITURA EM MASSA</span>
-      <span id="badgeTotalMassa" style="background:rgba(0,0,0,0.35);padding:6px 10px;border-radius:8px;font-size:0.9rem;">0 fardos</span>
+      <span style="font-size:0.8rem;opacity:0.85;">COLETA CONTÍNUA</span>
     </div>
 
     <div class="status-box" style="justify-content: flex-start;">
-      <div style="font-size: 0.9rem; color: #cbd5e1;">
-        Aperte o gatilho para varrer o galpão. Quando parar de apitar, todos os fardos ao redor foram lidos.
+      <div class="contador-massa-box">
+        <div id="numTotalMassa" class="contador-massa-numero">0</div>
+        <div class="contador-massa-label">Etiquetas Únicas Capturadas</div>
       </div>
 
-      <div id="listaContagemMassa" class="lista-massa">
-        <div style="color:#94a3b8; padding:24px 0;">Nenhum fardo lido ainda...</div>
+      <div style="font-size: 0.85rem; color: #cbd5e1;">
+        Ande pelo galpão e aperte o gatilho quantas vezes precisar. Quando parar de apitar, tudo ao redor já foi lido.
+      </div>
+
+      <div id="listaUltimasMassa" class="ultimas-tags-box">
+        <div style="color:#64748b; font-size:0.85rem; padding:12px;">Aguardando leitura de etiquetas...</div>
       </div>
 
       <div class="acoes-grid" style="margin-top: auto;">
@@ -162,8 +167,9 @@
     </div>
     <div class="status-box">
       <div class="alerta-ok">
-        TODA A LEITURA FOI ENVIADA PARA O ERP!<br>
+        TODA A LEITURA FOI ENVIADA!<br>
         <span id="resumoEnvioMassa" style="font-size:0.95rem; font-weight:600; display:block; margin-top:8px;"></span>
+        <span style="font-size:0.85rem; font-weight:500; display:block; margin-top:6px;">Acesse o ERP no Windows na aba Conferência de Estoque para visualizar o resultado.</span>
       </div>
       <div class="acoes-grid" style="margin-top: 16px;">
         <button class="btn-acao btn-neutro" onclick="irParaInicio()">SAIR</button>
@@ -203,7 +209,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
@@ -227,9 +233,8 @@
     let processando = false;
     let timerRetornoPrensa = null;
 
-    // VARIÁVEIS DA LEITURA EM MASSA
-    let estoqueCacheMassa = {};     // Mapa EPC -> { material, peso_kg } carregado ao entrar no modo MASSA
-    let epcsLidosMassa = new Map(); // EPC -> { epc, material, peso_kg, existe_estoque }
+    // SET PURO DE EPCS LIDOS EM MASSA (SEM CONFERÊNCIA LOCAL NO CELULAR)
+    let epcsLidosMassa = new Set();
 
     function limparTimerPrensa() {
       if (timerRetornoPrensa) {
@@ -303,7 +308,6 @@
       modoAtual = null;
       materialPrensa = null;
       epcsLidosMassa.clear();
-      estoqueCacheMassa = {};
       liberarColetor();
       mostrarJanela("win-inicio");
     };
@@ -318,25 +322,13 @@
       setTimeout(() => document.getElementById("inputSenhaMassa").focus(), 150);
     };
 
-    window.validarSenhaMassa = async function() {
+    window.validarSenhaMassa = function() {
       const senha = document.getElementById("inputSenhaMassa").value.trim();
       if (senha !== "0770") {
         document.getElementById("erroSenhaMassa").textContent = "Senha incorreta! Tente novamente.";
         document.getElementById("inputSenhaMassa").value = "";
         document.getElementById("inputSenhaMassa").focus();
         return;
-      }
-
-      document.getElementById("erroSenhaMassa").textContent = "Carregando base de estoque...";
-      try {
-        // Baixa snapshot do estoque atual para identificar instantaneamente cada etiqueta sem atraso na leitura em massa
-        const snap = await getDocs(collection(db, "estoque_atual"));
-        estoqueCacheMassa = {};
-        snap.forEach(d => {
-          estoqueCacheMassa[d.id.toUpperCase()] = d.data();
-        });
-      } catch (e) {
-        console.error("Erro ao pré-carregar estoque:", e);
       }
 
       epcsLidosMassa.clear();
@@ -349,53 +341,26 @@
           window.AndroidSingleTag.limparMemoriaMassa();
         }
       }
-      renderizarResumoMassa();
+      renderizarTelaMassa();
       mostrarJanela("win-massa");
     };
 
-    function renderizarResumoMassa() {
+    function renderizarTelaMassa() {
       const total = epcsLidosMassa.size;
-      document.getElementById("badgeTotalMassa").textContent = `${total} fardo(s)`;
+      document.getElementById("numTotalMassa").textContent = total;
       document.getElementById("btnEnviarMassa").disabled = total === 0;
 
-      const container = document.getElementById("listaContagemMassa");
+      const box = document.getElementById("listaUltimasMassa");
       if (total === 0) {
-        container.innerHTML = `<div style="color:#94a3b8; padding:24px 0;">Nenhum fardo lido ainda...</div>`;
+        box.innerHTML = `<div style="color:#64748b; font-size:0.85rem; padding:12px;">Aguardando leitura de etiquetas...</div>`;
         return;
       }
 
-      const contagemPorMaterial = {};
-      let qtdSemEstoque = 0;
-
-      epcsLidosMassa.forEach((item) => {
-        if (!item.existe_estoque) {
-          qtdSemEstoque++;
-        } else {
-          const mat = item.material || "Outros";
-          contagemPorMaterial[mat] = (contagemPorMaterial[mat] || 0) + 1;
-        }
-      });
-
-      let html = "";
-      Object.keys(contagemPorMaterial).forEach(mat => {
-        html += `
-          <div class="item-massa">
-            <span class="item-massa-nome">${mat}</span>
-            <span class="item-massa-qtd">${contagemPorMaterial[mat]}</span>
-          </div>
-        `;
-      });
-
-      if (qtdSemEstoque > 0) {
-        html += `
-          <div class="item-massa sem-cadastro">
-            <span class="item-massa-nome" style="color:#fca5a5;">Sem Correspondência no Estoque</span>
-            <span class="item-massa-qtd" style="color:#fca5a5;">${qtdSemEstoque}</span>
-          </div>
-        `;
-      }
-
-      container.innerHTML = html;
+      // Mostra as últimas 25 etiquetas lidas (mais recentes no topo) apenas como retorno visual da captura
+      const listaReversa = Array.from(epcsLidosMassa).reverse().slice(0, 25);
+      box.innerHTML = listaReversa.map((epc, i) => `
+        <div class="tag-linha-massa">#${total - i} — ${epc}</div>
+      `).join("");
     }
 
     window.continuarLendoMassa = function() {
@@ -410,7 +375,7 @@
       if (window.AndroidSingleTag && typeof window.AndroidSingleTag.limparMemoriaMassa === "function") {
         window.AndroidSingleTag.limparMemoriaMassa();
       }
-      renderizarResumoMassa();
+      renderizarTelaMassa();
     };
 
     window.enviarLeituraMassa = async function() {
@@ -420,32 +385,30 @@
       btn.textContent = "ENVIANDO...";
 
       try {
-        const listaItens = Array.from(epcsLidosMassa.values());
+        const listaItens = Array.from(epcsLidosMassa).map(epc => ({ epc }));
         const totalLidos = listaItens.length;
-        const semCorrespondencia = listaItens.filter(i => !i.existe_estoque).length;
 
         await addDoc(collection(db, "conferencias_estoque"), {
           criado_em: serverTimestamp(),
           dispositivo: "Bluebird-EF401",
           total_lidos: totalLidos,
-          total_sem_correspondencia: semCorrespondencia,
           itens_lidos: listaItens
         });
 
         await registrarLogAuditoria(
           "INVENTARIO_MASSA",
           "CONFERENCIA_ENVIADA",
-          `Conferência em massa enviada ao ERP: ${totalLidos} fardo(s) lido(s), ${semCorrespondencia} sem correspondência no estoque.`
+          `Leitura em massa enviada ao ERP para conferência: ${totalLidos} etiqueta(s) coletada(s).`
         );
 
         epcsLidosMassa.clear();
         modoAtual = null;
         liberarColetor();
 
-        document.getElementById("resumoEnvioMassa").textContent = `Total enviado: ${totalLidos} fardo(s).`;
+        document.getElementById("resumoEnvioMassa").textContent = `Total de etiquetas enviadas: ${totalLidos} fardo(s).`;
         mostrarJanela("win-massa-enviada");
       } catch (err) {
-        alert("Erro ao enviar conferência: " + err.message);
+        alert("Erro ao enviar leitura: " + err.message);
       } finally {
         btn.disabled = false;
         btn.textContent = "ENVIAR PARA CONFERÊNCIA";
@@ -646,32 +609,17 @@
 
       if (!modoAtual) return;
 
-      // MODO LEITURA EM MASSA (ACUMULA CONTAGEM SEM TRAVAR)
+      // MODO LEITURA EM MASSA: APENAS ACUMULA TODOS OS EPCS LIDOS (ZERO CONSULTA AO BANCO)
       if (modoAtual === "MASSA") {
         let houveNovo = false;
         for (const epc of epcs) {
           if (!epcsLidosMassa.has(epc)) {
+            epcsLidosMassa.add(epc);
             houveNovo = true;
-            const infoEstoque = estoqueCacheMassa[epc];
-            if (infoEstoque) {
-              epcsLidosMassa.set(epc, {
-                epc: epc,
-                material: infoEstoque.material || "Outros",
-                peso_kg: Number(infoEstoque.peso_kg || 0),
-                existe_estoque: true
-              });
-            } else {
-              epcsLidosMassa.set(epc, {
-                epc: epc,
-                material: "Sem Correspondência no Estoque",
-                peso_kg: 0,
-                existe_estoque: false
-              });
-            }
           }
         }
         if (houveNovo) {
-          renderizarResumoMassa();
+          renderizarTelaMassa();
         }
         return;
       }
