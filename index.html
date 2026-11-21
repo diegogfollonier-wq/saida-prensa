@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Saída da Prensa - Controle RFID</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #2563eb;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --warning: #d97706;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .badge-status {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #064e3b;
+      color: #6ee7b7;
+      font-weight: 600;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .status-banner {
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      background: #172554;
+      color: #93c5fd;
+      border: 1px dashed #3b82f6;
+    }
+
+    .status-banner.confirmando {
+      background: #422006;
+      color: #fcd34d;
+      border: 1px solid #f59e0b;
+    }
+
+    .status-banner.erro {
+      background: #450a0a;
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+
+    .grid-dados {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .campo {
+      background: #0f172a;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+    }
+
+    .campo.full {
+      grid-column: span 2;
+    }
+
+    .campo label {
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .campo .valor {
+      font-size: 13px;
+      font-weight: 700;
+      word-break: break-all;
+      color: #fff;
+    }
+
+    .campo input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #475569;
+      color: #4ade80;
+      font-size: 16px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .acoes-fardo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 12px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      transition: opacity 0.15s;
+    }
+
+    button:active {
+      opacity: 0.8;
+    }
+
+    button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-gravar {
+      background: var(--success);
+    }
+
+    .btn-refazer {
+      background: var(--warning);
+    }
+
+    .btn-simular {
+      background: #334155;
+      font-size: 11px;
+      padding: 6px 8px;
+      margin-top: 6px;
+      width: 100%;
+    }
+
+    .resumo-estoque {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .resumo-estoque strong {
+      color: #38bdf8;
+      font-size: 14px;
+    }
+
+    .acoes-estoque {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .btn-csv {
+      background: var(--primary);
+      padding: 8px 10px;
+      font-size: 12px;
+      flex: 1;
+    }
+
+    .btn-limpar {
+      background: var(--danger);
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .lista-estoque {
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .item-fardo {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+
+    .item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-width: 82%;
+    }
+
+    .item-topo {
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .item-epc {
+      color: #cbd5e1;
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    .item-data {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .btn-del-item {
+      background: transparent;
+      color: #f87171;
+      border: 1px solid #7f1d1d;
+      padding: 5px 8px;
+      font-size: 11px;
+      border-radius: 6px;
+    }
+
+    .vazio {
+      text-align: center;
+      color: var(--muted);
+      padding: 16px 0;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SAÍDA DA PRENSA</h1>
+    <span class="badge-status">Balança: Simulada</span>
+  </header>
+
+  <!-- ÁREA DE LEITURA E CONFIRMAÇÃO -->
+  <div class="card">
+    <div id="statusBanner" class="status-banner">
+      Aguardando leitura da etiqueta RFID do fardo...
+    </div>
+
+    <div class="grid-dados">
+      <div class="campo">
+        <label>ID do Fardo</label>
+        <div id="campoId" class="valor">---</div>
+      </div>
+
+      <div class="campo">
+        <label>Peso (kg)</label>
+        <input type="number" id="campoPeso" step="0.1" placeholder="0.0" disabled />
+      </div>
+
+      <div class="campo full">
+        <label>Código Etiqueta RFID (EPC)</label>
+        <div id="campoEpc" class="valor">---</div>
+      </div>
+
+      <div class="campo full">
+        <label>Data e Hora</label>
+        <div id="campoData" class="valor">---</div>
+      </div>
+    </div>
+
+    <div class="acoes-fardo">
+      <button id="btnGravar" class="btn-gravar" disabled onclick="gravarFardo()">GRAVAR FARDO</button>
+      <button id="btnRefazer" class="btn-refazer" disabled onclick="refazerLeitura()">REFAZER</button>
+    </div>
+
+    <button class="btn-simular" onclick="simularLeituraTeste()">Simular Leitura (Teste sem RFR900)</button>
+  </div>
+
+  <!-- ÁREA DE ESTOQUE -->
+  <div class="card">
+    <div class="resumo-estoque">
+      <span>Fardos: <strong id="totalFardos">0</strong></span>
+      <span>Peso Total: <strong id="pesoTotal">0,0 kg</strong></span>
+    </div>
+
+    <div class="acoes-estoque">
+      <button class="btn-csv" onclick="exportarCSV()">Exportar CSV</button>
+      <button class="btn-limpar" onclick="limparEstoque()">Limpar Tudo</button>
+    </div>
+
+    <div id="listaEstoque" class="lista-estoque">
+      <div class="vazio">Nenhum fardo gravado no estoque.</div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'estoque_saida_prensa_v1';
+    let estoque = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let fardoAtual = null;
+    let pesoBalancaAtual = null; // Reservado para integração futura com balança real
+
+    // Elementos da UI
+    const statusBanner = document.getElementById('statusBanner');
+    const campoId = document.getElementById('campoId');
+    const campoPeso = document.getElementById('campoPeso');
+    const campoEpc = document.getElementById('campoEpc');
+    const campoData = document.getElementById('campoData');
+    const btnGravar = document.getElementById('btnGravar');
+    const btnRefazer = document.getElementById('btnRefazer');
+
+    // Gera ID único sequencial do dia: FRD-AAAAMMDD-001
+    function gerarIdFardo() {
+      const agora = new Date();
+      const ano = agora.getFullYear();
+      const mes = String(agora.getMonth() + 1).padStart(2, '0');
+      const dia = String(agora.getDate()).padStart(2, '0');
+      const seq = String(estoque.length + 1).padStart(3, '0');
+      return `FRD-${ano}${mes}${dia}-${seq}`;
+    }
+
+    // Formata data/hora local
+    function obterDataHora() {
+      return new Date().toLocaleString('pt-BR');
+    }
+
+    // Simula peso de balança entre 180.0 kg e 260.0 kg (até a balança real ser ligada)
+    function obterPeso() {
+      if (pesoBalancaAtual !== null) {
+        return Number(pesoBalancaAtual).toFixed(1);
+      }
+      const pesoSimulado = (Math.random() * (260 - 180) + 180).toFixed(1);
+      return pesoSimulado;
+    }
+
+    // Função pronta para receber o peso real da balança no futuro
+    window.receberPesoBalanca = function(peso) {
+      const num = parseFloat(String(peso).replace(',', '.'));
+      if (!isNaN(num) && num > 0) {
+        pesoBalancaAtual = num;
+        if (fardoAtual) {
+          campoPeso.value = num.toFixed(1);
+        }
+      }
+    };
+
+    // Função principal chamada pelo Android (InventoryFragment.java)
+    window.receberRFID = function(epcBruto) {
+      if (!epcBruto) return;
+      const epc = String(epcBruto).replace(/\s+/g, '').toUpperCase();
+
+      // Se já existe um fardo aguardando confirmação, ignora novas leituras acidentais
+      if (fardoAtual !== null) {
+        return;
+      }
+
+      // Verifica se essa etiqueta já foi gravada no estoque
+      const jaExiste = estoque.some(item => item.epc === epc);
+      if (jaExiste) {
+        statusBanner.className = 'status-banner erro';
+        statusBanner.textContent = `Etiqueta ${epc.slice(-6)} já está no estoque! Use outra etiqueta.`;
+        return;
+      }
+
+      // Cria prévia do fardo para conferência do operador
+      fardoAtual = {
+        id: gerarIdFardo(),
+        epc: epc,
+        peso: obterPeso(),
+        data: obterDataHora(),
+        origem: 'Saida da prensa'
+      };
+
+      campoId.textContent = fardoAtual.id;
+      campoEpc.textContent = fardoAtual.epc;
+      campoData.textContent = fardoAtual.data;
+      campoPeso.value = fardoAtual.peso;
+      campoPeso.disabled = false;
+
+      btnGravar.disabled = false;
+      btnRefazer.disabled = false;
+
+      statusBanner.className = 'status-banner confirmando';
+      statusBanner.textContent = 'Confira o peso e a etiqueta. Clique em GRAVAR ou REFAZER.';
+    };
+
+    // Grava o fardo conferido no estoque e pede o próximo item
+    function gravarFardo() {
+      if (!fardoAtual) return;
+
+      const pesoFinal = parseFloat(String(campoPeso.value).replace(',', '.'));
+      if (isNaN(pesoFinal) || pesoFinal <= 0) {
+        alert('Informe um peso válido antes de gravar.');
+        return;
+      }
+
+      fardoAtual.peso = Number(pesoFinal.toFixed(1));
+      estoque.unshift(fardoAtual);
+      salvarStorage();
+      renderizarEstoque();
+
+      resetarTela('Fardo gravado! Aguardando leitura do próximo fardo...');
+    }
+
+    // Descarta a leitura atual para ler novamente
+    function refazerLeitura() {
+      resetarTela('Leitura descartada. Leia novamente a etiqueta do fardo...');
+    }
+
+    function resetarTela(mensagem) {
+      fardoAtual = null;
+      campoId.textContent = '---';
+      campoEpc.textContent = '---';
+      campoData.textContent = '---';
+      campoPeso.value = '';
+      campoPeso.disabled = true;
+
+      btnGravar.disabled = true;
+      btnRefazer.disabled = true;
+
+      statusBanner.className = 'status-banner';
+      statusBanner.textContent = mensagem;
+    }
+
+    function excluirItem(index) {
+      if (confirm('Deseja remover este fardo do estoque?')) {
+        estoque.splice(index, 1);
+        salvarStorage();
+        renderizarEstoque();
+      }
+    }
+
+    function limparEstoque() {
+      if (estoque.length === 0) return;
+      if (confirm('Tem certeza que deseja apagar TODO o estoque gravado neste aparelho?')) {
+        estoque = [];
+        salvarStorage();
+        renderizarEstoque();
+        resetarTela('Estoque limpo. Aguardando leitura da etiqueta RFID...');
+      }
+    }
+
+    function salvarStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(estoque));
+    }
+
+    function renderizarEstoque() {
+      const listaEl = document.getElementById('listaEstoque');
+      const totalFardosEl = document.getElementById('totalFardos');
+      const pesoTotalEl = document.getElementById('pesoTotal');
+
+      totalFardosEl.textContent = estoque.length;
+      const somaPeso = estoque.reduce((acc, item) => acc + Number(item.peso), 0);
+      pesoTotalEl.textContent = somaPeso.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kg';
+
+      if (estoque.length === 0) {
+        listaEl.innerHTML = '<div class="vazio">Nenhum fardo gravado no estoque.</div>';
+        return;
+      }
+
+      listaEl.innerHTML = estoque.map((item, idx) => `
+        <div class="item-fardo">
+          <div class="item-info">
+            <span class="item-topo">${item.id} • ${Number(item.peso).toFixed(1)} kg</span>
+            <span class="item-epc">RFID: ${item.epc}</span>
+            <span class="item-data">${item.data}</span>
+          </div>
+          <button class="btn-del-item" onclick="excluirItem(${idx})">X</button>
+        </div>
+      `).join('');
+    }
+
+    function exportarCSV() {
+      if (estoque.length === 0) {
+        alert('Não há fardos no estoque para exportar.');
+        return;
+      }
+      const cabecalho = 'ID;EPC_RFID;PESO_KG;DATA_HORA;ORIGEM\n';
+      const linhas = estoque.map(i => `${i.id};${i.epc};${String(i.peso).replace('.', ',')};${i.data};${i.origem}`).join('\n');
+      const blob = new Blob(['\uFEFF' + cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `estoque_prensa_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Botão auxiliar para testar o fluxo no navegador antes de usar o leitor físico
+    function simularLeituraTeste() {
+      const hex = Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0');
+      window.receberRFID('3400E2801170400002' + hex);
+    }
+
+    // Inicializa a lista ao abrir
+    renderizarEstoque();
+  </script>
+</body>
+</html>
