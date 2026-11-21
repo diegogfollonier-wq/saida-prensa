@@ -188,6 +188,7 @@
       <span>PRENSA — ESCOLHA O MATERIAL</span>
       <button class="btn-topo" onclick="irParaInicio()">VOLTAR</button>
     </div>
+    <div id="avisoCadastroPendente" style="text-align:center; color:#facc15; font-weight:700; font-size:0.9rem; margin-bottom:8px; word-break:break-all;"></div>
     <div class="grid-materiais-prensa">
       <button class="btn-mat-prensa" onclick="iniciarPrensa('Pet Cristal')">Pet Cristal</button>
       <button class="btn-mat-prensa" onclick="iniciarPrensa('Pet Azul')">Pet Azul</button>
@@ -407,6 +408,8 @@
     let consultaHistorico = [];
     let consultaQtdOk = 0;
     let consultaQtdNao = 0;
+    let epcPendenteCadastro = null;   // etiqueta não cadastrada que o operador quer cadastrar na Prensa
+    let voltarParaConsulta = false;   // após cadastrar/cancelar, volta para a consulta
 
     function limparTimerPrensa() {
       if (timerRetornoPrensa) {
@@ -446,6 +449,10 @@
       massaLendoAtiva = false;
       limparTimersFardoAFardo();
       pararEscutaConsulta();
+      epcPendenteCadastro = null;
+      voltarParaConsulta = false;
+      const avisoCad = document.getElementById("avisoCadastroPendente");
+      if (avisoCad) avisoCad.textContent = "";
       if (window.AndroidSingleTag && typeof window.AndroidSingleTag.pararLeituraMassa === "function") {
         window.AndroidSingleTag.pararLeituraMassa();
       }
@@ -698,6 +705,10 @@
             <div class="consulta-titulo">✖ Não cadastrado</div>
             <div class="consulta-sub">Esta etiqueta não consta no estoque do sistema</div>
             <div class="epc-tag" style="text-align:center;">${escHtml(u.epc)}</div>
+            <div class="acoes-grid">
+              <button class="btn-acao btn-confirmar" onclick="cadastrarDaConsulta()">CADASTRAR ESTE FARDO</button>
+              <div class="consulta-sub">Para só continuar verificando, aperte o gatilho na próxima etiqueta.</div>
+            </div>
           </div>`;
       }
 
@@ -716,12 +727,14 @@
       }
     }
 
-    window.iniciarConsultaFardo = function() {
+    window.iniciarConsultaFardo = function(manterHistorico) {
       encerraAntenaMassaSeAtiva();
+      if (manterHistorico !== true) {
+        consultaHistorico = [];
+        consultaQtdOk = 0;
+        consultaQtdNao = 0;
+      }
       consultaUltima = null;
-      consultaHistorico = [];
-      consultaQtdOk = 0;
-      consultaQtdNao = 0;
       estoqueConsulta = {};
       estoqueConsultaPronto = false;
       estoqueConsultaErro = "";
@@ -758,6 +771,20 @@
       }
 
       liberarColetor();
+    };
+
+    // Operador quer cadastrar a etiqueta não cadastrada: vai direto para a PRENSA (escolha do material)
+    window.cadastrarDaConsulta = function() {
+      const u = consultaUltima;
+      if (!u || u.cadastrado || u.erro) return;
+      const epc = u.epc;
+      encerraAntenaMassaSeAtiva();
+      modoAtual = null;
+      epcPendenteCadastro = epc;
+      voltarParaConsulta = true;
+      liberarColetor();
+      document.getElementById("avisoCadastroPendente").innerHTML = `Cadastrando a etiqueta <strong>${escHtml(epc)}</strong>.<br>Escolha o material do fardo.`;
+      mostrarJanela("win-sel-prensa");
     };
 
     window.limparConsultaFardo = function() {
@@ -1121,6 +1148,11 @@
       document.getElementById("btnTrocarMaterial").textContent = "MUDAR MATERIAL";
       mostrarJanela("win-operacao");
       renderizarTelaEspera();
+      // Veio da consulta: já segue com a etiqueta que acabou de ser lida (sem precisar ler de novo)
+      const pendente = epcPendenteCadastro;
+      epcPendenteCadastro = null;
+      document.getElementById("avisoCadastroPendente").textContent = "";
+      if (pendente) window.receberLoteRFID([pendente]);
     };
 
     window.iniciarCarregamentoDireto = function() {
@@ -1275,6 +1307,7 @@
     };
 
     window.cancelarPrensa = async function() {
+      const voltarConsulta = voltarParaConsulta;
       if (fardosValidados.length > 0) {
         const item = fardosValidados[0];
         await registrarLogAuditoria(
@@ -1285,6 +1318,7 @@
           item.peso_kg
         );
       }
+      if (voltarConsulta) { window.iniciarConsultaFardo(true); return; }
       renderizarTelaEspera();
     };
 
@@ -1495,16 +1529,18 @@
           item.peso_kg
         );
 
+        const voltarConsulta = voltarParaConsulta;
         document.getElementById("areaConteudo").innerHTML = `
           <div class="alerta-ok">
             GRAVADO: ${item.material} (${item.peso_kg.toFixed(2)} kg)<br>
-            <span style="font-size:0.85rem;font-weight:500;">Voltando para seleção de material em 3 segundos...</span>
+            <span style="font-size:0.85rem;font-weight:500;">${voltarConsulta ? "Voltando para a consulta em 3 segundos..." : "Voltando para seleção de material em 3 segundos..."}</span>
           </div>
         `;
 
         limparTimerPrensa();
         timerRetornoPrensa = setTimeout(() => {
-          abrirSelecaoPrensa();
+          if (voltarConsulta) window.iniciarConsultaFardo(true);
+          else abrirSelecaoPrensa();
         }, 3000);
       } catch (err) {
         alert("Erro ao gravar entrada: " + err.message);
