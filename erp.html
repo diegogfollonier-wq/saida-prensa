@@ -1,640 +1,773 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ERP Cloud - Controle de Fardos RFID</title>
-  <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { margin: 0; background: #f1f5f9; color: #0f172a; }
-    .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
-    .login-box { background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); width: 100%; max-width: 380px; }
-    .login-box h2 { margin: 0 0 20px; text-align: center; color: #1e293b; }
-    .input-group { margin-bottom: 16px; }
-    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #475569; }
-    .input-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
-    .btn-primary { width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
-    .btn-primary:hover { background: #1d4ed8; }
-    .erro-login { color: #dc2626; font-size: 0.9rem; margin-top: 12px; text-align: center; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#071C28" />
+<title>ERP Cloud — Controle de Fardos RFID</title>
+<style>
+:root{
+  --bg:#071C28; --side:#0A2433; --card:#0E3144; --card2:#123A50; --line:#1B4A62;
+  --txt:#F4F0E6; --txt2:#C9D3D8; --muted:#7E9AA6; --blue:#5EAAEC; --navy:#0F4C6A;
+  --ok:#4FC38A; --err:#E5736B; --warn:#E8B04B; --violet:#A98BEA;
+  --radius:14px; --shadow:0 6px 24px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font-family:Calibri,Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%}
+body{min-height:100vh;font-size:15px;line-height:1.35}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit;color:var(--txt)}
+.hide{display:none!important}
+.mono{font-family:Consolas,"Courier New",monospace;letter-spacing:.2px}
+.muted{color:var(--muted)}
+::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}::-webkit-scrollbar-track{background:transparent}
 
-    .erp-container { display: none; max-width: 1320px; margin: 0 auto; padding: 20px; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: #fff; padding: 16px 24px; border-radius: 12px; margin-bottom: 20px; }
-    .topbar h1 { margin: 0; font-size: 1.3rem; }
-    .btn-sair { background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+/* ---------- LOGIN ---------- */
+#telaLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(1200px 600px at 20% -10%,rgba(94,170,236,.16),transparent 60%),radial-gradient(900px 500px at 110% 110%,rgba(15,76,106,.55),transparent 60%),var(--bg)}
+.login-box{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:32px 28px;box-shadow:var(--shadow)}
+.login-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.logo{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--navy));display:grid;place-items:center;flex:none}
+.logo svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.login-brand b{font-size:20px;display:block}.login-brand span{font-size:13px;color:var(--muted)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input{width:100%;padding:13px 14px;background:var(--bg);border:1px solid var(--line);border-radius:10px;font-size:16px;outline:none}
+.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(94,170,236,.2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:10px;border:1px solid var(--line);background:var(--card2);font-weight:700;font-size:14px;transition:.15s}
+.btn:hover{border-color:var(--blue)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#06202E;width:100%;padding:14px;font-size:16px}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:7px 12px;font-size:13px}
+.erro-login{color:var(--err);font-size:14px;text-align:center;margin-top:14px;min-height:18px}
 
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 20px; }
-    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #2563eb; }
-    .card.verde { border-left-color: #16a34a; }
-    .card.vermelho { border-left-color: #dc2626; }
-    .card-titulo { font-size: 0.82rem; color: #64748b; font-weight: 700; text-transform: uppercase; }
-    .card-valor { font-size: 2rem; font-weight: 800; margin-top: 8px; color: #0f172a; }
+/* ---------- LAYOUT ---------- */
+#telaErp{display:none}
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 14px}
+.sidebar .brand{display:flex;align-items:center;gap:11px;padding:4px 8px 22px}
+.sidebar .brand b{font-size:16px;display:block;line-height:1.1}.sidebar .brand span{font-size:12px;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;border-radius:10px;background:transparent;color:var(--txt2);font-weight:600;font-size:14.5px;text-align:left;position:relative}
+.nav button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.nav button:hover{background:rgba(94,170,236,.08);color:var(--txt)}
+.nav button.on{background:rgba(94,170,236,.16);color:#fff}
+.nav button.on::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:4px;border-radius:0 4px 4px 0;background:var(--blue)}
+.nav .count{margin-left:auto;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(229,115,107,.2);color:var(--err)}
+.side-foot{margin-top:auto;padding:14px 8px 0;border-top:1px solid var(--line);font-size:13px}
+.side-foot .user{color:var(--txt2);word-break:break-all;margin-bottom:10px}
+.live{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;margin-bottom:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(79,195,138,.6);animation:pulse 2s infinite}
+.dot.off{background:var(--err);animation:none}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(79,195,138,0)}100%{box-shadow:0 0 0 0 rgba(79,195,138,0)}}
+.main{padding:26px 30px 40px;min-width:0;max-width:1500px;width:100%}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+.page-head h1{font-size:26px;font-weight:700;letter-spacing:.2px}
+.page-head p{color:var(--muted);margin-top:4px;font-size:14px}
+.view{display:none}.view.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-    .resumo-materiais-box { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 22px; }
-    .resumo-materiais-titulo { font-size: 0.85rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 14px; }
-    .grid-materiais-estoque { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
-    .card-mat-estoque { background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #2563eb; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
-    .card-mat-estoque.zerado { opacity: 0.6; border-left-color: #94a3b8; }
-    .card-mat-nome { font-weight: 800; color: #0f172a; font-size: 0.95rem; text-transform: uppercase; }
-    .card-mat-linha { font-size: 0.92rem; font-weight: 700; color: #1d4ed8; }
-    .card-mat-estoque.zerado .card-mat-linha { color: #64748b; }
+/* ---------- KPIs ---------- */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue)}
+.kpi.ok::after{background:var(--ok)}.kpi.warn::after{background:var(--warn)}.kpi.err::after{background:var(--err)}.kpi.vio::after{background:var(--violet)}
+.kpi .l{font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi .v{font-size:28px;font-weight:700;margin-top:8px;white-space:nowrap}
+.kpi .v small{font-size:14px;font-weight:600;color:var(--muted);margin-left:4px}
+.kpi .s{font-size:12.5px;color:var(--muted);margin-top:4px}
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; flex-wrap: wrap; }
-    .tab-btn { padding: 10px 20px; border: none; background: transparent; font-weight: 700; font-size: 0.95rem; color: #64748b; cursor: pointer; border-radius: 8px; }
-    .tab-btn.active { background: #2563eb; color: #fff; }
-    .tab-btn.roxo.active { background: #7c3aed; color: #fff; }
+/* ---------- CARDS / GRÁFICOS ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;min-width:0}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.panel h3{font-size:16px;font-weight:700}
+.panel .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:3px}
+.seg button{border:0;background:transparent;padding:5px 11px;border-radius:7px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--blue);color:#06202E}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--txt2);margin:2px 0 4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font-family:Calibri,Arial,sans-serif}
+.chart .empty{height:200px;display:grid;place-items:center;color:var(--muted);font-size:14px}
+.fonte{font-style:italic;font-size:11px;color:var(--muted);margin-top:8px;text-align:left}
+#tip{position:fixed;z-index:99;pointer-events:none;background:#031219;border:1px solid var(--line);color:var(--txt);padding:8px 11px;border-radius:9px;font-size:12.5px;line-height:1.4;box-shadow:var(--shadow);opacity:0;transition:opacity .08s;max-width:260px}
 
-    .panel-tabela { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow-x: auto; margin-bottom: 20px; }
-    .panel-tabela.alerta-borda { border: 2px solid #ef4444; }
-    .panel-tabela h3 { margin: 0 0 14px; font-size: 1.02rem; text-transform: uppercase; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+.mat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.mat{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.mat.zero{opacity:.5}
+.mat .n{font-weight:700;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.mat .n em{font-style:normal;color:var(--blue);font-weight:700}
+.mat .k{font-size:13px;color:var(--txt2);margin-top:5px}
+.mat .bar{height:5px;border-radius:5px;background:var(--bg);margin-top:9px;overflow:hidden}
+.mat .bar i{display:block;height:100%;background:var(--blue);border-radius:5px}
 
-    .paralelo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 900px) { .paralelo-grid { grid-template-columns: 1fr; } }
-    .coluna-paralela { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow-x: auto; }
-    .coluna-paralela h3 { margin: 0 0 14px; font-size: 1rem; text-transform: uppercase; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
-    .titulo-entradas { color: #16a34a; }
-    .titulo-saidas { color: #2563eb; }
+/* ---------- TABELAS ---------- */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.input{padding:10px 13px;background:var(--bg);border:1px solid var(--line);border-radius:10px;outline:none;font-size:14px;min-width:0}
+.input:focus{border-color:var(--blue)}
+.input.grow{flex:1 1 260px;max-width:420px}
+select.input{padding-right:30px}
+.chip{font-size:13px;color:var(--muted);margin-left:auto}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;max-height:64vh;background:var(--card)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:11px 14px;text-align:left;font-size:14px;border-bottom:1px solid rgba(27,74,98,.55);white-space:nowrap}
+th{position:sticky;top:0;background:var(--card2);color:var(--muted);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;z-index:1}
+th[data-sort]{cursor:pointer;user-select:none}
+th[data-sort]:hover{color:var(--txt)}
+th .ar{opacity:.7;margin-left:4px}
+tbody tr:hover td{background:rgba(94,170,236,.05)}
+td.num,th.num{text-align:right}
+td.wrap{white-space:normal;min-width:220px}
+tr.total td{background:var(--card2);font-weight:700;border-top:1px solid var(--line)}
+tr.empty td{text-align:center;color:var(--muted);padding:26px}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent}
+.b-mat{background:rgba(94,170,236,.14);color:#9CCBF4;border-color:rgba(94,170,236,.3)}
+.b-ok{background:rgba(79,195,138,.14);color:#7BDDAE;border-color:rgba(79,195,138,.3)}
+.b-blue{background:rgba(94,170,236,.16);color:#8FC3F2;border-color:rgba(94,170,236,.35)}
+.b-err{background:rgba(229,115,107,.15);color:#F09992;border-color:rgba(229,115,107,.35)}
+.b-warn{background:rgba(232,176,75,.15);color:#F0C675;border-color:rgba(232,176,75,.35)}
+.b-vio{background:rgba(169,139,234,.16);color:#C2AAF2;border-color:rgba(169,139,234,.35)}
+.pos{color:var(--ok);font-weight:700}.neg{color:var(--err);font-weight:700}
 
-    .barra-filtro-conf { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #7c3aed; }
-    .select-conf { padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-weight: 600; min-width: 280px; }
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.split h3{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px}
+.split h3 small{font-size:12.5px;font-weight:600;color:var(--muted)}
+.t-in{color:var(--ok)}.t-out{color:var(--blue)}
+.panel.alert{border-color:rgba(229,115,107,.55)}
+.stack{display:flex;flex-direction:column;gap:16px}
 
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th, td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 0.88rem; }
-    th { background: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 0.78rem; }
-    tr.subtotal-row { background: #f1f5f9; font-weight: 800; }
-    
-    .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 700; display: inline-block; }
-    .badge-prensa { background: #dcfce7; color: #166534; }
-    .badge-carregamento { background: #dbeafe; color: #1e40af; }
-    .badge-erro { background: #fee2e2; color: #991b1b; }
-    .badge-alerta { background: #ffedd5; color: #9a3412; }
-    .badge-roxo { background: #f3e8ff; color: #6b21a8; }
-    .badge-material { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
-    .mono { font-family: monospace; font-weight: 600; color: #0284c7; font-size: 0.82rem; }
-  </style>
+/* ---------- RESPONSIVO ---------- */
+@media (max-width:1200px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:980px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;z-index:50;flex-direction:row;padding:6px 6px calc(6px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line)}
+  .sidebar .brand,.side-foot{display:none}
+  .nav{flex-direction:row;width:100%;gap:2px}
+  .nav button{flex:1;flex-direction:column;gap:3px;padding:8px 2px;font-size:11px;text-align:center;justify-content:center}
+  .nav button.on::before{display:none}
+  .nav .count{position:absolute;top:2px;right:12%;margin:0;font-size:10px;padding:1px 6px}
+  .main{padding:16px 14px 96px}
+  .page-head h1{font-size:22px}
+  .grid2,.split{grid-template-columns:1fr}
+  .topbar-m{display:flex!important}
+  .lg-d{display:none!important}.lg-m{display:inline!important}
+}
+@media (max-width:640px){
+  .kpis,.kpis.k4{grid-template-columns:1fr 1fr}.kpi .v{font-size:23px}.kpis .kpi:last-child:nth-child(odd){grid-column:1/-1}
+  .panel{padding:14px}
+  th,td{padding:10px 10px;font-size:13px}
+}
+.lg-m{display:none}
+.topbar-m{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
+.topbar-m .btn{padding:6px 12px;font-size:12.5px}
+</style>
 </head>
 <body>
 
-  <!-- TELA DE LOGIN -->
-  <div id="telaLogin" class="login-container">
-    <div class="login-box">
-      <h2>Acesso Restrito - ERP</h2>
-      <div class="input-group">
-        <label>E-mail</label>
-        <input type="email" id="emailInput" placeholder="seu@email.com" />
-      </div>
-      <div class="input-group">
-        <label>Senha</label>
-        <input type="password" id="senhaInput" placeholder="••••••••" />
-      </div>
-      <button class="btn-primary" onclick="fazerLogin()">Entrar no ERP</button>
-      <div id="erroLogin" class="erro-login"></div>
+<!-- ================= LOGIN ================= -->
+<div id="telaLogin">
+  <form class="login-box" id="formLogin" autocomplete="on">
+    <div class="login-brand">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></div>
+      <div><b>ERP Cloud</b><span>Controle de Fardos RFID · acesso restrito</span></div>
     </div>
-  </div>
+    <div class="field"><label for="emailInput">E-mail</label><input type="email" id="emailInput" placeholder="seu@email.com" autocomplete="username" required></div>
+    <div class="field"><label for="senhaInput">Senha</label><input type="password" id="senhaInput" placeholder="••••••••" autocomplete="current-password" required></div>
+    <button class="btn primary" type="submit" id="btnEntrar">Entrar no ERP</button>
+    <div id="erroLogin" class="erro-login"></div>
+  </form>
+</div>
 
-  <!-- PAINEL ERP -->
-  <div id="telaErp" class="erp-container">
-    <div class="topbar">
-      <h1>ERP Cloud — Gestão de Fardos RFID</h1>
-      <div>
-        <span id="usuarioLogado" style="margin-right: 16px; font-size: 0.9rem; color: #cbd5e1;"></span>
-        <button class="btn-sair" onclick="fazerLogout()">Sair</button>
+<!-- ================= ERP ================= -->
+<div id="telaErp">
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></div>
+      <div><b>ERP Cloud</b><span>Fardos RFID</span></div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-v="visao" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></svg><span>Visão geral</span></button>
+      <button data-v="estoque"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg><span>Estoque</span></button>
+      <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M7 4v13M7 17l-3-3M7 17l3-3"/><path d="M17 20V7M17 7l-3 3M17 7l3 3"/></svg><span>Histórico</span></button>
+      <button data-v="log"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg><span><span class="lg-d">Log / Bloqueios</span><span class="lg-m">Log</span></span><b class="count hide" id="navErros">0</b></button>
+      <button data-v="conferencia"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span>Conferência</span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="live"><span class="dot" id="dotLive"></span><span id="txtLive">conectando…</span></div>
+      <div class="user" id="usuarioLogado"></div>
+      <button class="btn sm" id="btnSair" style="width:100%">Sair</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar-m"><span><span class="dot" id="dotLiveM" style="display:inline-block;margin-right:6px"></span><span id="txtLiveM">conectando…</span></span><button class="btn" id="btnSairM">Sair</button></div>
+
+    <!-- ===== VISÃO GERAL ===== -->
+    <section class="view on" id="v-visao">
+      <div class="page-head"><div><h1>Visão geral da operação</h1><p>Estoque em tempo real, produção na Prensa e saídas no Carregamento.</p></div></div>
+      <div class="kpis">
+        <div class="kpi ok"><div class="l">Fardos em estoque</div><div class="v" id="kQtd">0</div><div class="s" id="kQtdS">&nbsp;</div></div>
+        <div class="kpi"><div class="l">Peso em estoque</div><div class="v" id="kPeso">0<small>kg</small></div><div class="s" id="kPesoS">&nbsp;</div></div>
+        <div class="kpi ok"><div class="l">Entradas hoje (Prensa)</div><div class="v" id="kIn">0<small>kg</small></div><div class="s" id="kInS">&nbsp;</div></div>
+        <div class="kpi vio"><div class="l">Saídas hoje (Carregamento)</div><div class="v" id="kOut">0<small>kg</small></div><div class="s" id="kOutS">&nbsp;</div></div>
+        <div class="kpi err"><div class="l">Bloqueios / erros (24 h)</div><div class="v" id="kErr">0</div><div class="s" id="kErrS">&nbsp;</div></div>
       </div>
-    </div>
 
-    <div class="cards-grid">
-      <div class="card verde">
-        <div class="card-titulo">Total de Fardos em Estoque</div>
-        <div class="card-valor" id="kpiQtdEstoque">0</div>
-      </div>
-      <div class="card">
-        <div class="card-titulo">Peso Total em Estoque</div>
-        <div class="card-valor" id="kpiPesoEstoque">0,00 kg</div>
-      </div>
-      <div class="card vermelho">
-        <div class="card-titulo">Registros na Linha do Tempo</div>
-        <div class="card-valor" id="kpiBloqueios">0</div>
-      </div>
-    </div>
-
-    <!-- TODOS OS MATERIAIS EM ORDEM -->
-    <div class="resumo-materiais-box">
-      <div class="resumo-materiais-titulo">Estoque Atual Dividido por Material</div>
-      <div id="gridMateriaisEstoque" class="grid-materiais-estoque"></div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" onclick="mudarAba('estoque', this)">Estoque Atual (Detalhado)</button>
-      <button class="tab-btn" onclick="mudarAba('historico', this)">Histórico Paralelo (Entradas x Saídas)</button>
-      <button class="tab-btn" onclick="mudarAba('bloqueios', this)">Log Completo / Linha do Tempo</button>
-      <button class="tab-btn roxo" onclick="mudarAba('conferencia', this)">Conferência de Estoque (Massa)</button>
-    </div>
-
-    <!-- ABA 1: ESTOQUE ATUAL -->
-    <div id="aba-estoque" class="panel-tabela">
-      <table>
-        <thead>
-          <tr>
-            <th>Material</th>
-            <th>Etiqueta (EPC)</th>
-            <th>Peso (kg)</th>
-            <th>Data/Hora Entrada (Prensa)</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaEstoque"></tbody>
-      </table>
-    </div>
-
-    <!-- ABA 2: HISTÓRICO EM DUAS LISTAS PARALELAS -->
-    <div id="aba-historico" style="display:none;">
-      <div class="paralelo-grid">
-        <div class="coluna-paralela">
-          <h3 class="titulo-entradas">Entradas na Prensa (Produzidos)</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Material</th>
-                <th>Peso (kg)</th>
-                <th>Data e Hora</th>
-              </tr>
-            </thead>
-            <tbody id="tabelaEntradasParalela"></tbody>
-          </table>
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Estoque atual por material</h3><div class="sub">Peso em kg dos fardos que estão no pátio</div></div></div>
+          <div class="chart" id="chEstoque"></div>
+          <div class="fonte">Fonte: Firestore · estoque_atual</div>
         </div>
-
-        <div class="coluna-paralela">
-          <h3 class="titulo-saidas">Saídas no Carregamento (Carregados)</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Material</th>
-                <th>Peso (kg)</th>
-                <th>Data e Hora</th>
-              </tr>
-            </thead>
-            <tbody id="tabelaSaidasParalela"></tbody>
-          </table>
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>Entradas × Saídas por dia</h3><div class="sub" id="subDia">kg por dia</div></div>
+            <div class="seg" id="segDias"><button data-d="7">7 dias</button><button data-d="14" class="on">14 dias</button><button data-d="30">30 dias</button></div>
+          </div>
+          <div class="legend"><span><i style="background:#5EAAEC"></i>Entradas (Prensa)</span><span><i style="background:#F4F0E6"></i>Saídas (Carregamento)</span></div>
+          <div class="chart" id="chDia"></div>
+          <div class="fonte" id="fonteDia">Fonte: Firestore · movimentacoes_fardos</div>
         </div>
       </div>
-    </div>
 
-    <!-- ABA 3: LOG COMPLETO DO TEMPO -->
-    <div id="aba-bloqueios" class="panel-tabela" style="display:none;">
-      <table>
-        <thead>
-          <tr>
-            <th>Data e Hora</th>
-            <th>Evento / Ação</th>
-            <th>Material</th>
-            <th>Peso (kg)</th>
-            <th>Etiqueta / ID</th>
-            <th>Descrição do Registro</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaBloqueios"></tbody>
-      </table>
-    </div>
-
-    <!-- ABA 4: CONFERÊNCIA DE ESTOQUE (LEITURA EM MASSA) -->
-    <div id="aba-conferencia" style="display:none;">
-      <div class="barra-filtro-conf">
-        <div>
-          <strong style="color:#6b21a8; text-transform:uppercase; font-size:0.9rem;">Selecionar Leitura em Massa Enviada:</strong><br>
-          <span id="infoResumoConf" style="font-size:0.85rem; color:#475569;">Aguardando leituras...</span>
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Bloqueios e erros por tipo</h3><div class="sub">Eventos do log, por tipo de ocorrência</div></div></div>
+          <div class="legend"><span><i style="background:#5EAAEC"></i>Operação normal</span><span><i style="background:#E5736B"></i>Bloqueio / erro</span></div>
+          <div class="chart" id="chLog"></div>
+          <div class="fonte">Fonte: Firestore · logs_bloqueios</div>
         </div>
-        <select id="selectConferencias" class="select-conf" onchange="renderizarConferenciaSelecionada()"></select>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Conferência: lidos × sistema</h3><div class="sub" id="subConf">Última conferência em massa</div></div></div>
+          <div class="legend"><span><i style="background:#5EAAEC"></i>Lidos na conferência</span><span><i style="background:#F4F0E6"></i>No estoque do sistema</span></div>
+          <div class="chart" id="chConf"></div>
+          <div class="fonte">Fonte: Firestore · conferencias_estoque</div>
+        </div>
       </div>
 
-      <!-- TABELA 4.1: SUBTOTAIS E TOTAIS POR MATERIAL (CONFERÊNCIA x ESTOQUE SISTEMA) -->
-      <div class="panel-tabela">
-        <h3 style="color:#6b21a8;">1. Resumo Comparativo por Material (Subtotais e Totais)</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Material</th>
-              <th>Fardos Lidos (Conferência)</th>
-              <th>Fardos no Estoque (Sistema)</th>
-              <th>Diferença (Fardos)</th>
-              <th>Peso Conferido (kg)</th>
-            </tr>
-          </thead>
-          <tbody id="tabelaConfSubtotais"></tbody>
-        </table>
+      <div class="panel">
+        <div class="panel-head"><div><h3>Estoque dividido por material</h3><div class="sub">Quantidade de fardos e peso, com a participação de cada material no peso total</div></div></div>
+        <div class="mat-grid" id="gridMat"></div>
       </div>
+    </section>
 
-      <!-- TABELA 4.2: FARDOS CONFERIDOS COM CORRESPONDÊNCIA NO ESTOQUE -->
-      <div class="panel-tabela">
-        <h3 style="color:#16a34a;">2. Fardos Lidos com Correspondência no Estoque</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Material</th>
-              <th>Etiqueta (EPC)</th>
-              <th>Peso (kg)</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="tabelaConfCorrespondentes"></tbody>
-        </table>
+    <!-- ===== ESTOQUE ===== -->
+    <section class="view" id="v-estoque">
+      <div class="page-head"><div><h1>Estoque atual</h1><p>Todos os fardos que entraram na Prensa e ainda não saíram.</p></div></div>
+      <div class="toolbar">
+        <input class="input grow" id="fEst" placeholder="Filtrar por material ou etiqueta (EPC)…">
+        <select class="input" id="fEstMat"><option value="">Todos os materiais</option></select>
+        <span class="chip" id="chipEst"></span>
       </div>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th data-sort="material">Material<span class="ar"></span></th>
+          <th data-sort="epc">Etiqueta (EPC)<span class="ar"></span></th>
+          <th class="num" data-sort="peso">Peso (kg)<span class="ar"></span></th>
+          <th data-sort="ts">Entrada (Prensa)<span class="ar"></span></th>
+        </tr></thead>
+        <tbody id="tbEst"></tbody>
+      </table></div>
+    </section>
 
-      <!-- TABELA 4.3: FARDOS SEM CORRESPONDÊNCIA NO ESTOQUE (SEPARADOS) -->
-      <div class="panel-tabela alerta-borda">
-        <h3 style="color:#dc2626;">3. Fardos Lidos SEM Correspondência no Estoque (Fora do Cadastro)</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Etiqueta (EPC)</th>
-              <th>Situação</th>
-              <th>Observação</th>
-            </tr>
-          </thead>
-          <tbody id="tabelaConfSemCorrespondencia"></tbody>
-        </table>
+    <!-- ===== HISTÓRICO ===== -->
+    <section class="view" id="v-historico">
+      <div class="page-head"><div><h1>Histórico: entradas × saídas</h1><p>Últimos 500 movimentos registrados, lado a lado.</p></div></div>
+      <div class="toolbar">
+        <select class="input" id="fHistMat"><option value="">Todos os materiais</option></select>
+        <input class="input" type="date" id="fHistDe" title="De">
+        <input class="input" type="date" id="fHistAte" title="Até">
+        <button class="btn sm" id="btnHistLimpar">Limpar filtros</button>
       </div>
-    </div>
-  </div>
+      <div class="split">
+        <div class="panel"><h3 class="t-in">Entradas na Prensa <small id="totIn"></small></h3>
+          <div class="table-wrap" style="border:0;max-height:62vh"><table><thead><tr><th>Material</th><th class="num">Peso (kg)</th><th>Data e hora</th></tr></thead><tbody id="tbIn"></tbody></table></div></div>
+        <div class="panel"><h3 class="t-out">Saídas no Carregamento <small id="totOut"></small></h3>
+          <div class="table-wrap" style="border:0;max-height:62vh"><table><thead><tr><th>Material</th><th class="num">Peso (kg)</th><th>Data e hora</th></tr></thead><tbody id="tbOut"></tbody></table></div></div>
+      </div>
+    </section>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <!-- ===== LOG ===== -->
+    <section class="view" id="v-log">
+      <div class="page-head"><div><h1>Log completo / linha do tempo</h1><p>Registros, carregamentos, cancelamentos, conferências e bloqueios.</p></div></div>
+      <div class="toolbar">
+        <input class="input grow" id="fLog" placeholder="Buscar por etiqueta, material ou descrição…">
+        <select class="input" id="fLogTipo"><option value="">Todos os eventos</option><option value="__erros">Só bloqueios / erros</option></select>
+        <span class="chip" id="chipLog"></span>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Data e hora</th><th>Evento / ação</th><th>Material</th><th class="num">Peso (kg)</th><th>Etiqueta / ID</th><th>Descrição</th></tr></thead>
+        <tbody id="tbLog"></tbody>
+      </table></div>
+    </section>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
-      authDomain: "controle-fardos-rfid.firebaseapp.com",
-      projectId: "controle-fardos-rfid",
-      storageBucket: "controle-fardos-rfid.firebasestorage.app",
-      messagingSenderId: "811246572619",
-      appId: "1:811246572619:web:ee9fc742ea183bc84d29ce"
-    };
+    <!-- ===== CONFERÊNCIA ===== -->
+    <section class="view" id="v-conferencia">
+      <div class="page-head"><div><h1>Conferência de estoque</h1><p>Compara a leitura física em massa com o estoque do sistema.</p></div></div>
+      <div class="toolbar">
+        <select class="input" id="selConf" style="min-width:300px;flex:1 1 300px;max-width:520px"></select>
+        <span class="chip" id="infoConf">Aguardando leituras…</span>
+      </div>
+      <div class="kpis k4">
+        <div class="kpi"><div class="l">Fardos lidos</div><div class="v" id="cLidos">0</div></div>
+        <div class="kpi ok"><div class="l">Com correspondência</div><div class="v" id="cOk">0</div></div>
+        <div class="kpi err"><div class="l">Sem correspondência</div><div class="v" id="cSem">0</div></div>
+        <div class="kpi vio"><div class="l">Peso conferido</div><div class="v" id="cPeso">0<small>kg</small></div></div>
+      </div>
+      <div class="stack">
+        <div class="panel"><h3 style="margin-bottom:12px">1. Resumo comparativo por material</h3>
+          <div class="table-wrap" style="border:0"><table><thead><tr><th>Material</th><th class="num">Lidos</th><th class="num">No sistema</th><th class="num">Diferença</th><th class="num">Peso conferido</th></tr></thead><tbody id="tbConfSub"></tbody></table></div></div>
+        <div class="panel"><h3 style="margin-bottom:12px;color:var(--ok)">2. Fardos lidos com correspondência no estoque</h3>
+          <div class="table-wrap" style="border:0;max-height:46vh"><table><thead><tr><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th>Status</th></tr></thead><tbody id="tbConfOk"></tbody></table></div></div>
+        <div class="panel alert"><h3 style="margin-bottom:12px;color:var(--err)">3. Fardos lidos SEM correspondência no estoque</h3>
+          <div class="table-wrap" style="border:0;max-height:46vh"><table><thead><tr><th>Etiqueta (EPC)</th><th>Situação</th><th>Observação</th></tr></thead><tbody id="tbConfSem"></tbody></table></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+</div>
+<div id="tip"></div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const ORDEM_MATERIAIS = [
-      "Pet Cristal",
-      "Pet Azul",
-      "Pet Verde",
-      "Pet Cor",
-      "PP Cor",
-      "PP Bandeja",
-      "Pead BR",
-      "Pead Cor",
-      "Flexivel",
-      "Lata"
-    ];
+const firebaseConfig = {
+  apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
+  authDomain: "controle-fardos-rfid.firebaseapp.com",
+  projectId: "controle-fardos-rfid",
+  storageBucket: "controle-fardos-rfid.firebasestorage.app",
+  messagingSenderId: "811246572619",
+  appId: "1:811246572619:web:ee9fc742ea183bc84d29ce"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-    let unsubEstoque = null;
-    let unsubHistorico = null;
-    let unsubBloqueios = null;
-    let unsubConferencias = null;
+const ORDEM_MATERIAIS = ["Pet Cristal","Pet Azul","Pet Verde","Pet Cor","PP Cor","PP Bandeja","Pead BR","Pead Cor","Flexivel","Lata"];
+const TZ = "America/Sao_Paulo";
+const C = { azul:"#5EAAEC", creme:"#F4F0E6", aux:"#7E9AA6", erro:"#E5736B", linha:"#1B4A62" };
 
-    let estoqueAtualMapa = {};     // EPC -> { material, peso_kg } em tempo real
-    let listaConferencias = [];    // Lista das conferências recebidas do coletor
+/* ---------- estado ---------- */
+let unsubs = [];
+let estoque = [];          // {epc, material, peso, ts}
+let estoqueMapa = {};      // EPC -> {material, peso_kg}
+let movs = [];             // {op, material, peso, ts}
+let logs = [];             // {ts, tipo, material, peso, epc, motivo}
+let confs = [];            // conferências
+let sortEst = { k:"ts", dir:-1 };
+let diasGrafico = 14;
+let viewAtual = "visao";
 
-    function formatarData(ts) {
-      if (!ts || !ts.toDate) return "—";
-      return ts.toDate().toLocaleString("pt-BR");
-    }
+/* ---------- utilitários ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const toDate = ts => ts && typeof ts.toDate === "function" ? ts.toDate() : (ts instanceof Date ? ts : null);
+const fmtData = ts => { const d = toDate(ts); return d ? d.toLocaleString("pt-BR", { timeZone: TZ }) : "—"; };
+const nf0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+const nf2 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtKg = v => nf2.format(Number(v || 0)) + " kg";
+const fmtNum = v => nf0.format(Number(v || 0));
+const diaKey = d => d.toLocaleDateString("sv-SE", { timeZone: TZ });          // AAAA-MM-DD no fuso de Brasília
+const compacto = v => v >= 1000 ? (v / 1000).toFixed(1).replace(".", ",") + " t" : nf0.format(v);
+const NORMAIS = ["REGISTRADO","CARREGADO","FINALIZADA","ELIMINADO","CANCELADO","CONFERENCIA"];
+const ehNormal = t => NORMAIS.some(n => String(t || "").includes(n));
+function classeLog(tipo){
+  tipo = String(tipo || "");
+  if (tipo.includes("REGISTRADO")) return "b-ok";
+  if (tipo.includes("CARREGADO") || tipo.includes("FINALIZADA")) return "b-blue";
+  if (tipo.includes("ELIMINADO") || tipo.includes("CANCELADO")) return "b-warn";
+  if (tipo.includes("CONFERENCIA")) return "b-vio";
+  return "b-err";
+}
+const badgeMat = m => `<span class="badge b-mat">${esc(m)}</span>`;
+const vazio = (cols, msg) => `<tr class="empty"><td colspan="${cols}">${esc(msg)}</td></tr>`;
+function listaMateriais(extra){
+  const s = new Set(ORDEM_MATERIAIS);
+  extra.forEach(m => s.add(m));
+  return [...s];
+}
 
-    function formatarPeso(val) {
-      return Number(val || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kg";
-    }
+/* ---------- gráficos (SVG puro) ---------- */
+const tip = $("tip");
+function showTip(html, ev){
+  tip.innerHTML = html; tip.style.opacity = 1;
+  const x = Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 10);
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = (ev.clientY + 16) + "px";
+}
+function hideTip(){ tip.style.opacity = 0; }
+function ligarTips(el){
+  el.querySelectorAll("[data-tip]").forEach(n => {
+    n.addEventListener("mousemove", e => showTip(n.getAttribute("data-tip"), e));
+    n.addEventListener("mouseleave", hideTip);
+    n.addEventListener("touchstart", e => { const t = e.touches[0]; showTip(n.getAttribute("data-tip"), t); setTimeout(hideTip, 2200); }, { passive: true });
+  });
+}
+function quebrar(s, max){
+  const palavras = String(s).split(" "), linhas = [];
+  let atual = "";
+  palavras.forEach(p => {
+    if ((atual + " " + p).trim().length > max && atual){ linhas.push(atual); atual = p; }
+    else atual = (atual + " " + p).trim();
+  });
+  if (atual) linhas.push(atual);
+  return linhas.slice(0, 3);
+}
 
-    window.fazerLogin = async function() {
-      const email = document.getElementById("emailInput").value.trim();
-      const senha = document.getElementById("senhaInput").value;
-      const erroEl = document.getElementById("erroLogin");
-      erroEl.textContent = "";
-      try {
-        await signInWithEmailAndPassword(auth, email, senha);
-      } catch (e) {
-        erroEl.textContent = "E-mail ou senha inválidos.";
-      }
-    };
-
-    window.fazerLogout = function() {
-      signOut(auth);
-    };
-
-    window.mudarAba = function(aba, btn) {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById("aba-estoque").style.display = aba === "estoque" ? "block" : "none";
-      document.getElementById("aba-historico").style.display = aba === "historico" ? "block" : "none";
-      document.getElementById("aba-bloqueios").style.display = aba === "bloqueios" ? "block" : "none";
-      document.getElementById("aba-conferencia").style.display = aba === "conferencia" ? "block" : "none";
-      if (aba === "conferencia") {
-        renderizarConferenciaSelecionada();
-      }
-    };
-
-    window.renderizarConferenciaSelecionada = function() {
-      const select = document.getElementById("selectConferencias");
-      const idx = Number(select.value || 0);
-      const conf = listaConferencias[idx];
-
-      if (!conf) {
-        document.getElementById("infoResumoConf").textContent = "Nenhuma conferência em massa enviada ainda.";
-        document.getElementById("tabelaConfSubtotais").innerHTML = `<tr><td colspan="5" style="text-align:center;color:#64748b;">Nenhuma leitura em massa recebida.</td></tr>`;
-        document.getElementById("tabelaConfCorrespondentes").innerHTML = `<tr><td colspan="4" style="text-align:center;color:#64748b;">—</td></tr>`;
-        document.getElementById("tabelaConfSemCorrespondencia").innerHTML = `<tr><td colspan="3" style="text-align:center;color:#64748b;">—</td></tr>`;
-        return;
-      }
-
-      const itens = Array.isArray(conf.itens_lidos) ? conf.itens_lidos : [];
-      document.getElementById("infoResumoConf").textContent = `Data: ${formatarData(conf.criado_em)} • Total Lido: ${itens.length} fardo(s)`;
-
-      const subtotaisLidos = {};
-      const subtotaisSistema = {};
-      ORDEM_MATERIAIS.forEach(m => {
-        subtotaisLidos[m] = { qtd: 0, peso: 0 };
-        subtotaisSistema[m] = { qtd: 0, peso: 0 };
-      });
-
-      // Conta o estoque atual do sistema por material
-      Object.values(estoqueAtualMapa).forEach(est => {
-        const mat = est.material || "Outros";
-        if (!subtotaisSistema[mat]) subtotaisSistema[mat] = { qtd: 0, peso: 0 };
-        subtotaisSistema[mat].qtd++;
-        subtotaisSistema[mat].peso += Number(est.peso_kg || 0);
-      });
-
-      let htmlCorrespondentes = "";
-      let htmlSemCorrespondencia = "";
-      let qtdCorresp = 0;
-      let pesoCorresp = 0;
-      let qtdSemCorresp = 0;
-
-      itens.forEach(item => {
-        const epc = (item.epc || "").toUpperCase();
-        // Cruza com o estoque atual em tempo real (ou usa o dado capturado na hora da leitura)
-        const noEstoqueAgora = estoqueAtualMapa[epc];
-        const encontrado = Boolean(noEstoqueAgora || item.existe_estoque);
-
-        if (encontrado) {
-          const mat = (noEstoqueAgora && noEstoqueAgora.material) || item.material || "Outros";
-          const peso = Number((noEstoqueAgora && noEstoqueAgora.peso_kg) || item.peso_kg || 0);
-
-          if (!subtotaisLidos[mat]) subtotaisLidos[mat] = { qtd: 0, peso: 0 };
-          subtotaisLidos[mat].qtd++;
-          subtotaisLidos[mat].peso += peso;
-
-          qtdCorresp++;
-          pesoCorresp += peso;
-
-          htmlCorrespondentes += `
-            <tr>
-              <td><span class="badge badge-material">${mat}</span></td>
-              <td class="mono">${epc}</td>
-              <td><strong>${formatarPeso(peso)}</strong></td>
-              <td><span class="badge badge-prensa">CONFERIDO NO ESTOQUE</span></td>
-            </tr>
-          `;
+/* colunas verticais agrupadas, sem linhas de grade, valores acima das barras */
+function graficoColunas(el, cfg){
+  const W = el.clientWidth;
+  if (!W) return;
+  const n = cfg.labels.length;
+  const vals = cfg.series.flatMap(s => s.values);
+  const max = Math.max(...vals, 0);
+  if (!n || max <= 0){ el.innerHTML = `<div class="empty">${esc(cfg.vazio || "Sem dados para exibir.")}</div>`; return; }
+  const H = cfg.altura || 280, mt = cfg.valoresRotacionados ? 50 : 26, mb = 50, ml = 6, mr = 6;
+  const area = H - mt - mb, gw = (W - ml - mr) / n, k = cfg.series.length;
+  const bw = Math.max(3, Math.min(38, gw * 0.78 / k - (k > 1 ? 2 : 0)));
+  const maxCh = Math.max(5, Math.floor(gw / 7.2));
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(cfg.titulo || "gráfico")}">`;
+  s += `<line x1="${ml}" x2="${W - mr}" y1="${mt + area}" y2="${mt + area}" stroke="${C.linha}" stroke-width="1"/>`;
+  cfg.labels.forEach((lab, i) => {
+    const gx = ml + i * gw, cx = gx + gw / 2, x0 = cx - (bw * k + (k - 1) * 2) / 2;
+    cfg.series.forEach((se, j) => {
+      const v = se.values[i] || 0, h = v / max * area, x = x0 + j * (bw + 2), y = mt + area - h;
+      const tipo = `<b>${esc(lab)}</b><br>${esc(se.nome)}: ${esc(cfg.fmtTip ? cfg.fmtTip(v) : fmtNum(v))}`;
+      s += `<rect x="${x.toFixed(1)}" y="${(v > 0 ? y : mt + area - 1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(v > 0 ? h : 1, 1).toFixed(1)}" rx="3" fill="${se.cor}" data-tip="${esc(tipo)}"/>`;
+      if (cfg.valores !== false){
+        let t = cfg.fmt ? cfg.fmt(v) : fmtNum(v);
+        if (cfg.valoresRotacionados){
+          if (v > 0) s += `<text transform="translate(${(x + bw / 2 + 4).toFixed(1)},${(y - 6).toFixed(1)}) rotate(-90)" font-size="11" font-weight="700" fill="${C.creme}">${esc(t)}</text>`;
         } else {
-          qtdSemCorresp++;
-          htmlSemCorrespondencia += `
-            <tr>
-              <td class="mono" style="color:#dc2626;">${epc}</td>
-              <td><span class="badge badge-erro">SEM CORRESPONDÊNCIA COM ESTOQUE</span></td>
-              <td>Fardo lido fisicamente, mas não consta no estoque atual do sistema.</td>
-            </tr>
-          `;
+        if (t.length * 6.2 > bw + gw * 0.12 && cfg.fmtCompacto) t = cfg.fmtCompacto(v);
+        if (t.length * 6.2 <= bw + gw * 0.2 + 8 && (v > 0 || n <= 12))
+          s += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 6).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${C.creme}">${esc(t)}</text>`;
         }
-      });
-
-      // Linha de subtotal dos correspondentes
-      if (qtdCorresp > 0) {
-        htmlCorrespondentes += `
-          <tr class="subtotal-row">
-            <td colspan="2">SUBTOTAL DE FARDOS COM CORRESPONDÊNCIA: ${qtdCorresp} fardo(s)</td>
-            <td colspan="2">${formatarPeso(pesoCorresp)}</td>
-          </tr>
-        `;
-      } else {
-        htmlCorrespondentes = `<tr><td colspan="4" style="text-align:center;color:#64748b;">Nenhum fardo correspondente encontrado.</td></tr>`;
-      }
-
-      // Linha de subtotal dos sem correspondência
-      if (qtdSemCorresp > 0) {
-        htmlSemCorrespondencia += `
-          <tr class="subtotal-row" style="background:#fee2e2;color:#991b1b;">
-            <td colspan="3">SUBTOTAL SEM CORRESPONDÊNCIA NO ESTOQUE: ${qtdSemCorresp} fardo(s)</td>
-          </tr>
-        `;
-      } else {
-        htmlSemCorrespondencia = `<tr><td colspan="3" style="text-align:center;color:#16a34a;font-weight:700;">Nenhum fardo divergente! Todos os fardos lidos constam no estoque.</td></tr>`;
-      }
-
-      document.getElementById("tabelaConfCorrespondentes").innerHTML = htmlCorrespondentes;
-      document.getElementById("tabelaConfSemCorrespondencia").innerHTML = htmlSemCorrespondencia;
-
-      // Monta tabela comparativa de Subtotais e Totais por Material
-      const todosMateriais = [...new Set([...ORDEM_MATERIAIS, ...Object.keys(subtotaisLidos), ...Object.keys(subtotaisSistema)])];
-      let htmlSubtotais = "";
-      let totalLidosGeral = 0;
-      let totalSistemaGeral = 0;
-      let pesoLidoGeral = 0;
-
-      todosMateriais.forEach(mat => {
-        const lido = subtotaisLidos[mat] || { qtd: 0, peso: 0 };
-        const sist = subtotaisSistema[mat] || { qtd: 0, peso: 0 };
-        const diff = lido.qtd - sist.qtd;
-
-        totalLidosGeral += lido.qtd;
-        totalSistemaGeral += sist.qtd;
-        pesoLidoGeral += lido.peso;
-
-        const diffTexto = diff === 0 ? "0 (OK)" : (diff > 0 ? `+${diff}` : `${diff}`);
-        const diffCor = diff === 0 ? "#16a34a" : "#dc2626";
-
-        htmlSubtotais += `
-          <tr>
-            <td><span class="badge badge-material">${mat}</span></td>
-            <td><strong>${lido.qtd} fardo(s)</strong></td>
-            <td>${sist.qtd} fardo(s)</td>
-            <td style="font-weight:800; color:${diffCor};">${diffTexto}</td>
-            <td>${formatarPeso(lido.peso)}</td>
-          </tr>
-        `;
-      });
-
-      const diffTotal = totalLidosGeral - totalSistemaGeral;
-      htmlSubtotais += `
-        <tr class="subtotal-row">
-          <td>TOTAL GERAL CONFERIDO</td>
-          <td>${totalLidosGeral} fardo(s)</td>
-          <td>${totalSistemaGeral} fardo(s)</td>
-          <td>${diffTotal > 0 ? '+' + diffTotal : diffTotal} fardo(s) (+ ${qtdSemCorresp} sem estoque)</td>
-          <td>${formatarPeso(pesoLidoGeral)}</td>
-        </tr>
-      `;
-
-      document.getElementById("tabelaConfSubtotais").innerHTML = htmlSubtotais;
-    };
-
-    function iniciarListeners() {
-      // 1. ESTOQUE ATUAL
-      const qEstoque = query(collection(db, "estoque_atual"), orderBy("data_entrada", "desc"));
-      unsubEstoque = onSnapshot(qEstoque, (snap) => {
-        let qtdTotal = 0;
-        let pesoTotal = 0;
-        let htmlTabela = "";
-        const mapaMateriais = {};
-        estoqueAtualMapa = {};
-
-        ORDEM_MATERIAIS.forEach(m => {
-          mapaMateriais[m] = { qtd: 0, peso: 0 };
-        });
-
-        snap.forEach((doc) => {
-          const d = doc.data();
-          const epc = (d.epc || doc.id).toUpperCase();
-          const mat = d.material || "Outros";
-          const peso = Number(d.peso_kg || 0);
-
-          estoqueAtualMapa[epc] = { material: mat, peso_kg: peso };
-
-          qtdTotal++;
-          pesoTotal += peso;
-
-          if (!mapaMateriais[mat]) {
-            mapaMateriais[mat] = { qtd: 0, peso: 0 };
-          }
-          mapaMateriais[mat].qtd++;
-          mapaMateriais[mat].peso += peso;
-
-          htmlTabela += `
-            <tr>
-              <td><span class="badge badge-material">${mat}</span></td>
-              <td class="mono">${epc}</td>
-              <td><strong>${formatarPeso(peso)}</strong></td>
-              <td>${formatarData(d.data_entrada)}</td>
-            </tr>
-          `;
-        });
-
-        document.getElementById("kpiQtdEstoque").textContent = qtdTotal;
-        document.getElementById("kpiPesoEstoque").textContent = formatarPeso(pesoTotal);
-        document.getElementById("tabelaEstoque").innerHTML = htmlTabela || `<tr><td colspan="4" style="text-align:center;color:#64748b;">Nenhum fardo em estoque.</td></tr>`;
-
-        const todasChaves = [...ORDEM_MATERIAIS, ...Object.keys(mapaMateriais).filter(k => !ORDEM_MATERIAIS.includes(k))];
-        document.getElementById("gridMateriaisEstoque").innerHTML = todasChaves.map(mat => {
-          const info = mapaMateriais[mat];
-          const classeZerado = info.qtd === 0 ? "zerado" : "";
-          return `
-            <div class="card-mat-estoque ${classeZerado}">
-              <span class="card-mat-nome">${mat}</span>
-              <span class="card-mat-linha">${info.qtd} fardo(s) — ${formatarPeso(info.peso)}</span>
-            </div>
-          `;
-        }).join("");
-
-        renderizarConferenciaSelecionada();
-      });
-
-      // 2. HISTÓRICO PARALELO
-      const qHist = query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(500));
-      unsubHistorico = onSnapshot(qHist, (snap) => {
-        let htmlEntradas = "";
-        let htmlSaidas = "";
-
-        snap.forEach((doc) => {
-          const d = doc.data();
-          const mat = d.material || "—";
-          const peso = formatarPeso(d.peso_kg);
-          const dataHora = formatarData(d.criado_em);
-
-          if (d.operacao === "PRENSA") {
-            htmlEntradas += `
-              <tr>
-                <td><span class="badge badge-material">${mat}</span></td>
-                <td><strong>${peso}</strong></td>
-                <td>${dataHora}</td>
-              </tr>
-            `;
-          } else if (d.operacao === "CARREGAMENTO") {
-            htmlSaidas += `
-              <tr>
-                <td><span class="badge badge-material">${mat}</span></td>
-                <td><strong>${peso}</strong></td>
-                <td>${dataHora}</td>
-              </tr>
-            `;
-          }
-        });
-
-        document.getElementById("tabelaEntradasParalela").innerHTML = htmlEntradas || `<tr><td colspan="3" style="text-align:center;color:#64748b;">Nenhuma entrada registrada.</td></tr>`;
-        document.getElementById("tabelaSaidasParalela").innerHTML = htmlSaidas || `<tr><td colspan="3" style="text-align:center;color:#64748b;">Nenhuma saída registrada.</td></tr>`;
-      });
-
-      // 3. LOG COMPLETO / LINHA DO TEMPO
-      const qBloq = query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500));
-      unsubBloqueios = onSnapshot(qBloq, (snap) => {
-        document.getElementById("kpiBloqueios").textContent = snap.size;
-        let html = "";
-        snap.forEach((doc) => {
-          const d = doc.data();
-          const tipo = d.operacao_tentada || "EVENTO";
-          let classeBadge = "badge-erro";
-          if (tipo.includes("REGISTRADO")) classeBadge = "badge-prensa";
-          else if (tipo.includes("CARREGADO") || tipo.includes("FINALIZADA")) classeBadge = "badge-carregamento";
-          else if (tipo.includes("ELIMINADO") || tipo.includes("CANCELADO")) classeBadge = "badge-alerta";
-          else if (tipo.includes("CONFERENCIA")) classeBadge = "badge-roxo";
-
-          const mat = d.material || "—";
-          const pesoTxt = d.peso_kg ? formatarPeso(d.peso_kg) : "—";
-
-          html += `
-            <tr>
-              <td>${formatarData(d.criado_em)}</td>
-              <td><span class="badge ${classeBadge}">${tipo}</span></td>
-              <td>${mat}</td>
-              <td>${pesoTxt}</td>
-              <td class="mono">${d.epc || "—"}</td>
-              <td>${d.motivo_bloqueio || "—"}</td>
-            </tr>
-          `;
-        });
-        document.getElementById("tabelaBloqueios").innerHTML = html || `<tr><td colspan="6" style="text-align:center;color:#64748b;">Nenhum registro na linha do tempo.</td></tr>`;
-      });
-
-      // 4. CONFERÊNCIAS DE ESTOQUE (LEITURAS EM MASSA)
-      const qConf = query(collection(db, "conferencias_estoque"), orderBy("criado_em", "desc"), limit(50));
-      unsubConferencias = onSnapshot(qConf, (snap) => {
-        listaConferencias = [];
-        const select = document.getElementById("selectConferencias");
-        let optionsHtml = "";
-
-        snap.forEach((doc) => {
-          const data = doc.data();
-          const idx = listaConferencias.length;
-          listaConferencias.push({ id: doc.id, ...data });
-          const tipoLabel = data.tipo_conferencia ? ` [${data.tipo_conferencia}]` : "";
-          optionsHtml += `<option value="${idx}">${formatarData(data.criado_em)}${tipoLabel} — ${data.total_lidos || 0} fardo(s)</option>`;
-        });
-
-        select.innerHTML = optionsHtml || `<option value="0">Nenhuma conferência enviada</option>`;
-        renderizarConferenciaSelecionada();
-      });
-    }
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.getElementById("telaLogin").style.display = "none";
-        document.getElementById("telaErp").style.display = "block";
-        document.getElementById("usuarioLogado").textContent = user.email;
-        iniciarListeners();
-      } else {
-        if (unsubEstoque) unsubEstoque();
-        if (unsubHistorico) unsubHistorico();
-        if (unsubBloqueios) unsubBloqueios();
-        if (unsubConferencias) unsubConferencias();
-        document.getElementById("telaErp").style.display = "none";
-        document.getElementById("telaLogin").style.display = "flex";
       }
     });
-  </script>
+    const pular = cfg.pularRotulos ? Math.ceil(cfg.pularRotulos / gw) : 1;
+    if (i % pular === 0){
+      quebrar(lab, maxCh).forEach((ln, li) => {
+        s += `<text x="${cx.toFixed(1)}" y="${mt + area + 17 + li * 13}" text-anchor="middle" font-size="11.5" fill="${C.aux}">${esc(ln)}</text>`;
+      });
+    }
+  });
+  s += `</svg>`;
+  el.innerHTML = s; ligarTips(el);
+}
+
+/* barras horizontais (rótulos longos) */
+function graficoBarrasH(el, cfg){
+  const W = el.clientWidth;
+  if (!W) return;
+  const itens = cfg.itens;
+  const max = Math.max(...itens.map(i => i.valor), 0);
+  if (!itens.length || max <= 0){ el.innerHTML = `<div class="empty">${esc(cfg.vazio || "Sem dados para exibir.")}</div>`; return; }
+  const linhaH = 34, H = itens.length * linhaH + 8;
+  const rotW = Math.min(210, Math.max(110, W * 0.38)), mr = 46, area = W - rotW - mr;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(cfg.titulo || "gráfico")}">`;
+  s += `<line x1="${rotW}" x2="${rotW}" y1="0" y2="${H - 4}" stroke="${C.linha}"/>`;
+  itens.forEach((it, i) => {
+    const y = 4 + i * linhaH, w = Math.max(it.valor > 0 ? 3 : 0, it.valor / max * area);
+    const tipo = `<b>${esc(it.nome)}</b><br>${fmtNum(it.valor)} ocorrência(s)`;
+    const maxCh = Math.floor((rotW - 12) / 6.2);
+    const nome = it.nome.length > maxCh ? it.nome.slice(0, maxCh - 1) + "…" : it.nome;
+    s += `<text x="${rotW - 10}" y="${y + 19}" text-anchor="end" font-size="12" fill="${C.creme}">${esc(nome)}</text>`;
+    s += `<rect x="${rotW + 1}" y="${y + 5}" width="${w.toFixed(1)}" height="20" rx="3" fill="${it.cor}" data-tip="${esc(tipo)}"/>`;
+    s += `<text x="${(rotW + w + 8).toFixed(1)}" y="${y + 20}" font-size="12" font-weight="700" fill="${C.creme}">${fmtNum(it.valor)}</text>`;
+  });
+  s += `</svg>`;
+  el.innerHTML = s; ligarTips(el);
+}
+
+/* ---------- cálculos ---------- */
+function resumoEstoque(){
+  const m = {};
+  listaMateriais(estoque.map(e => e.material)).forEach(k => m[k] = { qtd: 0, peso: 0 });
+  estoque.forEach(e => { (m[e.material] ||= { qtd: 0, peso: 0 }); m[e.material].qtd++; m[e.material].peso += e.peso; });
+  return m;
+}
+function calcConferencia(conf){
+  if (!conf) return null;
+  const itens = Array.isArray(conf.itens_lidos) ? conf.itens_lidos : [];
+  const lidos = {}, sist = {};
+  const mats = listaMateriais([...Object.values(estoqueMapa).map(e => e.material), ...itens.map(i => i.material).filter(Boolean)]);
+  mats.forEach(m => { lidos[m] = { qtd: 0, peso: 0 }; sist[m] = { qtd: 0, peso: 0 }; });
+  Object.values(estoqueMapa).forEach(e => { const m = e.material || "Outros"; (sist[m] ||= { qtd: 0, peso: 0 }); sist[m].qtd++; sist[m].peso += e.peso_kg; });
+  const ok = [], sem = [];
+  itens.forEach(it => {
+    const epc = String(it.epc || "").toUpperCase();
+    const no = estoqueMapa[epc];
+    if (no || it.existe_estoque){
+      const mat = (no && no.material) || it.material || "Outros";
+      const peso = Number((no && no.peso_kg) || it.peso_kg || 0);
+      (lidos[mat] ||= { qtd: 0, peso: 0 }); lidos[mat].qtd++; lidos[mat].peso += peso;
+      ok.push({ epc, mat, peso });
+    } else sem.push({ epc });
+  });
+  return { itens, lidos, sist, ok, sem, mats: Object.keys({ ...lidos, ...sist }) };
+}
+
+/* ---------- renderização ---------- */
+function renderKpisEGraficos(){
+  const res = resumoEstoque();
+  const qtd = estoque.length, peso = estoque.reduce((a, e) => a + e.peso, 0);
+  $("kQtd").textContent = fmtNum(qtd);
+  $("kQtdS").textContent = `${Object.values(res).filter(x => x.qtd > 0).length} material(is) em estoque`;
+  $("kPeso").innerHTML = `${nf2.format(peso)}<small>kg</small>`;
+  $("kPesoS").textContent = qtd ? `Média de ${nf2.format(peso / qtd)} kg por fardo` : "Sem fardos em estoque";
+
+  const hoje = diaKey(new Date());
+  let inQ = 0, inP = 0, outQ = 0, outP = 0;
+  movs.forEach(m => { if (m.ts && diaKey(m.ts) === hoje){ if (m.op === "PRENSA"){ inQ++; inP += m.peso; } else if (m.op === "CARREGAMENTO"){ outQ++; outP += m.peso; } } });
+  $("kIn").innerHTML = `${nf2.format(inP)}<small>kg</small>`; $("kInS").textContent = `${fmtNum(inQ)} fardo(s) produzido(s)`;
+  $("kOut").innerHTML = `${nf2.format(outP)}<small>kg</small>`; $("kOutS").textContent = `${fmtNum(outQ)} fardo(s) carregado(s)`;
+
+  const agora = Date.now(), erros24 = logs.filter(l => !ehNormal(l.tipo) && l.ts && agora - l.ts.getTime() < 864e5).length;
+  const errosTotal = logs.filter(l => !ehNormal(l.tipo)).length;
+  $("kErr").textContent = fmtNum(erros24); $("kErrS").textContent = `${fmtNum(errosTotal)} no log recente · ${fmtNum(logs.length)} eventos`;
+  const nb = $("navErros"); nb.textContent = erros24; nb.classList.toggle("hide", erros24 === 0);
+
+  /* material cards */
+  const totalPeso = peso || 1;
+  $("gridMat").innerHTML = Object.keys(res).map(m => {
+    const i = res[m], pct = i.peso / totalPeso * 100;
+    return `<div class="mat ${i.qtd === 0 ? "zero" : ""}"><div class="n"><span>${esc(m)}</span><em>${pct.toFixed(1).replace(".", ",")}%</em></div>
+      <div class="k">${fmtNum(i.qtd)} fardo(s) · ${fmtKg(i.peso)}</div><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div></div>`;
+  }).join("");
+
+  /* filtros que dependem dos materiais */
+  preencherSelectMat("fEstMat"); preencherSelectMat("fHistMat");
+  desenharGraficos();
+}
+
+function desenharGraficos(){
+  if (viewAtual !== "visao") return;
+  /* 1. estoque por material (kg) */
+  const res = resumoEstoque(), mats = Object.keys(res);
+  graficoColunas($("chEstoque"), {
+    titulo: "Estoque por material", labels: mats,
+    series: [{ nome: "Peso em estoque", cor: C.azul, values: mats.map(m => Math.round(res[m].peso)) }],
+    fmt: v => nf0.format(v), fmtCompacto: compacto, fmtTip: v => nf0.format(v) + " kg", vazio: "Nenhum fardo em estoque."
+  });
+
+  /* 2. entradas x saídas por dia (kg) */
+  const dias = [];
+  for (let i = diasGrafico - 1; i >= 0; i--){ const d = new Date(Date.now() - i * 864e5); dias.push(diaKey(d)); }
+  const ent = dias.map(() => 0), sai = dias.map(() => 0);
+  movs.forEach(m => { if (!m.ts) return; const ix = dias.indexOf(diaKey(m.ts)); if (ix < 0) return; if (m.op === "PRENSA") ent[ix] += m.peso; else if (m.op === "CARREGAMENTO") sai[ix] += m.peso; });
+  const totE = ent.reduce((a, b) => a + b, 0), totS = sai.reduce((a, b) => a + b, 0);
+  $("subDia").textContent = `kg por dia · período: ${nf0.format(totE)} kg produzidos, ${nf0.format(totS)} kg carregados`;
+  const antigo = movs.length ? movs[movs.length - 1].ts : null;
+  $("fonteDia").textContent = "Fonte: Firestore · movimentacoes_fardos (últimos 500 registros" + (antigo ? `, desde ${antigo.toLocaleDateString("pt-BR", { timeZone: TZ })}` : "") + ")";
+  graficoColunas($("chDia"), {
+    titulo: "Entradas e saídas por dia", altura: 290,
+    labels: dias.map(d => d.slice(8, 10) + "/" + d.slice(5, 7)),
+    series: [{ nome: "Entradas (Prensa)", cor: C.azul, values: ent.map(Math.round) }, { nome: "Saídas (Carregamento)", cor: C.creme, values: sai.map(Math.round) }],
+    fmt: v => nf0.format(v), fmtCompacto: compacto, fmtTip: v => nf0.format(v) + " kg", pularRotulos: 34, valores: diasGrafico <= 14, valoresRotacionados: true,
+    vazio: "Sem movimentações no período."
+  });
+
+  /* 3. log por tipo */
+  const cont = {};
+  logs.forEach(l => { const t = l.tipo || "EVENTO"; cont[t] = (cont[t] || 0) + 1; });
+  const itens = Object.keys(cont).map(t => ({ nome: t, valor: cont[t], cor: ehNormal(t) ? C.azul : C.erro })).sort((a, b) => b.valor - a.valor).slice(0, 12);
+  graficoBarrasH($("chLog"), { titulo: "Eventos por tipo", itens, vazio: "Nenhum evento no log." });
+
+  /* 4. conferência */
+  const cf = calcConferencia(confs[Number($("selConf").value || 0)]);
+  if (!cf){ $("chConf").innerHTML = `<div class="empty">Nenhuma conferência em massa enviada ainda.</div>`; $("subConf").textContent = "Última conferência em massa"; }
+  else {
+    const mm = cf.mats.filter(m => cf.lidos[m].qtd || cf.sist[m].qtd);
+    $("subConf").textContent = `${fmtNum(cf.itens.length)} fardo(s) lido(s) · ${fmtNum(cf.sem.length)} sem correspondência`;
+    graficoColunas($("chConf"), {
+      titulo: "Conferência por material", labels: mm,
+      series: [{ nome: "Lidos", cor: C.azul, values: mm.map(m => cf.lidos[m].qtd) }, { nome: "Sistema", cor: C.creme, values: mm.map(m => cf.sist[m].qtd) }],
+      fmt: v => fmtNum(v), fmtTip: v => fmtNum(v) + " fardo(s)", vazio: "Conferência sem itens."
+    });
+  }
+}
+
+function preencherSelectMat(id){
+  const sel = $(id), atual = sel.value;
+  const mats = listaMateriais([...estoque.map(e => e.material), ...movs.map(m => m.material).filter(Boolean)]);
+  sel.innerHTML = `<option value="">Todos os materiais</option>` + mats.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+  sel.value = mats.includes(atual) ? atual : "";
+}
+
+function renderEstoque(){
+  const termo = $("fEst").value.trim().toLowerCase(), mat = $("fEstMat").value;
+  let lista = estoque.filter(e => (!mat || e.material === mat) && (!termo || e.epc.toLowerCase().includes(termo) || e.material.toLowerCase().includes(termo)));
+  const k = sortEst.k, d = sortEst.dir;
+  lista = lista.slice().sort((a, b) => {
+    const va = k === "ts" ? (a.ts ? a.ts.getTime() : 0) : a[k], vb = k === "ts" ? (b.ts ? b.ts.getTime() : 0) : b[k];
+    return (typeof va === "string" ? va.localeCompare(vb, "pt-BR") : va - vb) * d;
+  });
+  document.querySelectorAll("#v-estoque th[data-sort]").forEach(th => th.querySelector(".ar").textContent = th.dataset.sort === k ? (d > 0 ? "▲" : "▼") : "");
+  const peso = lista.reduce((a, e) => a + e.peso, 0);
+  $("chipEst").textContent = `${fmtNum(lista.length)} fardo(s) · ${fmtKg(peso)}`;
+  const MAX = 1500;
+  $("tbEst").innerHTML = lista.length ? lista.slice(0, MAX).map(e => `<tr><td>${badgeMat(e.material)}</td><td class="mono" style="color:var(--blue)">${esc(e.epc)}</td><td class="num"><b>${nf2.format(e.peso)}</b></td><td>${fmtData(e.ts)}</td></tr>`).join("")
+    + (lista.length > MAX ? vazio(4, `Mostrando ${MAX} de ${lista.length}. Use o filtro para refinar.`) : "") : vazio(4, "Nenhum fardo encontrado.");
+}
+
+function renderHistorico(){
+  const mat = $("fHistMat").value, de = $("fHistDe").value, ate = $("fHistAte").value;
+  const f = movs.filter(m => (!mat || m.material === mat) && (!de || (m.ts && diaKey(m.ts) >= de)) && (!ate || (m.ts && diaKey(m.ts) <= ate)));
+  const lin = op => {
+    const l = f.filter(m => m.op === op), kg = l.reduce((a, m) => a + m.peso, 0);
+    return { l, kg, html: l.length ? l.map(m => `<tr><td>${badgeMat(m.material || "—")}</td><td class="num"><b>${nf2.format(m.peso)}</b></td><td>${fmtData(m.ts)}</td></tr>`).join("") + `<tr class="total"><td>Total</td><td class="num">${nf2.format(kg)}</td><td>${fmtNum(l.length)} fardo(s)</td></tr>` : vazio(3, "Nenhum registro.") };
+  };
+  const e = lin("PRENSA"), s = lin("CARREGAMENTO");
+  $("tbIn").innerHTML = e.html; $("tbOut").innerHTML = s.html;
+  $("totIn").textContent = `${fmtNum(e.l.length)} fardo(s) · ${fmtKg(e.kg)}`;
+  $("totOut").textContent = `${fmtNum(s.l.length)} fardo(s) · ${fmtKg(s.kg)}`;
+}
+
+function renderLog(){
+  const termo = $("fLog").value.trim().toLowerCase(), tipo = $("fLogTipo").value;
+  const f = logs.filter(l => (!tipo || (tipo === "__erros" ? !ehNormal(l.tipo) : l.tipo === tipo))
+    && (!termo || [l.epc, l.material, l.motivo, l.tipo].join(" ").toLowerCase().includes(termo)));
+  $("chipLog").textContent = `${fmtNum(f.length)} de ${fmtNum(logs.length)} evento(s)`;
+  $("tbLog").innerHTML = f.length ? f.map(l => `<tr><td>${fmtData(l.ts)}</td><td><span class="badge ${classeLog(l.tipo)}">${esc(l.tipo)}</span></td><td>${esc(l.material || "—")}</td><td class="num">${l.peso ? nf2.format(l.peso) : "—"}</td><td class="mono" style="color:var(--blue)">${esc(l.epc || "—")}</td><td class="wrap">${esc(l.motivo || "—")}</td></tr>`).join("") : vazio(6, "Nenhum registro na linha do tempo.");
+  const sel = $("fLogTipo"), atual = sel.value;
+  const tipos = [...new Set(logs.map(l => l.tipo))].sort();
+  sel.innerHTML = `<option value="">Todos os eventos</option><option value="__erros">Só bloqueios / erros</option>` + tipos.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  sel.value = (atual === "__erros" || tipos.includes(atual)) ? atual : "";
+}
+
+function renderConferencia(){
+  const conf = confs[Number($("selConf").value || 0)], cf = calcConferencia(conf);
+  if (!cf){
+    $("infoConf").textContent = "Nenhuma conferência em massa enviada ainda.";
+    ["cLidos","cOk","cSem"].forEach(i => $(i).textContent = "0"); $("cPeso").innerHTML = "0<small>kg</small>";
+    $("tbConfSub").innerHTML = vazio(5, "Nenhuma leitura em massa recebida.");
+    $("tbConfOk").innerHTML = vazio(4, "—"); $("tbConfSem").innerHTML = vazio(3, "—"); return;
+  }
+  $("infoConf").textContent = `Enviada em ${fmtData(conf.criado_em)}${conf.tipo_conferencia ? " · " + conf.tipo_conferencia : ""}`;
+  const pesoOk = cf.ok.reduce((a, i) => a + i.peso, 0);
+  $("cLidos").textContent = fmtNum(cf.itens.length); $("cOk").textContent = fmtNum(cf.ok.length); $("cSem").textContent = fmtNum(cf.sem.length);
+  $("cPeso").innerHTML = `${nf2.format(pesoOk)}<small>kg</small>`;
+
+  let tl = 0, ts = 0, tp = 0;
+  let h = cf.mats.map(m => {
+    const l = cf.lidos[m], s = cf.sist[m]; if (!l.qtd && !s.qtd && !ORDEM_MATERIAIS.includes(m)) return "";
+    const diff = l.qtd - s.qtd; tl += l.qtd; ts += s.qtd; tp += l.peso;
+    return `<tr><td>${badgeMat(m)}</td><td class="num"><b>${fmtNum(l.qtd)}</b></td><td class="num">${fmtNum(s.qtd)}</td><td class="num ${diff === 0 ? "pos" : "neg"}">${diff === 0 ? "0 (OK)" : (diff > 0 ? "+" + diff : diff)}</td><td class="num">${fmtKg(l.peso)}</td></tr>`;
+  }).join("");
+  const dt = tl - ts;
+  h += `<tr class="total"><td>Total geral</td><td class="num">${fmtNum(tl)}</td><td class="num">${fmtNum(ts)}</td><td class="num">${dt > 0 ? "+" + dt : dt}${cf.sem.length ? ` (+${cf.sem.length} sem estoque)` : ""}</td><td class="num">${fmtKg(tp)}</td></tr>`;
+  $("tbConfSub").innerHTML = h;
+
+  $("tbConfOk").innerHTML = cf.ok.length ? cf.ok.map(i => `<tr><td>${badgeMat(i.mat)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td><span class="badge b-ok">Conferido no estoque</span></td></tr>`).join("")
+    + `<tr class="total"><td colspan="2">Subtotal: ${fmtNum(cf.ok.length)} fardo(s)</td><td class="num">${nf2.format(pesoOk)}</td><td></td></tr>` : vazio(4, "Nenhum fardo correspondente encontrado.");
+  $("tbConfSem").innerHTML = cf.sem.length ? cf.sem.map(i => `<tr><td class="mono" style="color:var(--err)">${esc(i.epc)}</td><td><span class="badge b-err">Sem correspondência</span></td><td class="wrap">Fardo lido fisicamente, mas não consta no estoque atual do sistema.</td></tr>`).join("")
+    + `<tr class="total" style="color:var(--err)"><td colspan="3">Subtotal sem correspondência: ${fmtNum(cf.sem.length)} fardo(s)</td></tr>`
+    : `<tr class="empty"><td colspan="3" style="color:var(--ok);font-weight:700">Nenhuma divergência: todos os fardos lidos constam no estoque.</td></tr>`;
+}
+
+function renderTudo(){ renderKpisEGraficos(); renderEstoque(); renderHistorico(); renderLog(); renderConferencia(); }
+
+/* ---------- navegação e eventos ---------- */
+function irPara(v){
+  viewAtual = v;
+  document.querySelectorAll(".view").forEach(s => s.classList.toggle("on", s.id === "v-" + v));
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  window.scrollTo({ top: 0 });
+  if (v === "visao") requestAnimationFrame(desenharGraficos);
+}
+$("nav").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) irPara(b.dataset.v); });
+$("segDias").addEventListener("click", e => {
+  const b = e.target.closest("button[data-d]"); if (!b) return;
+  diasGrafico = Number(b.dataset.d);
+  document.querySelectorAll("#segDias button").forEach(x => x.classList.toggle("on", x === b));
+  desenharGraficos();
+});
+$("fEst").addEventListener("input", renderEstoque); $("fEstMat").addEventListener("change", renderEstoque);
+document.querySelectorAll("#v-estoque th[data-sort]").forEach(th => th.addEventListener("click", () => {
+  const k = th.dataset.sort; sortEst = { k, dir: sortEst.k === k ? -sortEst.dir : (k === "ts" || k === "peso" ? -1 : 1) }; renderEstoque();
+}));
+["fHistMat","fHistDe","fHistAte"].forEach(i => $(i).addEventListener("change", renderHistorico));
+$("btnHistLimpar").addEventListener("click", () => { $("fHistMat").value = ""; $("fHistDe").value = ""; $("fHistAte").value = ""; renderHistorico(); });
+$("fLog").addEventListener("input", renderLog); $("fLogTipo").addEventListener("change", renderLog);
+$("selConf").addEventListener("change", () => { renderConferencia(); desenharGraficos(); });
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(desenharGraficos, 150); });
+
+/* ---------- login ---------- */
+$("formLogin").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const erro = $("erroLogin"), btn = $("btnEntrar"); erro.textContent = ""; btn.disabled = true;
+  try { await signInWithEmailAndPassword(auth, $("emailInput").value.trim(), $("senhaInput").value); }
+  catch (e) { erro.textContent = "E-mail ou senha inválidos."; }
+  btn.disabled = false;
+});
+const sair = () => signOut(auth);
+$("btnSair").addEventListener("click", sair); $("btnSairM").addEventListener("click", sair);
+
+/* ---------- tempo real (Firestore) ---------- */
+function marcarAtualizacao(ok = true){
+  const t = ok ? "ao vivo · " + new Date().toLocaleTimeString("pt-BR", { timeZone: TZ }) : "sem conexão com o banco";
+  ["txtLive","txtLiveM"].forEach(i => $(i).textContent = t);
+  ["dotLive","dotLiveM"].forEach(i => $(i).classList.toggle("off", !ok));
+}
+const falha = nome => err => { console.error("Erro " + nome + ":", err); marcarAtualizacao(false); };
+
+function iniciarListeners(){
+  unsubs.push(onSnapshot(query(collection(db, "estoque_atual"), orderBy("data_entrada", "desc")), snap => {
+    estoque = []; estoqueMapa = {};
+    snap.forEach(doc => {
+      const d = doc.data(), epc = String(d.epc || doc.id).toUpperCase(), mat = d.material || "Outros", peso = Number(d.peso_kg || 0);
+      estoqueMapa[epc] = { material: mat, peso_kg: peso };
+      estoque.push({ epc, material: mat, peso, ts: toDate(d.data_entrada) });
+    });
+    marcarAtualizacao(); renderTudo();
+  }, falha("estoque_atual")));
+
+  unsubs.push(onSnapshot(query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(500)), snap => {
+    movs = [];
+    snap.forEach(doc => { const d = doc.data(); movs.push({ op: d.operacao, material: d.material || "—", peso: Number(d.peso_kg || 0), ts: toDate(d.criado_em) }); });
+    marcarAtualizacao(); renderKpisEGraficos(); renderHistorico();
+  }, falha("movimentacoes_fardos")));
+
+  unsubs.push(onSnapshot(query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500)), snap => {
+    logs = [];
+    snap.forEach(doc => { const d = doc.data(); logs.push({ ts: toDate(d.criado_em), tipo: d.operacao_tentada || "EVENTO", material: d.material || "", peso: Number(d.peso_kg || 0), epc: d.epc || "", motivo: d.motivo_bloqueio || "" }); });
+    marcarAtualizacao(); renderKpisEGraficos(); renderLog();
+  }, falha("logs_bloqueios")));
+
+  unsubs.push(onSnapshot(query(collection(db, "conferencias_estoque"), orderBy("criado_em", "desc"), limit(50)), snap => {
+    const antes = $("selConf").value;
+    confs = []; let opts = "";
+    snap.forEach(doc => {
+      const d = doc.data(), i = confs.length; confs.push({ id: doc.id, ...d });
+      opts += `<option value="${i}">${fmtData(d.criado_em)}${d.tipo_conferencia ? " [" + esc(d.tipo_conferencia) + "]" : ""} — ${d.total_lidos || (Array.isArray(d.itens_lidos) ? d.itens_lidos.length : 0)} fardo(s)</option>`;
+    });
+    $("selConf").innerHTML = opts || `<option value="0">Nenhuma conferência enviada</option>`;
+    if (antes && Number(antes) < confs.length) $("selConf").value = antes;
+    marcarAtualizacao(); renderConferencia(); desenharGraficos();
+  }, falha("conferencias_estoque")));
+}
+
+onAuthStateChanged(auth, user => {
+  if (user){
+    $("telaLogin").style.display = "none"; $("telaErp").style.display = "block";
+    $("usuarioLogado").textContent = user.email;
+    unsubs.forEach(u => u()); unsubs = [];
+    iniciarListeners(); irPara(viewAtual);
+  } else {
+    unsubs.forEach(u => u()); unsubs = [];
+    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = [];
+    $("telaErp").style.display = "none"; $("telaLogin").style.display = "flex";
+    $("senhaInput").value = "";
+  }
+});
+</script>
 </body>
 </html>
