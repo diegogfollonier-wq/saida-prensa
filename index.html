@@ -8,7 +8,7 @@
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { margin: 0; padding: 14px; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; }
     h1 { font-size: 1.15rem; text-align: center; margin: 0 0 14px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-    
+
     .janela { display: none; flex-direction: column; flex: 1; }
     .janela.ativa { display: flex; }
 
@@ -36,7 +36,7 @@
     .badge-material { background: #facc15; color: #0f172a; padding: 6px 14px; border-radius: 999px; font-weight: 900; font-size: 1.1rem; text-transform: uppercase; }
     .epc-tag { font-family: monospace; font-size: 0.88rem; background: #0f172a; padding: 8px 10px; border-radius: 8px; color: #38bdf8; word-break: break-all; width: 100%; }
     .peso-valor { font-size: 2.3rem; font-weight: 900; color: #facc15; margin: 2px 0; }
-    
+
     /* CAMPO DE SENHA COMPATÍVEL COM TECLADO INJETADO PELO APP */
     .input-senha { width: 100%; max-width: 240px; padding: 14px; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 10px; border-radius: 12px; border: 2px solid #7c3aed; background: #0f172a; color: #facc15; margin: 6px 0; outline: none; }
 
@@ -68,6 +68,22 @@
     .fardo-a-fardo-detalhes { font-size: 1.05rem; font-weight: 800; color: #f8fafc; }
     .barra-tempo-3s { width: 100%; height: 8px; background: #1e293b; border-radius: 999px; overflow: hidden; margin-top: 4px; }
     .barra-tempo-fill { height: 100%; width: 100%; background: #38bdf8; transition: width 0.1s linear; }
+
+    /* CONSULTA DE FARDO (BIPAR E RESPONDER) */
+    .consulta-card { width: 100%; background: #0f172a; border: 3px solid #475569; border-radius: 16px; padding: 18px 12px; display: flex; flex-direction: column; gap: 8px; text-align: center; align-items: center; }
+    .consulta-card.ok { border-color: #22c55e; background: #14532d; }
+    .consulta-card.nao { border-color: #ef4444; background: #450a0a; }
+    .consulta-card.erro { border-color: #f59e0b; background: #451a03; }
+    .consulta-titulo { font-size: 1.25rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+    .consulta-card.ok .consulta-titulo { color: #86efac; }
+    .consulta-card.nao .consulta-titulo { color: #fca5a5; }
+    .consulta-card.erro .consulta-titulo { color: #fcd34d; }
+    .consulta-material { font-size: 1.6rem; font-weight: 900; color: #f8fafc; text-transform: uppercase; }
+    .consulta-peso { font-size: 2.2rem; font-weight: 900; color: #facc15; line-height: 1.1; }
+    .consulta-sub { font-size: 0.9rem; font-weight: 600; color: #e2e8f0; }
+    .consulta-linha { font-family: monospace; font-size: 0.78rem; text-align: left; word-break: break-all; padding: 4px 6px; border-bottom: 1px solid #1e293b; color: #86efac; }
+    .consulta-linha.nao { color: #fca5a5; }
+    .consulta-linha.erro { color: #fcd34d; }
 
     .fardo-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px; width: 100%; display: flex; justify-content: space-between; align-items: center; text-align: left; gap: 8px; }
     .fardo-card.invalido { border-color: #ef4444; background: #450a0a; }
@@ -128,7 +144,7 @@
     <div class="menu-inicial" style="display:flex; flex-direction:column; flex:1; justify-content:center; gap:16px;">
       <button class="btn-op btn-roxo" onclick="iniciarMassaTodos()">LER TODOS OS FARDOS</button>
       <button class="btn-op btn-continuar" onclick="abrirSelecaoMaterialMassa()">LER UM MATERIAL ESPECÍFICO</button>
-      <button class="btn-op btn-finalizar" onclick="iniciarMassaFardoAFardo()">LER FARDO A FARDO</button>
+      <button class="btn-op btn-finalizar" onclick="iniciarConsultaFardo()">CONSULTAR FARDO (BIPAR)</button>
     </div>
   </div>
 
@@ -271,6 +287,32 @@
     </div>
   </div>
 
+  <!-- JANELA 3D: CONSULTA DE FARDO (BIPAR E O SISTEMA RESPONDE; NÃO ENVIA NADA) -->
+  <div id="win-consulta" class="janela">
+    <div class="header-bar bg-roxo">
+      <span>CONSULTAR FARDO</span>
+      <button class="btn-topo" onclick="voltarTipoMassa()">SAIR</button>
+    </div>
+    <div class="status-box" style="justify-content: flex-start;">
+      <div id="consultaStatusEstoque" style="font-size:0.85rem; font-weight:700; color:#c4b5fd;"></div>
+      <div id="consultaResultado" style="width:100%;"></div>
+      <div class="sub-contadores-massa">
+        <div class="sub-box">
+          <span id="consultaNumOk" class="sub-num">0</span>
+          <span class="sub-lbl">Cadastrados</span>
+        </div>
+        <div class="sub-box alerta">
+          <span id="consultaNumNao" class="sub-num">0</span>
+          <span class="sub-lbl">Não cadastrados</span>
+        </div>
+      </div>
+      <div id="consultaHistorico" class="ultimas-tags-box" style="max-height: 24vh;"></div>
+      <div class="acoes-grid" style="margin-top: auto;">
+        <button class="btn-acao btn-finalizar" onclick="limparConsultaFardo()">LIMPAR LISTA</button>
+      </div>
+    </div>
+  </div>
+
   <!-- JANELA 4: PÓS-ACEITE NO CARREGAMENTO -->
   <div id="win-pos-carga" class="janela">
     <div class="header-bar bg-azul">
@@ -303,7 +345,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, collection, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
@@ -342,6 +384,17 @@
     let eventosFardoAFardo = [];
     let epcsVistosFardoAFardo = new Set();
 
+    // VARIÁVEIS DA CONSULTA DE FARDO (BIPAR E RESPONDER)
+    let consultaAtiva = false;
+    let estoqueConsulta = {};
+    let estoqueConsultaPronto = false;
+    let estoqueConsultaErro = "";
+    let unsubConsulta = null;
+    let consultaUltima = null;
+    let consultaHistorico = [];
+    let consultaQtdOk = 0;
+    let consultaQtdNao = 0;
+
     function limparTimerPrensa() {
       if (timerRetornoPrensa) {
         clearTimeout(timerRetornoPrensa);
@@ -367,9 +420,19 @@
       document.getElementById(idJanela).classList.add("ativa");
     }
 
+    function pararEscutaConsulta() {
+      if (unsubConsulta) {
+        try { unsubConsulta(); } catch (e) { /* ignora */ }
+        unsubConsulta = null;
+      }
+      consultaAtiva = false;
+      estoqueConsultaPronto = false;
+    }
+
     function encerraAntenaMassaSeAtiva() {
       massaLendoAtiva = false;
       limparTimersFardoAFardo();
+      pararEscutaConsulta();
       if (window.AndroidSingleTag && typeof window.AndroidSingleTag.pararLeituraMassa === "function") {
         window.AndroidSingleTag.pararLeituraMassa();
       }
@@ -380,8 +443,10 @@
       fardosInvalidos = [];
       processando = false;
       if (window.AndroidSingleTag) {
-        if (modoAtual && typeof window.AndroidSingleTag.configurarModo === "function") {
-          window.AndroidSingleTag.configurarModo(modoAtual);
+        // A CONSULTA usa o mesmo modo de leitura por gatilho (1 etiqueta por disparo) da PRENSA
+        const modoNativo = modoAtual === "CONSULTA" ? "PRENSA" : modoAtual;
+        if (modoNativo && typeof window.AndroidSingleTag.configurarModo === "function") {
+          window.AndroidSingleTag.configurarModo(modoNativo);
         }
         if (typeof window.AndroidSingleTag.liberarProximaEtiqueta === "function") {
           window.AndroidSingleTag.liberarProximaEtiqueta();
@@ -565,7 +630,180 @@
       ativarEstadoLendoMassa();
     };
 
-    // OPÇÃO 3 DA MASSA: LER FARDO A FARDO (INSPEÇÃO UM A UM COM PAUSA DE 3s)
+    // ------------------------------------------------------------------
+    // OPÇÃO 3 DA MASSA: CONSULTAR FARDO (BIPAR E O SISTEMA RESPONDE)
+    // A cada disparo do gatilho, mostra na hora se a etiqueta está cadastrada
+    // no estoque do sistema. Não espera tempo e NÃO envia nada ao sistema.
+    // ------------------------------------------------------------------
+    function escHtml(v) {
+      return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function avisoTatil(longo) {
+      try { if (navigator.vibrate) navigator.vibrate(longo ? [200, 80, 200] : 120); } catch (e) { /* ignora */ }
+    }
+
+    function renderizarConsulta() {
+      const st = document.getElementById("consultaStatusEstoque");
+      if (estoqueConsultaErro) {
+        st.style.color = "#fca5a5";
+        st.textContent = "Erro ao carregar estoque: " + estoqueConsultaErro;
+      } else if (estoqueConsultaPronto) {
+        st.style.color = "#86efac";
+        st.textContent = `Estoque carregado: ${Object.keys(estoqueConsulta).length} fardo(s) — atualizado ao vivo`;
+      } else {
+        st.style.color = "#c4b5fd";
+        st.textContent = "Carregando estoque do sistema...";
+      }
+
+      const box = document.getElementById("consultaResultado");
+      const u = consultaUltima;
+      if (!u) {
+        box.innerHTML = `
+          <div class="consulta-card">
+            <div class="consulta-titulo" style="color:#94a3b8;">Aperte o gatilho</div>
+            <div class="consulta-sub">Leia uma etiqueta para ver se está no estoque</div>
+          </div>`;
+      } else if (u.erro) {
+        box.innerHTML = `
+          <div class="consulta-card erro">
+            <div class="consulta-titulo">Erro de conexão</div>
+            <div class="consulta-sub">${escHtml(u.erro)}</div>
+            <div class="epc-tag" style="text-align:center;">${escHtml(u.epc)}</div>
+          </div>`;
+      } else if (u.cadastrado) {
+        box.innerHTML = `
+          <div class="consulta-card ok">
+            <div class="consulta-titulo">✔ Cadastrado no estoque</div>
+            <div class="consulta-material">${escHtml(u.material)}</div>
+            <div class="consulta-peso">${Number(u.peso_kg || 0).toFixed(2)} kg</div>
+            <div class="epc-tag" style="text-align:center;">${escHtml(u.epc)}</div>
+          </div>`;
+      } else {
+        box.innerHTML = `
+          <div class="consulta-card nao">
+            <div class="consulta-titulo">✖ Não cadastrado</div>
+            <div class="consulta-sub">Esta etiqueta não consta no estoque do sistema</div>
+            <div class="epc-tag" style="text-align:center;">${escHtml(u.epc)}</div>
+          </div>`;
+      }
+
+      document.getElementById("consultaNumOk").textContent = consultaQtdOk;
+      document.getElementById("consultaNumNao").textContent = consultaQtdNao;
+
+      const hist = document.getElementById("consultaHistorico");
+      if (consultaHistorico.length === 0) {
+        hist.innerHTML = `<div style="color:#64748b; font-size:0.85rem; padding:12px;">Nenhuma etiqueta lida ainda.</div>`;
+      } else {
+        hist.innerHTML = consultaHistorico.slice(0, 30).map(h => {
+          if (h.erro) return `<div class="consulta-linha erro">${escHtml(h.hora)} — ERRO — ${escHtml(h.epc)}</div>`;
+          if (h.cadastrado) return `<div class="consulta-linha">${escHtml(h.hora)} — ${escHtml(h.material)} (${Number(h.peso_kg || 0).toFixed(2)} kg) — ${escHtml(h.epc)}</div>`;
+          return `<div class="consulta-linha nao">${escHtml(h.hora)} — NÃO CADASTRADO — ${escHtml(h.epc)}</div>`;
+        }).join("");
+      }
+    }
+
+    window.iniciarConsultaFardo = function() {
+      encerraAntenaMassaSeAtiva();
+      consultaUltima = null;
+      consultaHistorico = [];
+      consultaQtdOk = 0;
+      consultaQtdNao = 0;
+      estoqueConsulta = {};
+      estoqueConsultaPronto = false;
+      estoqueConsultaErro = "";
+      modoAtual = "CONSULTA";
+      consultaAtiva = true;
+
+      document.getElementById("statusCarregandoFardoAFardo").textContent = "";
+      mostrarJanela("win-consulta");
+      renderizarConsulta();
+
+      // Estoque do sistema em tempo real (reflete entradas/saídas feitas enquanto consulta)
+      try {
+        unsubConsulta = onSnapshot(collection(db, "estoque_atual"), (snap) => {
+          const mapa = {};
+          snap.forEach(d => {
+            const dados = d.data();
+            const epc = String(dados.epc || d.id).trim().toUpperCase();
+            mapa[epc] = {
+              material: (dados.material || "Sem Material").trim(),
+              peso_kg: Number(dados.peso_kg || 0)
+            };
+          });
+          estoqueConsulta = mapa;
+          estoqueConsultaPronto = true;
+          estoqueConsultaErro = "";
+          if (consultaAtiva) renderizarConsulta();
+        }, (err) => {
+          estoqueConsultaErro = err && err.message ? err.message : String(err);
+          if (consultaAtiva) renderizarConsulta();
+        });
+      } catch (err) {
+        estoqueConsultaErro = err && err.message ? err.message : String(err);
+        renderizarConsulta();
+      }
+
+      liberarColetor();
+    };
+
+    window.limparConsultaFardo = function() {
+      consultaUltima = null;
+      consultaHistorico = [];
+      consultaQtdOk = 0;
+      consultaQtdNao = 0;
+      renderizarConsulta();
+    };
+
+    async function processarConsulta(epcs) {
+      try {
+        for (const epc of epcs) {
+          if (!consultaAtiva) return;
+          let info = estoqueConsulta[epc];
+          let falhou = null;
+
+          // Se o estoque ainda não terminou de carregar, confere esta etiqueta direto na nuvem
+          if (!estoqueConsultaPronto) {
+            try {
+              const snap = await getDoc(doc(db, "estoque_atual", epc));
+              if (snap.exists()) {
+                const d = snap.data();
+                info = { material: (d.material || "Sem Material").trim(), peso_kg: Number(d.peso_kg || 0) };
+              }
+            } catch (err) {
+              falhou = err && err.message ? err.message : String(err);
+            }
+            if (!consultaAtiva) return;
+          }
+
+          const hora = new Date().toLocaleTimeString("pt-BR");
+          let reg;
+          if (falhou) {
+            reg = { epc, hora, erro: falhou };
+          } else if (info) {
+            reg = { epc, hora, cadastrado: true, material: info.material, peso_kg: info.peso_kg };
+            consultaQtdOk++;
+          } else {
+            reg = { epc, hora, cadastrado: false };
+            consultaQtdNao++;
+          }
+          consultaUltima = reg;
+          consultaHistorico.unshift(reg);
+          avisoTatil(!reg.cadastrado);
+        }
+        renderizarConsulta();
+      } finally {
+        // libera o gatilho na hora para a próxima etiqueta
+        if (window.AndroidSingleTag && typeof window.AndroidSingleTag.liberarProximaEtiqueta === "function") {
+          window.AndroidSingleTag.liberarProximaEtiqueta();
+        }
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // (Código anterior do modo "fardo a fardo com pausa de 3s", mantido sem alteração
+    //  e hoje sem botão no menu.)
+    // ------------------------------------------------------------------
     window.iniciarMassaFardoAFardo = async function() {
       const statusEl = document.getElementById("statusCarregandoFardoAFardo");
       statusEl.textContent = "Carregando estoque atual para auditoria fardo a fardo...";
@@ -1049,6 +1287,12 @@
       }
 
       if (!modoAtual) return;
+
+      // MODO CONSULTA DE FARDO: responde na hora a cada disparo do gatilho
+      if (modoAtual === "CONSULTA") {
+        await processarConsulta(epcs);
+        return;
+      }
 
       // MODO LEITURA EM MASSA (SÓ ACEITA SE ESTIVER ATIVO ANTES DE APERTAR PARAR)
       if (modoAtual === "MASSA") {
