@@ -2,527 +2,1145 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Saída da Prensa - Controle RFID</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestão de Estoque RFID • Controle de Entradas e Saídas</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --card-border: #334155;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --primary: #2563eb;
-      --success: #16a34a;
-      --danger: #dc2626;
-      --warning: #d97706;
+      --sidebar-bg: #0f172a;
+      --topbar-bg: #111827;
+      --body-bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --orange: #f97316;
+      --red: #ef4444;
+      --green: #10b981;
+      --blue: #3b82f6;
+      --dark-banner: #0b1120;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     }
 
     body {
-      background-color: var(--bg);
-      color: var(--text);
-      padding: 10px;
-      font-size: 14px;
-    }
-
-    header {
+      background-color: var(--body-bg);
+      color: var(--text-main);
       display: flex;
-      justify-content: space-between;
+      min-height: 100vh;
+    }
+
+    /* BARRA LATERAL ESQUERDA */
+    .sidebar {
+      width: 68px;
+      background-color: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--card-border);
+      padding: 14px 0;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 20;
     }
 
-    header h1 {
-      font-size: 16px;
-      font-weight: 700;
-      color: #38bdf8;
-    }
-
-    .badge-status {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #064e3b;
-      color: #6ee7b7;
-      font-weight: 600;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--card-border);
+    .brand-logo {
+      width: 42px;
+      height: 42px;
       border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 12px;
-    }
-
-    .status-banner {
-      text-align: center;
-      padding: 10px;
-      border-radius: 8px;
-      font-weight: 600;
-      margin-bottom: 10px;
-      background: #172554;
-      color: #93c5fd;
-      border: 1px dashed #3b82f6;
-    }
-
-    .status-banner.confirmando {
-      background: #422006;
-      color: #fcd34d;
-      border: 1px solid #f59e0b;
-    }
-
-    .status-banner.erro {
-      background: #450a0a;
-      color: #fca5a5;
-      border: 1px solid #ef4444;
-    }
-
-    .grid-dados {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .campo {
-      background: #0f172a;
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid var(--card-border);
-    }
-
-    .campo.full {
-      grid-column: span 2;
-    }
-
-    .campo label {
-      display: block;
-      font-size: 10px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 2px;
-    }
-
-    .campo .valor {
-      font-size: 13px;
-      font-weight: 700;
-      word-break: break-all;
+      background: linear-gradient(135deg, #38bdf8, #2563eb);
       color: #fff;
+      font-weight: 900;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
     }
 
-    .campo input {
-      width: 100%;
+    .nav-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      color: #fff;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      opacity: 0.85;
+      position: relative;
+    }
+
+    .nav-btn:hover, .nav-btn.active {
+      opacity: 1;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      outline: 2px solid rgba(255, 255, 255, 0.45);
+    }
+
+    .nav-dash { background: var(--orange); }
+    .nav-estoque { background: var(--red); }
+    .nav-mov { background: var(--green); }
+    .nav-sync { background: var(--blue); }
+
+    /* ÁREA PRINCIPAL */
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* TOPBAR ESCURA */
+    .topbar {
+      height: 56px;
+      background-color: var(--topbar-bg);
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      gap: 16px;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 460px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-box input {
       background: transparent;
       border: none;
-      border-bottom: 1px solid #475569;
-      color: #4ade80;
-      font-size: 16px;
-      font-weight: 700;
+      color: #f8fafc;
+      width: 100%;
+      font-size: 13px;
       outline: none;
     }
 
-    .acoes-fardo {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
     }
 
-    button {
-      border: none;
+    .sync-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--red);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* CONTEÚDO */
+    .content {
+      padding: 22px;
+      max-width: 1360px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .welcome-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .welcome-row h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .welcome-row p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .date-chip {
+      background: #fff;
+      border: 1px solid var(--border);
+      padding: 8px 14px;
       border-radius: 8px;
-      padding: 12px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    /* CARDS DE MÓDULOS / INDICADORES */
+    .module-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .m-card {
+      border-radius: 10px;
+      padding: 18px;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 112px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    .m-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+    }
+
+    .m-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 13px;
       font-weight: 700;
-      cursor: pointer;
+      opacity: 0.95;
+    }
+
+    .m-card-val {
+      font-size: 26px;
+      font-weight: 800;
+      margin-top: 10px;
+    }
+
+    .m-card-sub {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .bg-orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+    .bg-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .bg-green { background: linear-gradient(135deg, #10b981, #059669); }
+    .bg-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+    /* FAIXA DE OPERAÇÃO RÁPIDA (SIMULAÇÃO / ENVIO DO COLETOR) */
+    .action-strip {
+      background: linear-gradient(90deg, #0f172a, #1e293b);
       color: #fff;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .action-strip-text strong {
+      color: #38bdf8;
+      font-size: 14px;
+      display: block;
+    }
+
+    .action-strip-text span {
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    .action-strip-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 7px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
       transition: opacity 0.15s;
     }
 
-    button:active {
-      opacity: 0.8;
+    .btn:hover { opacity: 0.9; }
+    .btn-entrada { background: var(--green); color: #fff; }
+    .btn-saida { background: var(--orange); color: #fff; }
+    .btn-export { background: var(--blue); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid #475569; color: #e2e8f0; }
+
+    /* GRID INFERIOR DO DASHBOARD (3 COLUNAS ESTILO IMAGEM) */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 1fr;
+      gap: 16px;
+      margin-bottom: 22px;
     }
 
-    button:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
 
-    .btn-gravar {
-      background: var(--success);
-    }
-
-    .btn-refazer {
-      background: var(--warning);
-    }
-
-    .btn-simular {
-      background: #334155;
-      font-size: 11px;
-      padding: 6px 8px;
-      margin-top: 6px;
-      width: 100%;
-    }
-
-    .resumo-estoque {
+    .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
-      font-size: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
     }
 
-    .resumo-estoque strong {
-      color: #38bdf8;
-      font-size: 14px;
-    }
-
-    .acoes-estoque {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    .btn-csv {
-      background: var(--primary);
-      padding: 8px 10px;
-      font-size: 12px;
-      flex: 1;
-    }
-
-    .btn-limpar {
-      background: var(--danger);
-      padding: 8px 10px;
-      font-size: 12px;
-    }
-
-    .lista-estoque {
-      max-height: 220px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .item-fardo {
-      background: #0f172a;
-      border: 1px solid var(--card-border);
-      border-radius: 6px;
-      padding: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-    }
-
-    .item-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      max-width: 82%;
-    }
-
-    .item-topo {
+    .panel-header h2 {
+      font-size: 15px;
       font-weight: 700;
-      color: #38bdf8;
+      color: #1e293b;
     }
 
-    .item-epc {
-      color: #cbd5e1;
-      font-family: monospace;
-      word-break: break-all;
+    .shortcut-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .item-data {
-      color: var(--muted);
+    .shortcut-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      transition: background 0.15s;
+    }
+
+    .shortcut-item:hover {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    /* DONUT SITUAÇÃO DO ESTOQUE */
+    .donut-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 0;
+    }
+
+    .donut {
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .donut-inner {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: #0f172a;
+    }
+
+    .donut-inner small {
       font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
     }
 
-    .btn-del-item {
-      background: transparent;
-      color: #f87171;
-      border: 1px solid #7f1d1d;
-      padding: 5px 8px;
-      font-size: 11px;
-      border-radius: 6px;
-    }
-
-    .vazio {
-      text-align: center;
-      color: var(--muted);
-      padding: 16px 0;
+    .legend {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
       font-size: 12px;
+    }
+
+    .legend-row {
+      display: flex;
+      justify-content: space-between;
+      color: #475569;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    /* TABELA DE MOVIMENTAÇÕES E ESTOQUE */
+    .table-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tab-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: #0f172a;
+      color: #fff;
+      border-color: #0f172a;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      color: #1e293b;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    .tag-tipo {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      display: inline-block;
+    }
+
+    .tag-entrada {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .tag-saida {
+      background: #ffedd5;
+      color: #9a3412;
+    }
+
+    .mono {
+      font-family: monospace;
+      font-size: 12px;
+      color: #334155;
+    }
+
+    .view-section {
+      display: none;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    /* CONFIGURAÇÃO DE CONEXÃO */
+    .config-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 680px;
+    }
+
+    .config-box label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .config-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1024px) {
+      .module-cards { grid-template-columns: repeat(2, 1fr); }
+      .dash-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .module-cards { grid-template-columns: 1fr; }
+      .sidebar { width: 54px; }
+      .content { padding: 14px; }
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>SAÍDA DA PRENSA</h1>
-    <span class="badge-status">Balança: Simulada</span>
-  </header>
+  <!-- BARRA LATERAL -->
+  <aside class="sidebar">
+    <div class="brand-logo">RF</div>
+    <button class="nav-btn nav-dash active" title="Dashboard Geral" onclick="mudarTela('dashboard', this)">🏠</button>
+    <button class="nav-btn nav-estoque" title="Estoque Atual" onclick="mudarTela('estoque', this)">📦</button>
+    <button class="nav-btn nav-mov" title="Entradas e Saídas" onclick="mudarTela('movimentacoes', this)">⇄</button>
+    <button class="nav-btn nav-sync" title="Conexão Coletor EF401" onclick="mudarTela('conexao', this)">🔗</button>
+  </aside>
 
-  <!-- ÁREA DE LEITURA E CONFIRMAÇÃO -->
-  <div class="card">
-    <div id="statusBanner" class="status-banner">
-      Aguardando leitura da etiqueta RFID do fardo...
-    </div>
-
-    <div class="grid-dados">
-      <div class="campo">
-        <label>ID do Fardo</label>
-        <div id="campoId" class="valor">---</div>
+  <!-- ÁREA PRINCIPAL -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="globalSearch" placeholder="Buscar por ID do fardo, etiqueta RFID (EPC) ou material..." oninput="filtrarTabela()" />
       </div>
 
-      <div class="campo">
-        <label>Peso (kg)</label>
-        <input type="number" id="campoPeso" step="0.1" placeholder="0.0" disabled />
+      <div class="topbar-right">
+        <div class="sync-pill">
+          <span class="dot"></span>
+          <span id="statusConexaoTop">Coletor RFID Pronto</span>
+        </div>
+        <div class="user-badge">
+          <div class="avatar">A</div>
+          <span>Operação Estoque</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="welcome-row">
+        <div>
+          <h1>Controle de Estoque RFID</h1>
+          <p>Gestão de entradas da prensa e saídas de expedição integradas ao coletor Bluebird EF401.</p>
+        </div>
+        <div class="date-chip" id="dataHojeChip">Hoje</div>
       </div>
 
-      <div class="campo full">
-        <label>Código Etiqueta RFID (EPC)</label>
-        <div id="campoEpc" class="valor">---</div>
+      <!-- 4 CARDS COLORIDOS ESTILO ERP -->
+      <section class="module-cards">
+        <div class="m-card bg-green" onclick="mudarTela('movimentacoes', document.querySelectorAll('.nav-btn')[2])">
+          <div class="m-card-top">
+            <span>Entradas (Prensa)</span>
+            <span>↓</span>
+          </div>
+          <div class="m-card-val" id="cardEntradasPeso">0,0 kg</div>
+          <div class="m-card-sub" id="cardEntradasQtd">0 fardos recebidos</div>
+        </div>
+
+        <div class="m-card bg-red" onclick="mudarTela('estoque', document.querySelectorAll('.nav-btn')[1])">
+          <div class="m-card-top">
+            <span>Saldo em Estoque</span>
+            <span>📦</span>
+          </div>
+          <div class="m-card-val" id="cardSaldoPeso">0,0 kg</div>
+          <div class="m-card-sub" id="cardSaldoQtd">0 fardos disponíveis</div>
+        </div>
+
+        <div class="m-card bg-orange" onclick="mudarTela('movimentacoes', document.querySelectorAll('.nav-btn')[2])">
+          <div class="m-card-top">
+            <span>Saídas (Expedição)</span>
+            <span>↑</span>
+          </div>
+          <div class="m-card-val" id="cardSaidasPeso">0,0 kg</div>
+          <div class="m-card-sub" id="cardSaidasQtd">0 fardos expedidos</div>
+        </div>
+
+        <div class="m-card bg-blue" onclick="mudarTela('conexao', document.querySelectorAll('.nav-btn')[3])">
+          <div class="m-card-top">
+            <span>Leituras & Regravações</span>
+            <span>📡</span>
+          </div>
+          <div class="m-card-val" id="cardTotalMov">0</div>
+          <div class="m-card-sub" id="cardAlertasSub">0 regravações confirmadas</div>
+        </div>
+      </section>
+
+      <!-- FAIXA DE TESTE E AÇÕES RÁPIDAS -->
+      <div class="action-strip">
+        <div class="action-strip-text">
+          <strong>Simulador de Recebimento do Coletor (Bluebird EF401)</strong>
+          <span>Teste agora a chegada de uma leitura RFID de Entrada ou Saída, ou teste o alerta de tag duplicada.</span>
+        </div>
+        <div class="action-strip-btns">
+          <button class="btn btn-entrada" onclick="simularMovimentoCelular('ENTRADA')">+ Simular Entrada (Prensa)</button>
+          <button class="btn btn-saida" onclick="simularMovimentoCelular('SAIDA')">- Simular Saída (Expedição)</button>
+          <button class="btn btn-export" onclick="exportarCSV()">Exportar CSV</button>
+          <button class="btn btn-outline" onclick="limparDadosDemo()">Zerar Dados</button>
+        </div>
       </div>
 
-      <div class="campo full">
-        <label>Data e Hora</label>
-        <div id="campoData" class="valor">---</div>
-      </div>
-    </div>
+      <!-- TELA 1: DASHBOARD -->
+      <section id="view-dashboard" class="view-section active">
+        <div class="dash-grid">
+          <!-- Coluna 1: Atalhos -->
+          <div class="panel">
+            <div class="panel-header">
+              <h2>⚙️ Atalhos Operacionais</h2>
+            </div>
+            <div class="shortcut-list">
+              <div class="shortcut-item" onclick="mudarTela('estoque', document.querySelectorAll('.nav-btn')[1])">
+                <span>📦 Consultar Saldo de Fardos</span>
+                <span>›</span>
+              </div>
+              <div class="shortcut-item" onclick="mudarTela('movimentacoes', document.querySelectorAll('.nav-btn')[2])">
+                <span>⇄ Histórico de Entradas e Saídas</span>
+                <span>›</span>
+              </div>
+              <div class="shortcut-item" onclick="testarTagDuplicada()">
+                <span>⚠️ Testar Alerta de RFID Duplicado</span>
+                <span>›</span>
+              </div>
+              <div class="shortcut-item" onclick="mudarTela('conexao', document.querySelectorAll('.nav-btn')[3])">
+                <span>🔗 Configurar Sincronização Nuvem</span>
+                <span>›</span>
+              </div>
+            </div>
+          </div>
 
-    <div class="acoes-fardo">
-      <button id="btnGravar" class="btn-gravar" disabled onclick="gravarFardo()">GRAVAR FARDO</button>
-      <button id="btnRefazer" class="btn-refazer" disabled onclick="refazerLeitura()">REFAZER</button>
-    </div>
+          <!-- Coluna 2: Situação do Estoque -->
+          <div class="panel">
+            <div class="panel-header">
+              <h2>📊 Situação do Estoque</h2>
+            </div>
+            <div class="donut-wrap">
+              <div class="donut" id="donutChart">
+                <div class="donut-inner">
+                  <span id="donutTotalFardos">0</span>
+                  <small>FARDOS</small>
+                </div>
+              </div>
+              <div class="legend" id="donutLegend"></div>
+            </div>
+          </div>
 
-    <button class="btn-simular" onclick="simularLeituraTeste()">Simular Leitura (Teste sem RFR900)</button>
-  </div>
+          <!-- Coluna 3: Operação do Dia -->
+          <div class="panel">
+            <div class="panel-header">
+              <h2>⚡ Últimas Leituras RFID</h2>
+            </div>
+            <div class="shortcut-list" id="ultimasLeiturasLista"></div>
+          </div>
+        </div>
+      </section>
 
-  <!-- ÁREA DE ESTOQUE -->
-  <div class="card">
-    <div class="resumo-estoque">
-      <span>Fardos: <strong id="totalFardos">0</strong></span>
-      <span>Peso Total: <strong id="pesoTotal">0,0 kg</strong></span>
-    </div>
+      <!-- TELA 2: ESTOQUE ATUAL -->
+      <section id="view-estoque" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>📦 Fardos Atualmente em Estoque (Saldo Disponível)</h2>
+            <button class="btn btn-export" onclick="exportarCSV()">Baixar Inventário CSV</button>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID Fardo</th>
+                  <th>Etiqueta RFID (EPC)</th>
+                  <th>Material</th>
+                  <th>Peso (kg)</th>
+                  <th>Data Entrada</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaEstoqueBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-    <div class="acoes-estoque">
-      <button class="btn-csv" onclick="exportarCSV()">Exportar CSV</button>
-      <button class="btn-limpar" onclick="limparEstoque()">Limpar Tudo</button>
-    </div>
+      <!-- TELA 3: MOVIMENTAÇÕES (ENTRADAS E SAÍDAS) -->
+      <section id="view-movimentacoes" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>⇄ Registro Completo de Entradas e Saídas</h2>
+            <div class="filter-tabs">
+              <button class="tab-btn active" onclick="setFiltroTipo('TODOS', this)">Todos</button>
+              <button class="tab-btn" onclick="setFiltroTipo('ENTRADA', this)">Entradas</button>
+              <button class="tab-btn" onclick="setFiltroTipo('SAIDA', this)">Saídas</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>ID Fardo</th>
+                  <th>Etiqueta RFID (EPC)</th>
+                  <th>Material</th>
+                  <th>Peso (kg)</th>
+                  <th>Data / Hora</th>
+                  <th>Origem / Obs.</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaMovBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-    <div id="listaEstoque" class="lista-estoque">
-      <div class="vazio">Nenhum fardo gravado no estoque.</div>
-    </div>
+      <!-- TELA 4: CONEXÃO COM O COLETOR -->
+      <section id="view-conexao" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>🔗 Integração em Tempo Real com o Coletor Bluebird EF401</h2>
+          </div>
+          <div class="config-box">
+            <p style="font-size: 13px; color: #475569; line-height: 1.5;">
+              Este painel já está preparado para receber os eventos de <strong>Entrada</strong> e <strong>Saída</strong> enviados pelo aplicativo do coletor. Quando você conectar um endpoint compartilhado (como <strong>Google Apps Script / Google Sheets</strong> ou <strong>API/Webhook</strong>), os fardos lidos na prensa aparecem aqui automaticamente no computador.
+            </p>
+            <div>
+              <label>URL do Endpoint de Sincronização (Google Apps Script / Webhook / API)</label>
+              <input type="text" id="inputEndpointUrl" placeholder="https://script.google.com/macros/s/SEU_ID/exec" />
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-entrada" onclick="salvarConfigEndpoint()">Salvar Endpoint</button>
+              <button class="btn btn-export" onclick="sincronizarAgora()">Sincronizar Agora</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
   </div>
 
   <script>
-    const STORAGE_KEY = 'estoque_saida_prensa_v1';
-    let estoque = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    let fardoAtual = null;
-    let pesoBalancaAtual = null; // Reservado para integração futura com balança real
+    const STORAGE_MOV_KEY = 'erp_rfid_movimentacoes_v1';
+    const STORAGE_CFG_KEY = 'erp_rfid_endpoint_v1';
+    let filtroTipoAtual = 'TODOS';
 
-    // Elementos da UI
-    const statusBanner = document.getElementById('statusBanner');
-    const campoId = document.getElementById('campoId');
-    const campoPeso = document.getElementById('campoPeso');
-    const campoEpc = document.getElementById('campoEpc');
-    const campoData = document.getElementById('campoData');
-    const btnGravar = document.getElementById('btnGravar');
-    const btnRefazer = document.getElementById('btnRefazer');
+    // Dados iniciais de exemplo para visualização imediata
+    const DADOS_EXEMPLO = [
+      { id: 'FRD-20261120-001', epc: '3400E28011704000021C393F08D0', tipo: 'ENTRADA', material: 'Papelão Ondulado', peso: 242.5, data: '20/11/2026 08:15:10', obs: 'Saída da Prensa 01' },
+      { id: 'FRD-20261120-002', epc: '3400E28011704000021C393F08D1', tipo: 'ENTRADA', material: 'Plástico PET', peso: 198.0, data: '20/11/2026 09:02:44', obs: 'Saída da Prensa 01' },
+      { id: 'FRD-20261120-003', epc: '3400E28011704000021C393F08D2', tipo: 'ENTRADA', material: 'Papelão Ondulado', peso: 255.2, data: '20/11/2026 10:18:05', obs: 'Saída da Prensa 02' },
+      { id: 'FRD-20261120-004', epc: '3400E28011704000021C393F08D3', tipo: 'ENTRADA', material: 'Plástico Filme', peso: 210.8, data: '20/11/2026 11:40:19', obs: 'Saída da Prensa 01' },
+      { id: 'FRD-20261120-002', epc: '3400E28011704000021C393F08D1', tipo: 'SAIDA', material: 'Plástico PET', peso: 198.0, data: '20/11/2026 14:12:30', obs: 'Carregamento Expedição' }
+    ];
 
-    // Gera ID único sequencial do dia: FRD-AAAAMMDD-001
-    function gerarIdFardo() {
-      const agora = new Date();
-      const ano = agora.getFullYear();
-      const mes = String(agora.getMonth() + 1).padStart(2, '0');
-      const dia = String(agora.getDate()).padStart(2, '0');
-      const seq = String(estoque.length + 1).padStart(3, '0');
-      return `FRD-${ano}${mes}${dia}-${seq}`;
+    let movimentacoes = JSON.parse(localStorage.getItem(STORAGE_MOV_KEY) || 'null');
+    if (movimentacoes === null) {
+      movimentacoes = DADOS_EXEMPLO;
+      localStorage.setItem(STORAGE_MOV_KEY, JSON.stringify(movimentacoes));
     }
 
-    // Formata data/hora local
-    function obterDataHora() {
-      return new Date().toLocaleString('pt-BR');
-    }
+    document.getElementById('dataHojeChip').textContent = '📅 Hoje, ' + new Date().toLocaleDateString('pt-BR');
+    document.getElementById('inputEndpointUrl').value = localStorage.getItem(STORAGE_CFG_KEY) || '';
 
-    // Simula peso de balança entre 180.0 kg e 260.0 kg (até a balança real ser ligada)
-    function obterPeso() {
-      if (pesoBalancaAtual !== null) {
-        return Number(pesoBalancaAtual).toFixed(1);
-      }
-      const pesoSimulado = (Math.random() * (260 - 180) + 180).toFixed(1);
-      return pesoSimulado;
-    }
-
-    // Função pronta para receber o peso real da balança no futuro
-    window.receberPesoBalanca = function(peso) {
-      const num = parseFloat(String(peso).replace(',', '.'));
-      if (!isNaN(num) && num > 0) {
-        pesoBalancaAtual = num;
-        if (fardoAtual) {
-          campoPeso.value = num.toFixed(1);
+    // Calcula o estoque atual com base nas Entradas e Saídas
+    function calcularEstoqueAtual() {
+      const mapa = new Map();
+      // Processa do mais antigo para o mais recente
+      const cronologico = [...movimentacoes].reverse();
+      cronologico.forEach(mov => {
+        if (mov.tipo === 'ENTRADA') {
+          mapa.set(mov.epc, { ...mov });
+        } else if (mov.tipo === 'SAIDA') {
+          mapa.delete(mov.epc);
         }
+      });
+      return Array.from(mapa.values()).reverse();
+    }
+
+    // Função pronta para receber uma movimentação completa do coletor (Entrada ou Saída)
+    window.receberMovimentacaoRFID = function(registro) {
+      if (!registro || !registro.epc) return;
+      const epc = String(registro.epc).replace(/\s+/g, '').toUpperCase();
+      const tipo = (registro.tipo || 'ENTRADA').toUpperCase();
+      const estoqueAtual = calcularEstoqueAtual();
+      const jaEmEstoque = estoqueAtual.find(item => item.epc === epc);
+
+      // Se for ENTRADA e a tag já estiver gravada no estoque, alerta e pede confirmação para regravar
+      if (tipo === 'ENTRADA' && jaEmEstoque) {
+        const certeza = confirm(
+          `ALERTA DE DUPLICIDADE RFID!\n\nA etiqueta ${epc} já está gravada no estoque (${jaEmEstoque.id} - ${jaEmEstoque.peso} kg).\n\nTem certeza que deseja REGRAVAR este fardo?`
+        );
+        if (!certeza) {
+          return false;
+        }
+        // Remove a entrada anterior desse EPC para regravar com os novos dados
+        movimentacoes = movimentacoes.filter(m => !(m.epc === epc && m.tipo === 'ENTRADA'));
+        registro.obs = (registro.obs || 'Saída da Prensa') + ' (Regravado)';
       }
-    };
 
-    // Função principal chamada pelo Android (InventoryFragment.java)
-    window.receberRFID = function(epcBruto) {
-      if (!epcBruto) return;
-      const epc = String(epcBruto).replace(/\s+/g, '').toUpperCase();
-
-      // Se já existe um fardo aguardando confirmação, ignora novas leituras acidentais
-      if (fardoAtual !== null) {
-        return;
-      }
-
-      // Verifica se essa etiqueta já foi gravada no estoque
-      const jaExiste = estoque.some(item => item.epc === epc);
-      if (jaExiste) {
-        statusBanner.className = 'status-banner erro';
-        statusBanner.textContent = `Etiqueta ${epc.slice(-6)} já está no estoque! Use outra etiqueta.`;
-        return;
-      }
-
-      // Cria prévia do fardo para conferência do operador
-      fardoAtual = {
-        id: gerarIdFardo(),
+      const novoItem = {
+        id: registro.id || gerarIdFardo(),
         epc: epc,
-        peso: obterPeso(),
-        data: obterDataHora(),
-        origem: 'Saida da prensa'
+        tipo: tipo,
+        material: registro.material || 'Fardo Prensado',
+        peso: Number(parseFloat(registro.peso || 0).toFixed(1)),
+        data: registro.data || new Date().toLocaleString('pt-BR'),
+        obs: registro.obs || (tipo === 'ENTRADA' ? 'Saída da Prensa' : 'Saída Estoque')
       };
 
-      campoId.textContent = fardoAtual.id;
-      campoEpc.textContent = fardoAtual.epc;
-      campoData.textContent = fardoAtual.data;
-      campoPeso.value = fardoAtual.peso;
-      campoPeso.disabled = false;
-
-      btnGravar.disabled = false;
-      btnRefazer.disabled = false;
-
-      statusBanner.className = 'status-banner confirmando';
-      statusBanner.textContent = 'Confira o peso e a etiqueta. Clique em GRAVAR ou REFAZER.';
+      movimentacoes.unshift(novoItem);
+      localStorage.setItem(STORAGE_MOV_KEY, JSON.stringify(movimentacoes));
+      atualizarInterface();
+      return true;
     };
 
-    // Grava o fardo conferido no estoque e pede o próximo item
-    function gravarFardo() {
-      if (!fardoAtual) return;
+    // Compatibilidade direta caso a ponte envie apenas o EPC bruto
+    window.receberRFID = function(epcBruto) {
+      const pesoSimulado = (Math.random() * (260 - 185) + 185).toFixed(1);
+      window.receberMovimentacaoRFID({
+        epc: epcBruto,
+        tipo: 'ENTRADA',
+        material: 'Fardo Prensado',
+        peso: pesoSimulado,
+        obs: 'Leitura Direta Coletor'
+      });
+    };
 
-      const pesoFinal = parseFloat(String(campoPeso.value).replace(',', '.'));
-      if (isNaN(pesoFinal) || pesoFinal <= 0) {
-        alert('Informe um peso válido antes de gravar.');
+    function gerarIdFardo() {
+      const d = new Date();
+      const dataStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      const seq = String(movimentacoes.length + 1).padStart(3, '0');
+      return `FRD-${dataStr}-${seq}`;
+    }
+
+    function atualizarInterface() {
+      const estoqueAtual = calcularEstoqueAtual();
+      const entradas = movimentacoes.filter(m => m.tipo === 'ENTRADA');
+      const saidas = movimentacoes.filter(m => m.tipo === 'SAIDA');
+      const regravacoes = movimentacoes.filter(m => (m.obs || '').includes('Regravado')).length;
+
+      const pesoEntradas = entradas.reduce((s, i) => s + Number(i.peso), 0);
+      const pesoSaidas = saidas.reduce((s, i) => s + Number(i.peso), 0);
+      const pesoSaldo = estoqueAtual.reduce((s, i) => s + Number(i.peso), 0);
+
+      document.getElementById('cardEntradasPeso').textContent = formatarKg(pesoEntradas);
+      document.getElementById('cardEntradasQtd').textContent = `${entradas.length} fardos recebidos`;
+
+      document.getElementById('cardSaldoPeso').textContent = formatarKg(pesoSaldo);
+      document.getElementById('cardSaldoQtd').textContent = `${estoqueAtual.length} fardos disponíveis`;
+
+      document.getElementById('cardSaidasPeso').textContent = formatarKg(pesoSaidas);
+      document.getElementById('cardSaidasQtd').textContent = `${saidas.length} fardos expedidos`;
+
+      document.getElementById('cardTotalMov').textContent = movimentacoes.length;
+      document.getElementById('cardAlertasSub').textContent = `${regravacoes} regravações confirmadas`;
+
+      renderizarDonut(estoqueAtual);
+      renderizarUltimasLeituras();
+      renderizarTabelas(estoqueAtual);
+    }
+
+    function renderizarDonut(estoqueAtual) {
+      document.getElementById('donutTotalFardos').textContent = estoqueAtual.length;
+      const grupos = {};
+      estoqueAtual.forEach(item => {
+        grupos[item.material] = (grupos[item.material] || 0) + 1;
+      });
+
+      const cores = ['#10b981', '#f97316', '#3b82f6', '#ef4444'];
+      const entries = Object.entries(grupos);
+      const donutEl = document.getElementById('donutChart');
+      const legendEl = document.getElementById('donutLegend');
+
+      if (entries.length === 0) {
+        donutEl.style.background = '#e2e8f0';
+        legendEl.innerHTML = '<div style="text-align:center;color:#64748b;">Sem fardos em estoque</div>';
         return;
       }
 
-      fardoAtual.peso = Number(pesoFinal.toFixed(1));
-      estoque.unshift(fardoAtual);
-      salvarStorage();
-      renderizarEstoque();
+      let acumulado = 0;
+      const fatias = entries.map(([mat, qtd], idx) => {
+        const pct = (qtd / estoqueAtual.length) * 100;
+        const inicio = acumulado;
+        acumulado += pct;
+        const cor = cores[idx % cores.length];
+        return { mat, qtd, pct: pct.toFixed(1), inicio, fim: acumulado, cor };
+      });
 
-      resetarTela('Fardo gravado! Aguardando leitura do próximo fardo...');
-    }
+      const gradiente = fatias.map(f => `${f.cor} ${f.inicio}% ${f.fim}%`).join(', ');
+      donutEl.style.background = `conic-gradient(${gradiente})`;
 
-    // Descarta a leitura atual para ler novamente
-    function refazerLeitura() {
-      resetarTela('Leitura descartada. Leia novamente a etiqueta do fardo...');
-    }
-
-    function resetarTela(mensagem) {
-      fardoAtual = null;
-      campoId.textContent = '---';
-      campoEpc.textContent = '---';
-      campoData.textContent = '---';
-      campoPeso.value = '';
-      campoPeso.disabled = true;
-
-      btnGravar.disabled = true;
-      btnRefazer.disabled = true;
-
-      statusBanner.className = 'status-banner';
-      statusBanner.textContent = mensagem;
-    }
-
-    function excluirItem(index) {
-      if (confirm('Deseja remover este fardo do estoque?')) {
-        estoque.splice(index, 1);
-        salvarStorage();
-        renderizarEstoque();
-      }
-    }
-
-    function limparEstoque() {
-      if (estoque.length === 0) return;
-      if (confirm('Tem certeza que deseja apagar TODO o estoque gravado neste aparelho?')) {
-        estoque = [];
-        salvarStorage();
-        renderizarEstoque();
-        resetarTela('Estoque limpo. Aguardando leitura da etiqueta RFID...');
-      }
-    }
-
-    function salvarStorage() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(estoque));
-    }
-
-    function renderizarEstoque() {
-      const listaEl = document.getElementById('listaEstoque');
-      const totalFardosEl = document.getElementById('totalFardos');
-      const pesoTotalEl = document.getElementById('pesoTotal');
-
-      totalFardosEl.textContent = estoque.length;
-      const somaPeso = estoque.reduce((acc, item) => acc + Number(item.peso), 0);
-      pesoTotalEl.textContent = somaPeso.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kg';
-
-      if (estoque.length === 0) {
-        listaEl.innerHTML = '<div class="vazio">Nenhum fardo gravado no estoque.</div>';
-        return;
-      }
-
-      listaEl.innerHTML = estoque.map((item, idx) => `
-        <div class="item-fardo">
-          <div class="item-info">
-            <span class="item-topo">${item.id} • ${Number(item.peso).toFixed(1)} kg</span>
-            <span class="item-epc">RFID: ${item.epc}</span>
-            <span class="item-data">${item.data}</span>
-          </div>
-          <button class="btn-del-item" onclick="excluirItem(${idx})">X</button>
+      legendEl.innerHTML = fatias.map(f => `
+        <div class="legend-row">
+          <span><span class="legend-dot" style="background:${f.cor}"></span>${f.mat}</span>
+          <strong>${f.qtd} (${f.pct}%)</strong>
         </div>
       `).join('');
     }
 
-    function exportarCSV() {
-      if (estoque.length === 0) {
-        alert('Não há fardos no estoque para exportar.');
+    function renderizarUltimasLeituras() {
+      const lista = document.getElementById('ultimasLeiturasLista');
+      const recentes = movimentacoes.slice(0, 4);
+      if (recentes.length === 0) {
+        lista.innerHTML = '<div style="color:#64748b;font-size:13px;">Nenhuma leitura registrada ainda.</div>';
         return;
       }
-      const cabecalho = 'ID;EPC_RFID;PESO_KG;DATA_HORA;ORIGEM\n';
-      const linhas = estoque.map(i => `${i.id};${i.epc};${String(i.peso).replace('.', ',')};${i.data};${i.origem}`).join('\n');
-      const blob = new Blob(['\uFEFF' + cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
+      lista.innerHTML = recentes.map(m => `
+        <div class="shortcut-item" style="cursor:default;">
+          <div>
+            <span class="tag-tipo ${m.tipo === 'ENTRADA' ? 'tag-entrada' : 'tag-saida'}">${m.tipo}</span>
+            <strong style="margin-left:6px;">${m.id}</strong>
+            <div style="font-size:11px;color:#64748b;margin-top:3px;">${m.material} • ${m.data}</div>
+          </div>
+          <strong>${Number(m.peso).toFixed(1)} kg</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderizarTabelas(estoqueAtual) {
+      const termo = (document.getElementById('globalSearch').value || '').toLowerCase();
+
+      // Tabela Estoque Atual
+      const estoqueFiltrado = estoqueAtual.filter(i =>
+        i.id.toLowerCase().includes(termo) ||
+        i.epc.toLowerCase().includes(termo) ||
+        i.material.toLowerCase().includes(termo)
+      );
+
+      document.getElementById('tabelaEstoqueBody').innerHTML = estoqueFiltrado.length
+        ? estoqueFiltrado.map(i => `
+            <tr>
+              <td><strong>${i.id}</strong></td>
+              <td class="mono">${i.epc}</td>
+              <td>${i.material}</td>
+              <td><strong>${Number(i.peso).toFixed(1)} kg</strong></td>
+              <td>${i.data}</td>
+              <td><span class="tag-tipo tag-entrada">EM ESTOQUE</span></td>
+            </tr>
+          `).join('')
+        : '<tr><td colspan="6" style="text-align:center;color:#64748b;">Nenhum fardo encontrado no estoque.</td></tr>';
+
+      // Tabela Movimentações
+      const movFiltradas = movimentacoes.filter(m => {
+        const bateTipo = filtroTipoAtual === 'TODOS' || m.tipo === filtroTipoAtual;
+        const bateTexto = m.id.toLowerCase().includes(termo) || m.epc.toLowerCase().includes(termo) || m.material.toLowerCase().includes(termo);
+        return bateTipo && bateTexto;
+      });
+
+      document.getElementById('tabelaMovBody').innerHTML = movFiltradas.length
+        ? movFiltradas.map(m => `
+            <tr>
+              <td><span class="tag-tipo ${m.tipo === 'ENTRADA' ? 'tag-entrada' : 'tag-saida'}">${m.tipo}</span></td>
+              <td><strong>${m.id}</strong></td>
+              <td class="mono">${m.epc}</td>
+              <td>${m.material}</td>
+              <td><strong>${Number(m.peso).toFixed(1)} kg</strong></td>
+              <td>${m.data}</td>
+              <td>${m.obs}</td>
+            </tr>
+          `).join('')
+        : '<tr><td colspan="7" style="text-align:center;color:#64748b;">Nenhuma movimentação encontrada.</td></tr>';
+    }
+
+    function formatarKg(val) {
+      return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kg';
+    }
+
+    function mudarTela(nome, btnEl) {
+      document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('view-' + nome).classList.add('active');
+      if (btnEl) {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+      }
+    }
+
+    function setFiltroTipo(tipo, btn) {
+      filtroTipoAtual = tipo;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      atualizarInterface();
+    }
+
+    function filtrarTabela() {
+      atualizarInterface();
+    }
+
+    // Simulação de envio vindo do celular
+    function simularMovimentoCelular(tipo) {
+      const estoqueAtual = calcularEstoqueAtual();
+      const materiais = ['Papelão Ondulado', 'Plástico PET', 'Plástico Filme', 'Alumínio'];
+      const mat = materiais[Math.floor(Math.random() * materiais.length)];
+
+      if (tipo === 'SAIDA') {
+        if (estoqueAtual.length === 0) {
+          alert('Não há fardos em estoque para simular uma saída. Simule uma Entrada primeiro!');
+          return;
+        }
+        const alvo = estoqueAtual[0];
+        window.receberMovimentacaoRFID({
+          id: alvo.id,
+          epc: alvo.epc,
+          tipo: 'SAIDA',
+          material: alvo.material,
+          peso: alvo.peso,
+          obs: 'Expedição Coletor EF401'
+        });
+        return;
+      }
+
+      const hex = Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0');
+      const peso = (Math.random() * (265 - 180) + 180).toFixed(1);
+      window.receberMovimentacaoRFID({
+        epc: '3400E2801170400002' + hex,
+        tipo: 'ENTRADA',
+        material: mat,
+        peso: peso,
+        obs: 'Saída da Prensa (EF401)'
+      });
+    }
+
+    function testarTagDuplicada() {
+      const estoqueAtual = calcularEstoqueAtual();
+      if (estoqueAtual.length === 0) {
+        alert('Grave pelo menos 1 fardo de Entrada antes de testar a duplicidade.');
+        return;
+      }
+      const primeiro = estoqueAtual[0];
+      window.receberMovimentacaoRFID({
+        id: primeiro.id,
+        epc: primeiro.epc,
+        tipo: 'ENTRADA',
+        material: primeiro.material,
+        peso: (Number(primeiro.peso) + 3.5).toFixed(1),
+        obs: 'Saída da Prensa (EF401)'
+      });
+    }
+
+    function limparDadosDemo() {
+      if (confirm('Deseja zerar todas as movimentações e iniciar o estoque limpo?')) {
+        movimentacoes = [];
+        localStorage.setItem(STORAGE_MOV_KEY, JSON.stringify(movimentacoes));
+        atualizarInterface();
+      }
+    }
+
+    function exportarCSV() {
+      if (movimentacoes.length === 0) {
+        alert('Não há movimentações para exportar.');
+        return;
+      }
+      const cab = 'TIPO;ID_FARDO;EPC_RFID;MATERIAL;PESO_KG;DATA_HORA;OBSERVACAO\n';
+      const linhas = movimentacoes.map(m =>
+        `${m.tipo};${m.id};${m.epc};${m.material};${String(m.peso).replace('.', ',')};${m.data};${m.obs}`
+      ).join('\n');
+      const blob = new Blob(['\uFEFF' + cab + linhas], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `estoque_prensa_${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `controle_estoque_rfid_${new Date().toISOString().slice(0,10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     }
 
-    // Botão auxiliar para testar o fluxo no navegador antes de usar o leitor físico
-    function simularLeituraTeste() {
-      const hex = Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0');
-      window.receberRFID('3400E2801170400002' + hex);
+    function salvarConfigEndpoint() {
+      const url = document.getElementById('inputEndpointUrl').value.trim();
+      localStorage.setItem(STORAGE_CFG_KEY, url);
+      alert('Endpoint salvo! Na próxima etapa vamos conectar o coletor EF401 a este endereço.');
     }
 
-    // Inicializa a lista ao abrir
-    renderizarEstoque();
+    function sincronizarAgora() {
+      const url = localStorage.getItem(STORAGE_CFG_KEY);
+      if (!url) {
+        alert('Cole a URL do endpoint de sincronização antes de sincronizar.');
+        return;
+      }
+      alert('Pronto para buscar dados de: ' + url);
+    }
+
+    // Atalho Ctrl+K para busca
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        document.getElementById('globalSearch').focus();
+      }
+    });
+
+    atualizarInterface();
   </script>
 </body>
 </html>
