@@ -37,8 +37,8 @@
     .epc-tag { font-family: monospace; font-size: 0.88rem; background: #0f172a; padding: 8px 10px; border-radius: 8px; color: #38bdf8; word-break: break-all; width: 100%; }
     .peso-valor { font-size: 2.3rem; font-weight: 900; color: #facc15; margin: 2px 0; }
     
-    /* TELA DE SENHA */
-    .input-senha { width: 100%; max-width: 240px; padding: 16px; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 8px; border-radius: 12px; border: 2px solid #7c3aed; background: #0f172a; color: #fff; margin: 8px 0; }
+    /* CAMPO DE SENHA COMPATÍVEL COM TECLADO INJETADO PELO APP */
+    .input-senha { width: 100%; max-width: 240px; padding: 14px; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 10px; border-radius: 12px; border: 2px solid #7c3aed; background: #0f172a; color: #facc15; margin: 6px 0; outline: none; }
 
     /* CONTADOR DA LEITURA EM MASSA */
     .contador-massa-box { background: #0f172a; border: 2px solid #7c3aed; border-radius: 14px; padding: 14px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -98,13 +98,12 @@
       <span>ACESSO RESTRITO</span>
       <button class="btn-topo" onclick="irParaInicio()">VOLTAR</button>
     </div>
-    <div class="status-box">
-      <div style="font-size: 1.15rem; font-weight: 800; color: #e2e8f0;">DIGITE A SENHA PARA LEITURA EM MASSA</div>
-      <input type="password" id="inputSenhaMassa" class="input-senha" inputmode="numeric" maxlength="4" placeholder="••••" />
-      <div id="erroSenhaMassa" style="color:#fca5a5; font-weight:700; min-height:20px;"></div>
-      <div class="acoes-grid">
-        <button class="btn-acao btn-roxo" onclick="validarSenhaMassa()">ENTRAR</button>
-        <button class="btn-acao btn-neutro" onclick="irParaInicio()">CANCELAR</button>
+    <div class="status-box" style="justify-content: flex-start; gap: 10px;">
+      <div style="font-size: 1.1rem; font-weight: 800; color: #e2e8f0;">DIGITE A SENHA PARA LEITURA EM MASSA</div>
+      <input type="password" id="inputSenhaMassa" class="input-senha" maxlength="4" readonly />
+      <div id="erroSenhaMassa" style="color:#fca5a5; font-weight:700; min-height:20px; font-size:0.9rem;"></div>
+      <div class="acoes-grid" style="max-width: 280px;">
+        <button id="btnEntrarSenhaMassa" class="btn-acao btn-roxo" onclick="validarSenhaMassa()">ENTRAR</button>
       </div>
     </div>
   </div>
@@ -395,20 +394,27 @@
       encerraAntenaMassaSeAtiva();
       modoAtual = null;
       liberarColetor();
-      document.getElementById("inputSenhaMassa").value = "";
+      const inp = document.getElementById("inputSenhaMassa");
+      inp.value = "";
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+      inp.dispatchEvent(new Event("change", { bubbles: true }));
       document.getElementById("erroSenhaMassa").textContent = "";
       mostrarJanela("win-senha-massa");
-      setTimeout(() => document.getElementById("inputSenhaMassa").focus(), 150);
     };
 
     window.validarSenhaMassa = function() {
-      const senha = document.getElementById("inputSenhaMassa").value.trim();
+      const inp = document.getElementById("inputSenhaMassa");
+      const senha = (inp.value || "").trim();
       if (senha !== "0770") {
-        document.getElementById("erroSenhaMassa").textContent = "Senha incorreta! Tente novamente.";
-        document.getElementById("inputSenhaMassa").value = "";
-        document.getElementById("inputSenhaMassa").focus();
+        document.getElementById("erroSenhaMassa").textContent = "Senha incorreta";
+        inp.value = "";
+        inp.dispatchEvent(new Event("input", { bubbles: true }));
+        inp.dispatchEvent(new Event("change", { bubbles: true }));
         return;
       }
+      inp.value = "";
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+      inp.dispatchEvent(new Event("change", { bubbles: true }));
       mostrarJanela("win-tipo-massa");
     };
 
