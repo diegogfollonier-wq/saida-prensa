@@ -88,6 +88,16 @@ input,select{font:inherit;color:var(--txt)}
 .chips button b{color:var(--blue)}
 .chips button:hover{border-color:var(--blue)}
 .chips button.on{background:rgba(94,170,236,.18);border-color:var(--blue);color:#fff}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#06202E}
+.carga-info{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.carga-info label{display:flex;flex-direction:column;gap:5px;font-size:11.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.carga-info .input{min-width:190px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--txt)}
+.carga-info .input.placa{min-width:130px;max-width:150px;text-transform:uppercase;letter-spacing:2px;font-family:Consolas,"Courier New",monospace;font-size:15px}
+.carga-info .st{font-size:13px;font-weight:600}
+.tempos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.tempos div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.tempos span{font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700}
+.tempos b{display:block;font-size:18px;margin-top:3px}
 .car-layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:16px;align-items:start}
 .dias-list{display:flex;flex-direction:column;gap:8px;max-height:74vh;overflow:auto;margin-top:12px;padding-right:2px}
 .dia-item{text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--txt);border-radius:12px;padding:11px 13px;display:block;width:100%}
@@ -210,7 +220,8 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
   .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;z-index:50;flex-direction:row;padding:6px 6px calc(6px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line)}
   .sidebar .brand,.side-foot{display:none}
   .nav{flex-direction:row;width:100%;gap:2px}
-  .nav button{flex:1;flex-direction:column;gap:3px;padding:8px 2px;font-size:11px;text-align:center;justify-content:center}
+  .nav{overflow-x:auto}
+  .nav button{flex:1 0 auto;min-width:50px;flex-direction:column;gap:3px;padding:8px 4px;font-size:11px;text-align:center;justify-content:center}
   .nav button.on::before{display:none}
   .nav .count{position:absolute;top:2px;right:12%;margin:0;font-size:10px;padding:1px 6px}
   .main{padding:16px 14px 96px}
@@ -255,12 +266,13 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
       <div><b>ERP Cloud</b><span>Fardos RFID</span></div>
     </div>
     <nav class="nav" id="nav">
-      <button data-v="visao" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></svg><span>Visão geral</span></button>
+      <button data-v="visao" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></svg><span><span class="lg-d">Visão geral</span><span class="lg-m">Geral</span></span></button>
       <button data-v="estoque"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg><span>Estoque</span></button>
-      <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M7 4v13M7 17l-3-3M7 17l3-3"/><path d="M17 20V7M17 7l-3 3M17 7l3 3"/></svg><span>Histórico</span></button>
-      <button data-v="log"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg><span><span class="lg-d">Log / Bloqueios</span><span class="lg-m">Log</span></span><b class="count hide" id="navErros">0</b></button>
       <button data-v="carregamentos"><svg viewBox="0 0 24 24"><path d="M2.5 6.5h11v9.5h-11z"/><path d="M13.5 9.5h4.2l3 3.2V16h-7.2z"/><circle cx="7" cy="17.8" r="1.8"/><circle cx="17.2" cy="17.8" r="1.8"/></svg><span><span class="lg-d">Carregamentos</span><span class="lg-m">Cargas</span></span></button>
-      <button data-v="conferencia"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span>Conferência</span></button>
+      <button data-v="prensa"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="4" rx="1"/><rect x="6" y="16.5" width="12" height="4" rx="1"/><path d="M12 7.5v9M9.5 10.5 12 13l2.5-2.5"/></svg><span><span class="lg-d">Saída da Prensa</span><span class="lg-m">Prensa</span></span></button>
+      <button data-v="conferencia"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span><span class="lg-d">Conferência</span><span class="lg-m">Confer.</span></span></button>
+      <button data-v="log"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg><span><span class="lg-d">Log / Bloqueios</span><span class="lg-m">Log</span></span><b class="count hide" id="navErros">0</b></button>
+      <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M7 4v13M7 17l-3-3M7 17l3-3"/><path d="M17 20V7M17 7l-3 3M17 7l3 3"/></svg><span><span class="lg-d">Histórico</span><span class="lg-m">Hist.</span></span></button>
     </nav>
     <div class="side-foot">
       <div class="live"><span class="dot" id="dotLive"></span><span id="txtLive">conectando…</span></div>
@@ -278,8 +290,8 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
       <div class="kpis">
         <div class="kpi ok"><div class="l">Fardos em estoque</div><div class="v" id="kQtd">0</div><div class="s" id="kQtdS">&nbsp;</div></div>
         <div class="kpi"><div class="l">Peso em estoque</div><div class="v" id="kPeso">0<small>kg</small></div><div class="s" id="kPesoS">&nbsp;</div></div>
-        <div class="kpi ok"><div class="l">Entradas hoje (Prensa)</div><div class="v" id="kIn">0<small>kg</small></div><div class="s" id="kInS">&nbsp;</div></div>
-        <div class="kpi vio"><div class="l">Saídas hoje (Carregamento)</div><div class="v" id="kOut">0<small>kg</small></div><div class="s" id="kOutS">&nbsp;</div></div>
+        <div class="kpi ok"><div class="l">Saída da Prensa hoje</div><div class="v" id="kIn">0<small>kg</small></div><div class="s" id="kInS">&nbsp;</div></div>
+        <div class="kpi vio"><div class="l">Saída de Carregamento hoje</div><div class="v" id="kOut">0<small>kg</small></div><div class="s" id="kOutS">&nbsp;</div></div>
         <div class="kpi err"><div class="l">Bloqueios / erros (24 h)</div><div class="v" id="kErr">0</div><div class="s" id="kErrS">&nbsp;</div></div>
       </div>
 
@@ -291,10 +303,10 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
         </div>
         <div class="panel">
           <div class="panel-head">
-            <div><h3>Entradas × Saídas por dia</h3><div class="sub" id="subDia">kg por dia</div></div>
+            <div><h3>Saída da Prensa × Saída de Carregamento por dia</h3><div class="sub" id="subDia">kg por dia</div></div>
             <div class="seg" id="segDias"><button data-d="7">7 dias</button><button data-d="14" class="on">14 dias</button><button data-d="30">30 dias</button></div>
           </div>
-          <div class="legend"><span><i style="background:#5EAAEC"></i>Entradas (Prensa)</span><span><i style="background:#F4F0E6"></i>Saídas (Carregamento)</span></div>
+          <div class="legend"><span><i style="background:#5EAAEC"></i>Saída da Prensa</span><span><i style="background:#F4F0E6"></i>Saída de Carregamento</span></div>
           <div class="chart" id="chDia"></div>
           <div class="fonte" id="fonteDia">Fonte: Firestore · movimentacoes_fardos</div>
         </div>
@@ -343,7 +355,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
           <th data-sort="material">Material<span class="ar"></span></th>
           <th data-sort="epc">Etiqueta (EPC)<span class="ar"></span></th>
           <th class="num" data-sort="peso">Peso (kg)<span class="ar"></span></th>
-          <th data-sort="ts">Entrada (Prensa)<span class="ar"></span></th>
+          <th data-sort="ts">Saída da Prensa<span class="ar"></span></th>
         </tr></thead>
         <tbody id="tbEst"></tbody>
       </table></div>
@@ -351,7 +363,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 
     <!-- ===== HISTÓRICO ===== -->
     <section class="view" id="v-historico">
-      <div class="page-head"><div><h1>Histórico: entradas × saídas</h1><p>Últimos 500 movimentos registrados, lado a lado.</p></div></div>
+      <div class="page-head"><div><h1>Histórico: Saída da Prensa × Saída de Carregamento</h1><p>Últimos 500 movimentos registrados, lado a lado.</p></div></div>
       <div class="toolbar">
         <select class="input" id="fHistMat"><option value="">Todos os materiais</option></select>
         <input class="input" type="date" id="fHistDe" title="De">
@@ -359,9 +371,9 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
         <button class="btn sm" id="btnHistLimpar">Limpar filtros</button>
       </div>
       <div class="split">
-        <div class="panel"><h3 class="t-in">Entradas na Prensa <small id="totIn"></small></h3>
+        <div class="panel"><h3 class="t-in">Saída da Prensa <small id="totIn"></small></h3>
           <div class="table-wrap" style="border:0;max-height:62vh"><table><thead><tr><th>Material</th><th class="num">Peso (kg)</th><th>Data e hora</th></tr></thead><tbody id="tbIn"></tbody></table></div></div>
-        <div class="panel"><h3 class="t-out">Saídas no Carregamento <small id="totOut"></small></h3>
+        <div class="panel"><h3 class="t-out">Saída de Carregamento <small id="totOut"></small></h3>
           <div class="table-wrap" style="border:0;max-height:62vh"><table><thead><tr><th>Material</th><th class="num">Peso (kg)</th><th>Data e hora</th></tr></thead><tbody id="tbOut"></tbody></table></div></div>
       </div>
     </section>
@@ -382,7 +394,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 
     <!-- ===== CARREGAMENTOS ===== -->
     <section class="view" id="v-carregamentos">
-      <div class="page-head"><div><h1>Carregamentos</h1><p>Saídas da expedição separadas por data e por carga, em ordem de horário, com totais.</p></div></div>
+      <div class="page-head"><div><h1>Carregamentos</h1><p>Saídas da expedição por data e por carga, em ordem de horário. Cliente e placa são informados aqui no sistema.</p></div></div>
       <div class="car-layout">
         <aside class="panel">
           <h3>Datas com carregamento</h3>
@@ -390,6 +402,19 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
           <div class="dias-list" id="listaDias"></div>
         </aside>
         <div class="car-det" id="carDetalhe"></div>
+      </div>
+    </section>
+
+    <!-- ===== SAÍDA DA PRENSA ===== -->
+    <section class="view" id="v-prensa">
+      <div class="page-head"><div><h1>Saída da Prensa</h1><p>Fardos produzidos na Prensa por data, em ordem de horário, com totais e produção por hora.</p></div></div>
+      <div class="car-layout">
+        <aside class="panel">
+          <h3>Datas com produção</h3>
+          <div class="sub" id="prDiasInfo"></div>
+          <div class="dias-list" id="listaDiasPrensa"></div>
+        </aside>
+        <div class="car-det" id="prDetalhe"></div>
       </div>
     </section>
 
@@ -433,7 +458,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, query, orderBy, limit, onSnapshot, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
@@ -470,6 +495,13 @@ let viewAtual = "visao";
 let confTab = "resumo", confMat = "";   // aba e filtro de material da Conferência
 let cargasMovs = [];       // saídas (CARREGAMENTO) para a aba Carregamentos
 let diaCarga = "";
+let prensaMovs = [];       // saídas da Prensa (PRENSA) para a aba Saída da Prensa
+let diaPrensa = "";
+let infoCargas = {};       // carregamentos_info: cliente e placa por carga
+let infoErro = "";
+const rascunhos = {};      // alterações ainda não salvas (cliente/placa) por carga
+const statusCarga = {};
+let renderPendente = false;
 const cargasFechadas = new Set();
 
 /* ---------- utilitários ---------- */
@@ -706,9 +738,9 @@ function desenharGraficos(){
   const antigo = movs.length ? movs[movs.length - 1].ts : null;
   $("fonteDia").textContent = "Fonte: Firestore · movimentacoes_fardos (últimos 500 registros" + (antigo ? `, desde ${antigo.toLocaleDateString("pt-BR", { timeZone: TZ })}` : "") + ")";
   graficoColunas($("chDia"), {
-    titulo: "Entradas e saídas por dia", altura: 290,
+    titulo: "Saída da Prensa e Saída de Carregamento por dia", altura: 290,
     labels: dias.map(d => d.slice(8, 10) + "/" + d.slice(5, 7)),
-    series: [{ nome: "Entradas (Prensa)", cor: C.azul, values: ent.map(Math.round) }, { nome: "Saídas (Carregamento)", cor: C.creme, values: sai.map(Math.round) }],
+    series: [{ nome: "Saída da Prensa", cor: C.azul, values: ent.map(Math.round) }, { nome: "Saída de Carregamento", cor: C.creme, values: sai.map(Math.round) }],
     fmt: v => nf0.format(v), fmtCompacto: compacto, fmtTip: v => nf0.format(v) + " kg", pularRotulos: 34, valores: diasGrafico <= 14, valoresRotacionados: true,
     vazio: "Sem movimentações no período."
   });
@@ -895,8 +927,31 @@ function tabelaMats(mats, total){
       return `<tr><td>${badgeMat(m)}</td><td class="num"><b>${fmtNum(mats[m].qtd)}</b></td><td class="num">${nf2.format(mats[m].peso)}</td><td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div class="pct" style="flex:1"><i style="width:${p.toFixed(1)}%"></i></div><span style="font-size:12.5px;color:var(--txt2);width:46px;text-align:right">${p.toFixed(1).replace(".", ",")}%</span></div></td></tr>`; }).join("")
     + `<tr class="total"><td>Total</td><td class="num">${fmtNum(qtd)}</td><td class="num">${nf2.format(total)}</td><td></td></tr></tbody></table></div>`;
 }
+const CLIENTES = ["Total Pet", "Wise", "CR Metais", "MV Plásticos", "Recicla Brasil", "Saturno"];
+const PLACA_RE = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
+const normPlaca = v => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
+const fmtPlaca = p => p && p.length === 7 ? p.slice(0, 3) + "-" + p.slice(3) : (p || "");
+const fmtMS = ms => { const t = Math.round(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+const fmtMin1 = ms => (ms / 60000).toFixed(1).replace(".", ",") + " min";
+
+function dadosCarga(id){
+  const b = infoCargas[id] || {}, r = rascunhos[id] || {};
+  const salvo = { cliente: b.cliente || "", placa: b.placa || "" };
+  const cliente = r.cliente !== undefined ? r.cliente : salvo.cliente, placa = r.placa !== undefined ? r.placa : salvo.placa;
+  return { cliente, placa, salvo, sujo: cliente !== salvo.cliente || placa !== salvo.placa };
+}
+function temposCarga(c){
+  const iv = c.itens.map((i, k) => k ? i.ts - c.itens[k - 1].ts : null);
+  const dur = c.fim - c.ini, n = c.qtd - 1;
+  let maxI = 0, maxK = -1; iv.forEach((v, k) => { if (v !== null && v > maxI){ maxI = v; maxK = k; } });
+  return { iv, dur, medio: n > 0 ? dur / n : null, maxI, maxK };
+}
+
 function renderCarregamentos(){
-  const dias = montarCargas(), lista = $("listaDias"), det = $("carDetalhe");
+  const ae = document.activeElement, det = $("carDetalhe");
+  if (ae && det.contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT")){ renderPendente = true; return; }   // não atrapalha quem está digitando
+  renderPendente = false;
+  const dias = montarCargas(), lista = $("listaDias");
   if (!dias.length){
     $("carDiasInfo").textContent = "";
     lista.innerHTML = `<div class="muted" style="font-size:13.5px;padding:6px 2px">Nenhum carregamento registrado.</div>`;
@@ -911,47 +966,156 @@ function renderCarregamentos(){
   const dia = dias.find(d => d.dia === diaCarga);
   const mats = {}; dia.cargas.forEach(c => Object.keys(c.mats).forEach(m => { (mats[m] ||= { qtd: 0, peso: 0 }); mats[m].qtd += c.mats[m].qtd; mats[m].peso += c.mats[m].peso; }));
   const n = dia.cargas.length;
+  let somaDur = 0, somaInt = 0; dia.cargas.forEach(c => { if (c.qtd > 1){ somaDur += c.fim - c.ini; somaInt += c.qtd - 1; } });
+  const clientes = {};
+  dia.cargas.forEach(c => { const d = dadosCarga(c.id).salvo, k = d.cliente || "Não informado"; (clientes[k] ||= { cargas: 0, qtd: 0, peso: 0, placas: [] }); const x = clientes[k]; x.cargas++; x.qtd += c.qtd; x.peso += c.peso; if (d.placa) x.placas.push(fmtPlaca(d.placa)); });
+  const ordemCli = Object.keys(clientes).sort((a, b) => (a === "Não informado") - (b === "Não informado") || a.localeCompare(b, "pt-BR"));
+
   const cargasHtml = dia.cargas.map((c, idx) => {
-    const dur = c.fim - c.ini, ritmo = (dur >= 60000 && c.qtd > 1) ? fmtNum(c.qtd / (dur / 3600000)) : "—";
-    const linhas = c.itens.map((i, k) => `<tr><td class="num" style="color:var(--muted)">${k + 1}</td><td>${fmtHora(i.ts)}</td><td>${badgeMat(i.material)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td></tr>`).join("");
+    const t = temposCarga(c), dc = dadosCarga(c.id), fech = cargasFechadas.has(c.id), idA = esc(c.id);
+    const nomes = (!dc.cliente || CLIENTES.includes(dc.cliente)) ? CLIENTES : [...CLIENTES, dc.cliente];
+    const opts = `<option value="">Selecionar cliente…</option>` + nomes.map(nm => `<option value="${esc(nm)}" ${nm === dc.cliente ? "selected" : ""}>${esc(nm)}</option>`).join("");
+    const titulo = `Carregamento ${idx + 1} de ${n}` + (dc.salvo.cliente ? ` · ${esc(dc.salvo.cliente)}` : "") + (dc.salvo.placa ? ` · ${esc(fmtPlaca(dc.salvo.placa))}` : "");
+    const ritmo = (t.dur >= 60000 && c.qtd > 1) ? fmtNum(c.qtd / (t.dur / 3600000)) : "—";
+    const linhas = c.itens.map((i, k) => `<tr><td class="num" style="color:var(--muted)">${k + 1}</td><td>${fmtHora(i.ts)}</td><td>${badgeMat(i.material)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td class="num" ${k === t.maxK ? 'style="color:var(--warn);font-weight:700"' : ""}>${t.iv[k] === null ? "início" : fmtMS(t.iv[k])}</td></tr>`).join("");
     return `<div class="panel carga">
-      <div class="carga-h" data-toggle="${esc(c.id)}">
-        <div><div class="carga-t">Carregamento ${idx + 1} de ${n}<i>${cargasFechadas.has(c.id) ? "▸ toque para abrir" : "▾ toque para recolher"}</i></div>
-          <div class="carga-s">${c.semId ? "Sem identificação de carga" : "Carga " + esc(c.id)} · ${fmtHora(c.ini)} → ${fmtHora(c.fim)} · duração ${fmtDur(dur)}</div></div>
-        <div class="carga-m"><div><b>${fmtNum(c.qtd)}</b><span>fardos</span></div><div><b>${nf2.format(c.peso)}</b><span>kg</span></div><div><b>${ritmo}</b><span>fardos/hora</span></div></div>
+      <div class="carga-h" data-toggle="${idA}">
+        <div><div class="carga-t">${titulo}<i>${fech ? "▸ toque para abrir" : "▾ toque para recolher"}</i></div>
+          <div class="carga-s">${c.semId ? "Sem identificação de carga" : "Carga " + esc(c.id)} · ${fmtHora(c.ini)} → ${fmtHora(c.fim)}</div></div>
+        <div class="carga-m"><div><b>${fmtNum(c.qtd)}</b><span>fardos</span></div><div><b>${nf2.format(c.peso)}</b><span>kg</span></div><div><b>${fmtDur(t.dur)}</b><span>duração</span></div></div>
       </div>
-      <div class="carga-corpo ${cargasFechadas.has(c.id) ? "hide" : ""}">
+      <div class="carga-info">
+        <label>Cliente<select class="input" data-f="cliente" data-id="${idA}">${opts}</select></label>
+        <label>Placa do caminhão<input class="input placa" data-f="placa" data-id="${idA}" placeholder="ABC1D23" autocomplete="off" value="${esc(dc.placa)}"></label>
+        <button class="btn sm ${dc.sujo ? "pri" : ""}" data-salvar="${idA}">Salvar</button>
+        <span class="st" style="color:${(statusCarga[c.id] || "").startsWith("Salvo") ? "var(--ok)" : "var(--err)"}">${esc(statusCarga[c.id] || "")}</span>
+      </div>
+      <div class="tempos">
+        <div><span>Início</span><b>${fmtHora(c.ini)}</b></div>
+        <div><span>Fim</span><b>${fmtHora(c.fim)}</b></div>
+        <div><span>Duração total</span><b>${fmtDur(t.dur)}</b></div>
+        <div><span>Tempo médio por fardo</span><b>${t.medio === null ? "—" : fmtMin1(t.medio)}</b></div>
+        <div><span>Maior intervalo</span><b>${t.maxK < 0 ? "—" : fmtMS(t.maxI) + " min"}</b></div>
+        <div><span>Fardos por hora</span><b>${ritmo}</b></div>
+      </div>
+      <div class="carga-corpo ${fech ? "hide" : ""}">
         <h4>Totais por material</h4>${tabelaMats(c.mats, c.peso)}
         <h4>Fardos carregados, em ordem de horário</h4>
-        <div class="table-wrap" style="max-height:52vh"><table><thead><tr><th class="num">#</th><th>Hora</th><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th></tr></thead><tbody>${linhas}
-          <tr class="total"><td colspan="4">Total do carregamento: ${fmtNum(c.qtd)} fardo(s)</td><td class="num">${nf2.format(c.peso)}</td></tr></tbody></table></div>
+        <div class="table-wrap" style="max-height:52vh"><table><thead><tr><th class="num">#</th><th>Hora</th><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th class="num" title="Tempo desde o fardo anterior (min:seg)">Desde o anterior</th></tr></thead><tbody>${linhas}
+          <tr class="total"><td colspan="4">Total do carregamento: ${fmtNum(c.qtd)} fardo(s)</td><td class="num">${nf2.format(c.peso)}</td><td></td></tr></tbody></table></div>
+        <div class="sub" style="margin-top:8px">Tempo médio por fardo = duração ÷ (fardos − 1). O início e o fim são os horários da primeira e da última leitura confirmada no coletor.</div>
       </div></div>`;
   }).join("");
 
   det.innerHTML = `
+    ${infoErro ? `<div class="aviso" style="background:rgba(229,115,107,.14);border-color:rgba(229,115,107,.4);color:#F5B3AE">Não foi possível ler ou gravar clientes e placas: ${esc(infoErro)}. Verifique as regras do Firestore para a coleção carregamentos_info.</div>` : ""}
     <div class="car-top"><h2>${fmtDiaKey(dia.dia)}<span>${esc(diaSemana(dia.dia))}</span></h2>
       <div class="acoes"><button class="btn sm" data-all="fechar">Recolher todos</button><button class="btn sm" data-all="abrir">Expandir todos</button><button class="btn sm" id="btnCsvDia">Baixar CSV do dia</button></div></div>
-    <div class="kpis k4">
+    <div class="kpis">
       <div class="kpi"><div class="l">Carregamentos</div><div class="v">${fmtNum(n)}</div></div>
       <div class="kpi ok"><div class="l">Fardos carregados</div><div class="v">${fmtNum(dia.qtd)}</div></div>
       <div class="kpi vio"><div class="l">Peso total</div><div class="v">${nf2.format(dia.peso)}<small>kg</small></div></div>
       <div class="kpi warn"><div class="l">Peso médio por fardo</div><div class="v">${nf2.format(dia.qtd ? dia.peso / dia.qtd : 0)}<small>kg</small></div></div>
+      <div class="kpi"><div class="l">Tempo médio por fardo</div><div class="v" style="font-size:24px">${somaInt ? fmtMin1(somaDur / somaInt) : "—"}</div></div>
     </div>
-    <div class="panel"><h3 style="margin-bottom:12px">Total do dia por material</h3>${tabelaMats(mats, dia.peso)}</div>
+    <div class="grid2" style="margin-bottom:0">
+      <div class="panel"><h3 style="margin-bottom:12px">Total do dia por material</h3>${tabelaMats(mats, dia.peso)}</div>
+      <div class="panel"><h3 style="margin-bottom:12px">Total do dia por cliente</h3>
+        <div class="table-wrap" style="max-height:none"><table><thead><tr><th>Cliente</th><th class="num">Cargas</th><th class="num">Fardos</th><th class="num">Peso (kg)</th><th>Placas</th></tr></thead><tbody>${ordemCli.map(k => { const x = clientes[k]; return `<tr><td>${k === "Não informado" ? `<span class="muted">${k}</span>` : `<b>${esc(k)}</b>`}</td><td class="num">${x.cargas}</td><td class="num">${fmtNum(x.qtd)}</td><td class="num">${nf2.format(x.peso)}</td><td class="mono" style="font-size:12.5px">${esc(x.placas.join(", ")) || "—"}</td></tr>`; }).join("")}</tbody></table></div></div>
+    </div>
     ${cargasHtml}`;
 }
+
+async function salvarCarga(id){
+  const dc = dadosCarga(id), placa = normPlaca(dc.placa);
+  if (placa && !PLACA_RE.test(placa)){ statusCarga[id] = "Placa inválida. Use o formato ABC1D23 ou ABC1234."; renderCarregamentos(); return; }
+  statusCarga[id] = "Salvando…"; renderCarregamentos();
+  try {
+    await setDoc(doc(db, "carregamentos_info", id), { cliente: dc.cliente || "", placa, atualizado_em: serverTimestamp(), atualizado_por: (auth.currentUser || {}).email || "" }, { merge: true });
+    infoCargas[id] = { ...(infoCargas[id] || {}), cliente: dc.cliente || "", placa };
+    delete rascunhos[id]; statusCarga[id] = "Salvo ✔";
+    setTimeout(() => { if (statusCarga[id] === "Salvo ✔"){ delete statusCarga[id]; renderCarregamentos(); } }, 3000);
+  } catch (e){
+    console.error("Erro ao salvar carregamento:", e);
+    statusCarga[id] = "Erro ao salvar: " + (e && e.message ? e.message : e);
+  }
+  renderCarregamentos();
+}
+
 function baixarCsvDia(){
   const dias = montarCargas(), dia = dias.find(d => d.dia === diaCarga); if (!dia) return;
-  const linhas = [["Data", "Carga", "Hora", "Material", "Etiqueta (EPC)", "Peso (kg)"]];
-  dia.cargas.forEach(c => c.itens.forEach(i => linhas.push([fmtDiaKey(dia.dia), c.semId ? "SEM IDENTIFICAÇÃO" : c.id, fmtHora(i.ts), i.material, i.epc, String(i.peso.toFixed(2)).replace(".", ",")])));
+  const linhas = [["Data", "Carga", "Cliente", "Placa", "Hora", "Material", "Etiqueta (EPC)", "Peso (kg)", "Desde o anterior (min:seg)"]];
+  dia.cargas.forEach(c => { const dc = dadosCarga(c.id).salvo, t = temposCarga(c);
+    c.itens.forEach((i, k) => linhas.push([fmtDiaKey(dia.dia), c.semId ? "SEM IDENTIFICAÇÃO" : c.id, dc.cliente, fmtPlaca(dc.placa), fmtHora(i.ts), i.material, i.epc, String(i.peso.toFixed(2)).replace(".", ","), t.iv[k] === null ? "" : fmtMS(t.iv[k])])); });
+  baixarCsv(linhas, `carregamentos_${dia.dia}.csv`);
+}
+function baixarCsv(linhas, nome){
   const csv = "﻿" + linhas.map(l => l.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  a.download = `carregamentos_${dia.dia}.csv`; document.body.appendChild(a); a.click(); a.remove();
+  a.download = nome; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
-function renderTudo(){ renderKpisEGraficos(); renderEstoque(); renderHistorico(); renderLog(); renderConferencia(); renderCarregamentos(); }
+/* ---------- Saída da Prensa (por data) ---------- */
+const horaDe = d => parseInt(new Intl.DateTimeFormat("pt-BR", { timeZone: TZ, hour: "numeric", hourCycle: "h23" }).format(d), 10);
+function montarDiasPrensa(){
+  const dias = new Map();
+  prensaMovs.forEach(m => { if (!m.ts) return; const k = diaKey(m.ts); if (!dias.has(k)) dias.set(k, { dia: k, itens: [] }); dias.get(k).itens.push(m); });
+  const lista = [...dias.values()];
+  lista.forEach(d => {
+    d.itens.sort((a, b) => a.ts - b.ts);
+    d.ini = d.itens[0].ts; d.fim = d.itens[d.itens.length - 1].ts; d.qtd = d.itens.length; d.peso = d.itens.reduce((a, i) => a + i.peso, 0);
+    d.mats = {}; d.horas = {};
+    d.itens.forEach(i => { (d.mats[i.material] ||= { qtd: 0, peso: 0 }); d.mats[i.material].qtd++; d.mats[i.material].peso += i.peso;
+      const h = horaDe(i.ts); (d.horas[h] ||= { qtd: 0, peso: 0 }); d.horas[h].qtd++; d.horas[h].peso += i.peso; });
+  });
+  return lista.sort((a, b) => a.dia < b.dia ? 1 : -1);
+}
+function renderPrensa(){
+  const dias = montarDiasPrensa(), lista = $("listaDiasPrensa"), det = $("prDetalhe");
+  if (!dias.length){
+    $("prDiasInfo").textContent = "";
+    lista.innerHTML = `<div class="muted" style="font-size:13.5px;padding:6px 2px">Nenhuma saída da Prensa registrada.</div>`;
+    det.innerHTML = `<div class="panel"><div class="vazio-box">Nenhuma saída da Prensa encontrada. Quando houver fardos registrados na Prensa do coletor, eles aparecem aqui por data.</div></div>`;
+    return;
+  }
+  if (!dias.some(d => d.dia === diaPrensa)) diaPrensa = dias[0].dia;
+  $("prDiasInfo").textContent = `${dias.length} data(s) · ${fmtNum(dias.reduce((a, d) => a + d.qtd, 0))} fardo(s)`;
+  lista.innerHTML = dias.map(d => `<button class="dia-item ${d.dia === diaPrensa ? "on" : ""}" data-dia="${d.dia}"><div><span class="d">${fmtDiaKey(d.dia)}</span><span class="w">${esc(diaSemana(d.dia))}</span></div><div class="m"><span>${fmtNum(d.qtd)} fardo(s)</span><b>${pesoCurto(d.peso)}</b></div></button>`).join("");
+
+  const d = dias.find(x => x.dia === diaPrensa), dur = d.fim - d.ini;
+  const hs = Object.keys(d.horas).map(Number), h0 = Math.min(...hs), h1 = Math.max(...hs), maxQ = Math.max(...hs.map(h => d.horas[h].qtd));
+  let linhasH = ""; for (let h = h0; h <= h1; h++){ const x = d.horas[h] || { qtd: 0, peso: 0 };
+    linhasH += `<tr><td>${String(h).padStart(2, "0")}h – ${String((h + 1) % 24).padStart(2, "0")}h</td><td class="num"><b>${fmtNum(x.qtd)}</b></td><td class="num">${nf2.format(x.peso)}</td><td style="min-width:160px"><div class="pct"><i style="width:${maxQ ? (x.qtd / maxQ * 100).toFixed(1) : 0}%"></i></div></td></tr>`; }
+  const linhas = d.itens.map((i, k) => `<tr><td class="num" style="color:var(--muted)">${k + 1}</td><td>${fmtHora(i.ts)}</td><td>${badgeMat(i.material)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td class="num">${k ? fmtMS(i.ts - d.itens[k - 1].ts) : "início"}</td></tr>`).join("");
+  det.innerHTML = `
+    <div class="car-top"><h2>${fmtDiaKey(d.dia)}<span>${esc(diaSemana(d.dia))}</span></h2>
+      <div class="acoes"><button class="btn sm" id="btnCsvPrensa">Baixar CSV do dia</button></div></div>
+    <div class="kpis">
+      <div class="kpi ok"><div class="l">Fardos produzidos</div><div class="v">${fmtNum(d.qtd)}</div></div>
+      <div class="kpi vio"><div class="l">Peso total</div><div class="v">${nf2.format(d.peso)}<small>kg</small></div></div>
+      <div class="kpi warn"><div class="l">Peso médio por fardo</div><div class="v">${nf2.format(d.peso / d.qtd)}<small>kg</small></div></div>
+      <div class="kpi"><div class="l">Primeira → última saída</div><div class="v" style="font-size:20px">${fmtHora(d.ini).slice(0, 5)} → ${fmtHora(d.fim).slice(0, 5)}</div><div class="s">${fmtDur(dur)}</div></div>
+      <div class="kpi"><div class="l">Ritmo médio</div><div class="v" style="font-size:24px">${(dur >= 60000 && d.qtd > 1) ? fmtNum(d.qtd / (dur / 3600000)) : "—"}<small>fardos/h</small></div></div>
+    </div>
+    <div class="grid2" style="margin-bottom:0">
+      <div class="panel"><h3 style="margin-bottom:12px">Total do dia por material</h3>${tabelaMats(d.mats, d.peso)}</div>
+      <div class="panel"><h3 style="margin-bottom:12px">Saída por hora</h3>
+        <div class="table-wrap" style="max-height:none"><table><thead><tr><th>Faixa</th><th class="num">Fardos</th><th class="num">Peso (kg)</th><th></th></tr></thead><tbody>${linhasH}</tbody></table></div></div>
+    </div>
+    <div class="panel"><h3 style="margin-bottom:12px">Fardos em ordem de horário</h3>
+      <div class="table-wrap" style="max-height:60vh"><table><thead><tr><th class="num">#</th><th>Hora</th><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th class="num" title="Tempo desde o fardo anterior (min:seg)">Desde o anterior</th></tr></thead><tbody>${linhas}
+        <tr class="total"><td colspan="4">Total do dia: ${fmtNum(d.qtd)} fardo(s)</td><td class="num">${nf2.format(d.peso)}</td><td></td></tr></tbody></table></div></div>`;
+}
+function baixarCsvPrensa(){
+  const d = montarDiasPrensa().find(x => x.dia === diaPrensa); if (!d) return;
+  const linhas = [["Data", "Hora", "Material", "Etiqueta (EPC)", "Peso (kg)", "Desde o anterior (min:seg)"]];
+  d.itens.forEach((i, k) => linhas.push([fmtDiaKey(d.dia), fmtHora(i.ts), i.material, i.epc, String(i.peso.toFixed(2)).replace(".", ","), k ? fmtMS(i.ts - d.itens[k - 1].ts) : ""]));
+  baixarCsv(linhas, `saida_prensa_${d.dia}.csv`);
+}
+
+function renderTudo(){ renderKpisEGraficos(); renderEstoque(); renderHistorico(); renderLog(); renderConferencia(); renderCarregamentos(); renderPrensa(); }
 
 /* ---------- navegação e eventos ---------- */
 function irPara(v){
@@ -978,8 +1142,11 @@ $("fLog").addEventListener("input", renderLog); $("fLogTipo").addEventListener("
 $("confTabs").addEventListener("click", e => { const b = e.target.closest("button[data-ct]"); if (b){ confTab = b.dataset.ct; aplicarConfTab(); } });
 $("confMatChips").addEventListener("click", e => { const b = e.target.closest("button[data-m]"); if (b){ confMat = b.dataset.m; renderConferencia(); } });
 $("listaDias").addEventListener("click", e => { const b = e.target.closest("button[data-dia]"); if (b){ diaCarga = b.dataset.dia; renderCarregamentos(); window.scrollTo({ top: 0 }); } });
+$("listaDiasPrensa").addEventListener("click", e => { const b = e.target.closest("button[data-dia]"); if (b){ diaPrensa = b.dataset.dia; renderPrensa(); window.scrollTo({ top: 0 }); } });
+$("prDetalhe").addEventListener("click", e => { if (e.target.closest("#btnCsvPrensa")) baixarCsvPrensa(); });
 $("carDetalhe").addEventListener("click", e => {
   if (e.target.closest("#btnCsvDia")) return baixarCsvDia();
+  const sv = e.target.closest("button[data-salvar]"); if (sv) return salvarCarga(sv.dataset.salvar);
   const all = e.target.closest("button[data-all]");
   if (all){
     const dia = montarCargas().find(d => d.dia === diaCarga);
@@ -989,6 +1156,16 @@ $("carDetalhe").addEventListener("click", e => {
   const t = e.target.closest("[data-toggle]");
   if (t){ const id = t.dataset.toggle; cargasFechadas.has(id) ? cargasFechadas.delete(id) : cargasFechadas.add(id); renderCarregamentos(); }
 });
+$("carDetalhe").addEventListener("input", e => {
+  const el = e.target.closest("[data-f]"); if (!el) return;
+  const id = el.dataset.id; rascunhos[id] ||= {};
+  if (el.dataset.f === "placa"){ const v = normPlaca(el.value); if (el.value !== v) el.value = v; rascunhos[id].placa = v; }
+  else rascunhos[id].cliente = el.value;
+  delete statusCarga[id];
+  document.querySelectorAll("#carDetalhe [data-salvar]").forEach(b => { if (b.dataset.salvar === id) b.classList.toggle("pri", dadosCarga(id).sujo); });
+});
+$("carDetalhe").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("[data-f=placa]")){ const id = e.target.dataset.id; e.target.blur(); salvarCarga(id); } });
+$("carDetalhe").addEventListener("focusout", () => setTimeout(() => { const ae = document.activeElement; if (renderPendente && !(ae && $("carDetalhe").contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT"))) renderCarregamentos(); }, 300));
 $("selConf").addEventListener("change", () => { renderConferencia(); desenharGraficos(); });
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(desenharGraficos, 150); });
 
@@ -1028,12 +1205,22 @@ function iniciarListeners(){
     marcarAtualizacao(); renderKpisEGraficos(); renderHistorico();
   }, falha("movimentacoes_fardos")));
 
-  // Saídas (carregamentos): consulta própria, sem o limite de 500 do histórico geral
-  unsubs.push(onSnapshot(query(collection(db, "movimentacoes_fardos"), where("operacao", "==", "CARREGAMENTO"), limit(5000)), snap => {
-    cargasMovs = [];
-    snap.forEach(doc => { const d = doc.data(); cargasMovs.push({ epc: String(d.epc || doc.id).toUpperCase(), material: d.material || "—", peso: Number(d.peso_kg || 0), ts: toDate(d.criado_em), carga: d.id_carga || "" }); });
-    marcarAtualizacao(); renderCarregamentos();
-  }, falha("carregamentos")));
+  // Carregamentos e Saída da Prensa: consulta própria (últimos 4.000 movimentos), sem o limite de 500 do histórico geral
+  unsubs.push(onSnapshot(query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(4000)), snap => {
+    cargasMovs = []; prensaMovs = [];
+    snap.forEach(dc => {
+      const d = dc.data(), m = { epc: String(d.epc || dc.id).toUpperCase(), material: d.material || "—", peso: Number(d.peso_kg || 0), ts: toDate(d.criado_em), carga: d.id_carga || "" };
+      if (d.operacao === "CARREGAMENTO") cargasMovs.push(m); else if (d.operacao === "PRENSA") prensaMovs.push(m);
+    });
+    marcarAtualizacao(); renderCarregamentos(); renderPrensa();
+  }, falha("movimentacoes_fardos (4000)")));
+
+  // Cliente e placa de cada carregamento (preenchidos no ERP)
+  unsubs.push(onSnapshot(collection(db, "carregamentos_info"), snap => {
+    infoCargas = {}; infoErro = "";
+    snap.forEach(dc => { infoCargas[dc.id] = dc.data(); });
+    renderCarregamentos();
+  }, err => { console.error("Erro carregamentos_info:", err); infoErro = err && err.message ? err.message : String(err); renderCarregamentos(); }));
 
   unsubs.push(onSnapshot(query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500)), snap => {
     logs = [];
@@ -1065,7 +1252,7 @@ onAuthStateChanged(auth, user => {
     iniciarListeners(); irPara(viewAtual);
   } else {
     unsubs.forEach(u => u()); unsubs = [];
-    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = [];
+    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {};
     $("telaErp").style.display = "none"; $("telaLogin").style.display = "flex";
     $("senhaInput").value = "";
   }
