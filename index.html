@@ -47,6 +47,7 @@
     .badge-status-scan { padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; }
     .scan-ativo { background: #16a34a; color: #fff; }
     .scan-parado { background: #f59e0b; color: #0f172a; }
+    .scan-pausa { background: #0284c7; color: #fff; }
 
     .sub-contadores-massa { display: flex; gap: 10px; width: 100%; }
     .sub-box { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; }
@@ -58,6 +59,15 @@
     .ultimas-tags-box { width: 100%; max-height: 20vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #0f172a; padding: 8px; border-radius: 10px; border: 1px solid #334155; }
     .tag-linha-massa { font-family: monospace; font-size: 0.76rem; color: #38bdf8; text-align: left; word-break: break-all; padding: 3px 6px; border-bottom: 1px solid #1e293b; }
     .tag-linha-massa.sem-reg { color: #fca5a5; }
+
+    /* CARD DE INSPEÇÃO FARDO A FARDO */
+    .fardo-a-fardo-card { width: 100%; background: #0f172a; border: 2px solid #38bdf8; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px; text-align: center; }
+    .fardo-a-fardo-card.alerta-fora { border-color: #ef4444; background: #450a0a; }
+    .fardo-a-fardo-card.alerta-dup { border-color: #f59e0b; background: #451a03; }
+    .fardo-a-fardo-status { font-size: 0.85rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+    .fardo-a-fardo-detalhes { font-size: 1.05rem; font-weight: 800; color: #f8fafc; }
+    .barra-tempo-3s { width: 100%; height: 8px; background: #1e293b; border-radius: 999px; overflow: hidden; margin-top: 4px; }
+    .barra-tempo-fill { height: 100%; width: 100%; background: #38bdf8; transition: width 0.1s linear; }
 
     .fardo-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px; width: 100%; display: flex; justify-content: space-between; align-items: center; text-align: left; gap: 8px; }
     .fardo-card.invalido { border-color: #ef4444; background: #450a0a; }
@@ -114,9 +124,11 @@
       <span>MODO DE LEITURA EM MASSA</span>
       <button class="btn-topo" onclick="irParaInicio()">SAIR</button>
     </div>
-    <div class="menu-inicial" style="display:flex; flex-direction:column; flex:1; justify-content:center; gap:18px;">
+    <div id="statusCarregandoFardoAFardo" style="text-align:center; color:#c4b5fd; font-weight:700; margin-bottom:8px; min-height:20px;"></div>
+    <div class="menu-inicial" style="display:flex; flex-direction:column; flex:1; justify-content:center; gap:16px;">
       <button class="btn-op btn-roxo" onclick="iniciarMassaTodos()">LER TODOS OS FARDOS</button>
       <button class="btn-op btn-continuar" onclick="abrirSelecaoMaterialMassa()">LER UM MATERIAL ESPECÍFICO</button>
+      <button class="btn-op btn-finalizar" onclick="iniciarMassaFardoAFardo()">LER FARDO A FARDO</button>
     </div>
   </div>
 
@@ -200,6 +212,25 @@
           <span id="lblSemRegistroMassa" class="sub-lbl">Sem Registro</span>
         </div>
       </div>
+
+      <!-- SUB-CONTADORES QUANDO FOR FARDO A FARDO -->
+      <div id="boxSubContadoresFardoAFardo" class="sub-contadores-massa" style="display:none;">
+        <div class="sub-box">
+          <span id="numFafNoEstoque" class="sub-num">0</span>
+          <span class="sub-lbl">No Estoque</span>
+        </div>
+        <div class="sub-box alerta">
+          <span id="numFafForaEstoque" class="sub-num">0</span>
+          <span class="sub-lbl">Fora / Sem Reg.</span>
+        </div>
+        <div class="sub-box" style="border-color:#f59e0b;">
+          <span id="numFafDuplicado" class="sub-num" style="color:#fcd34d;">0</span>
+          <span class="sub-lbl">Repetidos</span>
+        </div>
+      </div>
+
+      <!-- CARD DE INSPEÇÃO DO ÚLTIMO FARDO (MODO FARDO A FARDO) -->
+      <div id="boxInspecaoFardoAFardo" style="display:none; width:100%;"></div>
 
       <div id="instrucaoMassa" style="font-size: 0.83rem; color: #cbd5e1;">
         Leitura contínua ativa. Percorra o galpão e aperte PARAR quando terminar.
@@ -303,11 +334,31 @@
     let estoqueNuvemMassa = {};
     let epcsLidosMassa = new Map();
 
+    // VARIÁVEIS ESPECÍFICAS DO MODO "FARDO A FARDO"
+    let fardoAFardoPausado3s = false;
+    let timerPausaFardoAFardo = null;
+    let intervaloBarraFardoAFardo = null;
+    let ultimoCardFardoAFardo = null;
+    let eventosFardoAFardo = [];
+    let epcsVistosFardoAFardo = new Set();
+
     function limparTimerPrensa() {
       if (timerRetornoPrensa) {
         clearTimeout(timerRetornoPrensa);
         timerRetornoPrensa = null;
       }
+    }
+
+    function limparTimersFardoAFardo() {
+      if (timerPausaFardoAFardo) {
+        clearTimeout(timerPausaFardoAFardo);
+        timerPausaFardoAFardo = null;
+      }
+      if (intervaloBarraFardoAFardo) {
+        clearInterval(intervaloBarraFardoAFardo);
+        intervaloBarraFardoAFardo = null;
+      }
+      fardoAFardoPausado3s = false;
     }
 
     function mostrarJanela(idJanela) {
@@ -318,6 +369,7 @@
 
     function encerraAntenaMassaSeAtiva() {
       massaLendoAtiva = false;
+      limparTimersFardoAFardo();
       if (window.AndroidSingleTag && typeof window.AndroidSingleTag.pararLeituraMassa === "function") {
         window.AndroidSingleTag.pararLeituraMassa();
       }
@@ -383,6 +435,9 @@
       modoAtual = null;
       materialPrensa = null;
       materialFiltroMassa = null;
+      ultimoCardFardoAFardo = null;
+      eventosFardoAFardo = [];
+      epcsVistosFardoAFardo.clear();
       epcsLidosMassa.clear();
       estoqueNuvemMassa = {};
       liberarColetor();
@@ -415,6 +470,7 @@
       inp.value = "";
       inp.dispatchEvent(new Event("input", { bubbles: true }));
       inp.dispatchEvent(new Event("change", { bubbles: true }));
+      document.getElementById("statusCarregandoFardoAFardo").textContent = "";
       mostrarJanela("win-tipo-massa");
     };
 
@@ -422,6 +478,7 @@
       encerraAntenaMassaSeAtiva();
       modoAtual = null;
       liberarColetor();
+      document.getElementById("statusCarregandoFardoAFardo").textContent = "";
       mostrarJanela("win-tipo-massa");
     };
 
@@ -431,6 +488,7 @@
     };
 
     function ativarEstadoLendoMassa() {
+      limparTimersFardoAFardo();
       massaLendoAtiva = true;
       modoAtual = "MASSA";
 
@@ -456,11 +514,14 @@
     window.iniciarMassaTodos = function() {
       submodoMassa = "TODOS";
       materialFiltroMassa = null;
+      ultimoCardFardoAFardo = null;
       estoqueNuvemMassa = {};
       epcsLidosMassa.clear();
 
       document.getElementById("tituloHeaderMassa").textContent = "MASSA: TODOS OS FARDOS";
       document.getElementById("boxSubContadoresMassa").style.display = "none";
+      document.getElementById("boxSubContadoresFardoAFardo").style.display = "none";
+      document.getElementById("boxInspecaoFardoAFardo").style.display = "none";
       document.getElementById("instrucaoMassa").textContent = "Leitura contínua ativa. Percorra o galpão e aperte PARAR LEITURA quando terminar.";
       mostrarJanela("win-massa");
       ativarEstadoLendoMassa();
@@ -491,15 +552,88 @@
       statusEl.textContent = "";
       submodoMassa = "MATERIAL";
       materialFiltroMassa = materialEscolhido;
+      ultimoCardFardoAFardo = null;
       epcsLidosMassa.clear();
 
       document.getElementById("tituloHeaderMassa").textContent = `MASSA: ${materialEscolhido.toUpperCase()}`;
       document.getElementById("boxSubContadoresMassa").style.display = "flex";
+      document.getElementById("boxSubContadoresFardoAFardo").style.display = "none";
+      document.getElementById("boxInspecaoFardoAFardo").style.display = "none";
       document.getElementById("lblMatEncontrado").textContent = materialEscolhido;
       document.getElementById("instrucaoMassa").innerHTML = `Leitura contínua ativa para <strong>${materialEscolhido}</strong> e <strong>Sem Registro</strong>. Aperte PARAR LEITURA quando terminar.`;
       mostrarJanela("win-massa");
       ativarEstadoLendoMassa();
     };
+
+    // OPÇÃO 3 DA MASSA: LER FARDO A FARDO (INSPEÇÃO UM A UM COM PAUSA DE 3s)
+    window.iniciarMassaFardoAFardo = async function() {
+      const statusEl = document.getElementById("statusCarregandoFardoAFardo");
+      statusEl.textContent = "Carregando estoque atual para auditoria fardo a fardo...";
+
+      try {
+        const snap = await getDocs(collection(db, "estoque_atual"));
+        estoqueNuvemMassa = {};
+        snap.forEach(d => {
+          const dados = d.data();
+          const epc = (dados.epc || d.id).trim().toUpperCase();
+          estoqueNuvemMassa[epc] = {
+            material: (dados.material || "Sem Material").trim(),
+            peso_kg: Number(dados.peso_kg || 0)
+          };
+        });
+      } catch (err) {
+        statusEl.textContent = "";
+        alert("Erro ao consultar estoque na nuvem: " + err.message);
+        return;
+      }
+
+      statusEl.textContent = "";
+      submodoMassa = "FARDO_A_FARDO";
+      materialFiltroMassa = null;
+      ultimoCardFardoAFardo = null;
+      eventosFardoAFardo = [];
+      epcsVistosFardoAFardo.clear();
+      epcsLidosMassa.clear();
+
+      document.getElementById("tituloHeaderMassa").textContent = "MASSA: FARDO A FARDO";
+      document.getElementById("boxSubContadoresMassa").style.display = "none";
+      document.getElementById("boxSubContadoresFardoAFardo").style.display = "flex";
+      document.getElementById("boxInspecaoFardoAFardo").style.display = "block";
+      document.getElementById("instrucaoMassa").textContent = "Aponte para 1 fardo. Após mostrar tipo e peso, aguarda 3s para o próximo.";
+      mostrarJanela("win-massa");
+      ativarEstadoLendoMassa();
+    };
+
+    function iniciarPausa3SegundosFardoAFardo() {
+      limparTimersFardoAFardo();
+      fardoAFardoPausado3s = true;
+
+      if (massaLendoAtiva) {
+        const badge = document.getElementById("badgeStatusScanMassa");
+        badge.textContent = "PAUSA 3S...";
+        badge.className = "badge-status-scan scan-pausa";
+      }
+
+      const inicio = Date.now();
+      const duracao = 3000;
+      renderizarTelaMassa();
+
+      intervaloBarraFardoAFardo = setInterval(() => {
+        const restante = Math.max(0, 100 - ((Date.now() - inicio) / duracao) * 100);
+        const fillEl = document.getElementById("barraFardoAFardoFill");
+        if (fillEl) fillEl.style.width = `${restante}%`;
+      }, 100);
+
+      timerPausaFardoAFardo = setTimeout(() => {
+        limparTimersFardoAFardo();
+        if (massaLendoAtiva && modoAtual === "MASSA" && submodoMassa === "FARDO_A_FARDO") {
+          const badge = document.getElementById("badgeStatusScanMassa");
+          badge.textContent = "LENDO...";
+          badge.className = "badge-status-scan scan-ativo";
+          renderizarTelaMassa();
+        }
+      }, duracao);
+    }
 
     // BOTÃO PARAR LEITURA
     window.pararLeituraMassa = function() {
@@ -512,18 +646,99 @@
       document.getElementById("instrucaoMassa").textContent = "Leitura finalizada. Envie para conferência, inicie novamente ou saia.";
       document.getElementById("acoesMassaLendo").style.display = "none";
       document.getElementById("acoesMassaParado").style.display = "flex";
-      document.getElementById("btnEnviarMassa").disabled = epcsLidosMassa.size === 0;
+      const temDados = submodoMassa === "FARDO_A_FARDO" ? eventosFardoAFardo.length > 0 : epcsLidosMassa.size > 0;
+      document.getElementById("btnEnviarMassa").disabled = !temDados;
+      renderizarTelaMassa();
     };
 
     // BOTÃO INICIAR NOVAMENTE (ZERA E RECOMEÇA A LER AUTOMATICAMENTE)
     window.iniciarNovamenteMassa = function() {
       epcsLidosMassa.clear();
+      ultimoCardFardoAFardo = null;
+      eventosFardoAFardo = [];
+      epcsVistosFardoAFardo.clear();
       ativarEstadoLendoMassa();
     };
 
     function renderizarTelaMassa() {
+      if (submodoMassa === "FARDO_A_FARDO") {
+        const totalEventos = eventosFardoAFardo.length;
+        document.getElementById("numTotalMassa").textContent = totalEventos;
+        document.getElementById("lblTotalMassa").textContent = "Fardos Conferidos (1 a 1)";
+        document.getElementById("btnEnviarMassa").disabled = totalEventos === 0;
+
+        let qtdEstoque = 0;
+        let qtdFora = 0;
+        let qtdDup = 0;
+        eventosFardoAFardo.forEach(ev => {
+          if (ev.status_auditoria === "NO_ESTOQUE") qtdEstoque++;
+          else if (ev.status_auditoria === "FORA_DO_ESTOQUE") qtdFora++;
+          else if (ev.status_auditoria === "DUPLICADO") qtdDup++;
+        });
+
+        document.getElementById("numFafNoEstoque").textContent = qtdEstoque;
+        document.getElementById("numFafForaEstoque").textContent = qtdFora;
+        document.getElementById("numFafDuplicado").textContent = qtdDup;
+
+        const boxInsp = document.getElementById("boxInspecaoFardoAFardo");
+        if (!ultimoCardFardoAFardo) {
+          boxInsp.innerHTML = `
+            <div class="fardo-a-fardo-card">
+              <div class="fardo-a-fardo-status" style="color:#94a3b8;">AGUARDANDO PRÓXIMO FARDO</div>
+              <div style="font-size:0.85rem; color:#cbd5e1;">Aponte o leitor para ver EPC, Tipo e Peso</div>
+            </div>
+          `;
+        } else {
+          const u = ultimoCardFardoAFardo;
+          let classeCard = "fardo-a-fardo-card";
+          let corStatus = "#22c55e";
+          let textoStatus = "OK — CONSTA NO ESTOQUE";
+
+          if (u.status_auditoria === "FORA_DO_ESTOQUE") {
+            classeCard = "fardo-a-fardo-card alerta-fora";
+            corStatus = "#fca5a5";
+            textoStatus = "ALERTA: NÃO ESTÁ NO ESTOQUE";
+          } else if (u.status_auditoria === "DUPLICADO") {
+            classeCard = "fardo-a-fardo-card alerta-dup";
+            corStatus = "#fcd34d";
+            textoStatus = "AVISO: LIDO NOVAMENTE NESTA RONDA";
+          }
+
+          const pesoFmt = u.existe_no_estoque ? `${Number(u.peso_kg || 0).toFixed(2)} kg` : "—";
+          const matFmt = u.material || "NÃO CADASTRADO";
+          const barraHtml = fardoAFardoPausado3s && massaLendoAtiva
+            ? `<div style="font-size:0.78rem; color:#7dd3fc; font-weight:700;">Aguardando 3s para próxima leitura...</div><div class="barra-tempo-3s"><div id="barraFardoAFardoFill" class="barra-tempo-fill"></div></div>`
+            : "";
+
+          boxInsp.innerHTML = `
+            <div class="${classeCard}">
+              <div class="fardo-a-fardo-status" style="color:${corStatus};">${textoStatus}</div>
+              <div class="fardo-a-fardo-detalhes">${matFmt} • ${pesoFmt}</div>
+              <div class="epc-tag" style="text-align:center;">${u.epc}</div>
+              ${barraHtml}
+            </div>
+          `;
+        }
+
+        const box = document.getElementById("listaUltimasMassa");
+        if (totalEventos === 0) {
+          box.innerHTML = `<div style="color:#64748b; font-size:0.85rem; padding:12px;">${massaLendoAtiva ? "Aponte para o primeiro fardo..." : "Nenhum fardo conferido."}</div>`;
+          return;
+        }
+
+        const listaReversa = eventosFardoAFardo.slice().reverse().slice(0, 25);
+        box.innerHTML = listaReversa.map((ev, i) => {
+          const num = totalEventos - i;
+          const pesoTxt = ev.existe_no_estoque ? `${Number(ev.peso_kg || 0).toFixed(2)}kg` : "SEM ESTOQUE";
+          const classeLinha = ev.status_auditoria === "FORA_DO_ESTOQUE" ? "tag-linha-massa sem-reg" : "tag-linha-massa";
+          return `<div class="${classeLinha}">#${num} [${ev.status_auditoria}] ${ev.material} (${pesoTxt}) — ${ev.epc}</div>`;
+        }).join("");
+        return;
+      }
+
       const total = epcsLidosMassa.size;
       document.getElementById("numTotalMassa").textContent = total;
+      document.getElementById("lblTotalMassa").textContent = "Etiquetas Únicas Capturadas";
       document.getElementById("btnEnviarMassa").disabled = total === 0;
 
       if (submodoMassa === "MATERIAL") {
@@ -554,12 +769,52 @@
     }
 
     window.enviarLeituraMassa = async function() {
-      if (epcsLidosMassa.size === 0) return;
+      const temDados = submodoMassa === "FARDO_A_FARDO" ? eventosFardoAFardo.length > 0 : epcsLidosMassa.size > 0;
+      if (!temDados) return;
       const btn = document.getElementById("btnEnviarMassa");
       btn.disabled = true;
       btn.textContent = "ENVIANDO...";
 
       try {
+        if (submodoMassa === "FARDO_A_FARDO") {
+          const listaItens = eventosFardoAFardo.map(ev => ({
+            epc: ev.epc,
+            material: ev.material,
+            peso_kg: Number(ev.peso_kg || 0),
+            existe_estoque: Boolean(ev.existe_no_estoque),
+            status_auditoria: ev.status_auditoria,
+            sem_registro: !ev.existe_no_estoque
+          }));
+          const totalLidos = listaItens.length;
+          const tipoConferencia = "FARDO A FARDO (AUDITORIA)";
+
+          await addDoc(collection(db, "conferencias_estoque"), {
+            criado_em: serverTimestamp(),
+            dispositivo: "Bluebird-EF401",
+            tipo_conferencia: tipoConferencia,
+            material_filtrado: null,
+            total_lidos: totalLidos,
+            itens_lidos: listaItens
+          });
+
+          await registrarLogAuditoria(
+            "AUDITORIA_FARDO_A_FARDO",
+            "CONFERENCIA_ENVIADA",
+            `Conferência fardo a fardo enviada: ${totalLidos} leitura(s) registrada(s).`,
+            "FARDO A FARDO"
+          );
+
+          eventosFardoAFardo = [];
+          epcsVistosFardoAFardo.clear();
+          ultimoCardFardoAFardo = null;
+          modoAtual = null;
+          liberarColetor();
+
+          document.getElementById("resumoEnvioMassa").textContent = `${tipoConferencia} — Total enviado: ${totalLidos} leitura(s).`;
+          mostrarJanela("win-massa-enviada");
+          return;
+        }
+
         const listaItens = Array.from(epcsLidosMassa.values()).map(item => ({
           epc: item.epc,
           sem_registro: Boolean(item.sem_registro)
@@ -798,6 +1053,46 @@
       // MODO LEITURA EM MASSA (SÓ ACEITA SE ESTIVER ATIVO ANTES DE APERTAR PARAR)
       if (modoAtual === "MASSA") {
         if (!massaLendoAtiva) return;
+
+        if (submodoMassa === "FARDO_A_FARDO") {
+          if (fardoAFardoPausado3s) return;
+
+          const epc = epcs[0];
+          const infoNuvem = estoqueNuvemMassa[epc];
+          const jaVisto = epcsVistosFardoAFardo.has(epc);
+          epcsVistosFardoAFardo.add(epc);
+
+          let statusAuditoria = "NO_ESTOQUE";
+          let materialExibido = "Não Cadastrado";
+          let pesoExibido = 0;
+          let existeNoEstoque = false;
+
+          if (infoNuvem) {
+            existeNoEstoque = true;
+            materialExibido = infoNuvem.material || "Sem Material";
+            pesoExibido = Number(infoNuvem.peso_kg || 0);
+            statusAuditoria = jaVisto ? "DUPLICADO" : "NO_ESTOQUE";
+          } else {
+            existeNoEstoque = false;
+            materialExibido = "Não Cadastrado";
+            pesoExibido = 0;
+            statusAuditoria = jaVisto ? "DUPLICADO" : "FORA_DO_ESTOQUE";
+          }
+
+          const registroFardo = {
+            epc,
+            material: materialExibido,
+            peso_kg: pesoExibido,
+            existe_no_estoque: existeNoEstoque,
+            status_auditoria: statusAuditoria,
+            lido_em: new Date().toISOString()
+          };
+
+          eventosFardoAFardo.push(registroFardo);
+          ultimoCardFardoAFardo = registroFardo;
+          iniciarPausa3SegundosFardoAFardo();
+          return;
+        }
 
         let houveNovo = false;
         for (const epc of epcs) {
