@@ -74,6 +74,47 @@ input,select{font:inherit;color:var(--txt)}
 .kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue)}
 .kpi.ok::after{background:var(--ok)}.kpi.warn::after{background:var(--warn)}.kpi.err::after{background:var(--err)}.kpi.vio::after{background:var(--violet)}
 .kpi .l{font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--txt2);padding:10px 16px;border-radius:999px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:8px}
+.tabs button b{background:rgba(255,255,255,.08);border-radius:999px;padding:1px 9px;font-size:12.5px}
+.tabs button:hover{color:var(--txt);border-color:var(--blue)}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#06202E}
+.tabs button.on b{background:rgba(6,32,46,.18)}
+.tabs button.t-ok.on{background:var(--ok);border-color:var(--ok)}
+.tabs button.t-err.on{background:var(--err);border-color:var(--err)}
+.tabs button.t-warn.on{background:var(--warn);border-color:var(--warn)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chips button{border:1px solid var(--line);background:var(--bg);color:var(--txt2);padding:6px 13px;border-radius:999px;font-weight:700;font-size:13px;display:inline-flex;gap:7px;align-items:center}
+.chips button b{color:var(--blue)}
+.chips button:hover{border-color:var(--blue)}
+.chips button.on{background:rgba(94,170,236,.18);border-color:var(--blue);color:#fff}
+.car-layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:16px;align-items:start}
+.dias-list{display:flex;flex-direction:column;gap:8px;max-height:74vh;overflow:auto;margin-top:12px;padding-right:2px}
+.dia-item{text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--txt);border-radius:12px;padding:11px 13px;display:block;width:100%}
+.dia-item:hover{border-color:var(--blue)}
+.dia-item.on{border-color:var(--blue);background:rgba(94,170,236,.16)}
+.dia-item .d{font-weight:700;font-size:15px}
+.dia-item .w{color:var(--muted);font-size:12.5px;margin-left:6px;font-weight:600}
+.dia-item .m{display:flex;justify-content:space-between;gap:8px;margin-top:5px;font-size:12.5px;color:var(--txt2)}
+.dia-item .m b{color:var(--blue);white-space:nowrap}
+.car-det{display:flex;flex-direction:column;gap:16px;min-width:0}
+.car-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.car-top h2{font-size:21px;font-weight:700}
+.car-top h2 span{color:var(--muted);font-size:14px;font-weight:600;margin-left:8px}
+.car-top .acoes{display:flex;gap:8px;flex-wrap:wrap}
+.carga-h{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;cursor:pointer}
+.carga-t{font-size:17px;font-weight:700}
+.carga-t i{font-style:normal;color:var(--muted);font-size:13px;margin-left:8px}
+.carga-s{color:var(--muted);font-size:13px;margin-top:3px}
+.carga-m{display:flex;gap:22px;flex-wrap:wrap}
+.carga-m div{text-align:right}
+.carga-m b{display:block;font-size:21px;font-weight:700}
+.carga-m span{font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700}
+.carga-corpo{margin-top:14px}
+.carga-corpo h4{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 8px}
+.pct{height:8px;border-radius:99px;background:var(--bg);overflow:hidden;min-width:90px}
+.pct i{display:block;height:100%;background:var(--blue);border-radius:99px}
+.vazio-box{padding:40px 10px;text-align:center;color:var(--muted)}
 .status-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
 .status-row .badge{font-size:13px;padding:6px 14px}
 .alert-warn{border-color:rgba(232,176,75,.4)}
@@ -163,6 +204,8 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 /* ---------- RESPONSIVO ---------- */
 @media (max-width:1200px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:980px){
+  .car-layout{grid-template-columns:1fr}.dias-list{flex-direction:row;max-height:none;overflow-x:auto;padding-bottom:6px}.dia-item{min-width:160px;width:auto;flex:none}
+  .carga-m div{text-align:left}
   .app{grid-template-columns:1fr}
   .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;z-index:50;flex-direction:row;padding:6px 6px calc(6px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line)}
   .sidebar .brand,.side-foot{display:none}
@@ -216,6 +259,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
       <button data-v="estoque"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg><span>Estoque</span></button>
       <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M7 4v13M7 17l-3-3M7 17l3-3"/><path d="M17 20V7M17 7l-3 3M17 7l3 3"/></svg><span>Histórico</span></button>
       <button data-v="log"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg><span><span class="lg-d">Log / Bloqueios</span><span class="lg-m">Log</span></span><b class="count hide" id="navErros">0</b></button>
+      <button data-v="carregamentos"><svg viewBox="0 0 24 24"><path d="M2.5 6.5h11v9.5h-11z"/><path d="M13.5 9.5h4.2l3 3.2V16h-7.2z"/><circle cx="7" cy="17.8" r="1.8"/><circle cx="17.2" cy="17.8" r="1.8"/></svg><span><span class="lg-d">Carregamentos</span><span class="lg-m">Cargas</span></span></button>
       <button data-v="conferencia"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span>Conferência</span></button>
     </nav>
     <div class="side-foot">
@@ -336,6 +380,19 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
       </table></div>
     </section>
 
+    <!-- ===== CARREGAMENTOS ===== -->
+    <section class="view" id="v-carregamentos">
+      <div class="page-head"><div><h1>Carregamentos</h1><p>Saídas da expedição separadas por data e por carga, em ordem de horário, com totais.</p></div></div>
+      <div class="car-layout">
+        <aside class="panel">
+          <h3>Datas com carregamento</h3>
+          <div class="sub" id="carDiasInfo"></div>
+          <div class="dias-list" id="listaDias"></div>
+        </aside>
+        <div class="car-det" id="carDetalhe"></div>
+      </div>
+    </section>
+
     <!-- ===== CONFERÊNCIA ===== -->
     <section class="view" id="v-conferencia">
       <div class="page-head"><div><h1>Conferência de estoque</h1><p>Compara a leitura física em massa com o estoque do sistema.</p></div></div>
@@ -343,7 +400,12 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
         <select class="input" id="selConf" style="min-width:300px;flex:1 1 300px;max-width:520px"></select>
         <span class="chip" id="infoConf">Aguardando leituras…</span>
       </div>
-      <div id="resumoStatus" class="status-row hide"></div>
+      <div class="tabs" id="confTabs">
+        <button data-ct="resumo" class="on">Resumo por material</button>
+        <button data-ct="ok" class="t-ok">No estoque <b id="ctOk">0</b></button>
+        <button data-ct="sem" class="t-err">Fora do estoque <b id="ctSem">0</b></button>
+        <button data-ct="rep" class="t-warn hide" id="ctRepBtn">Repetidos na ronda <b id="ctRep">0</b></button>
+      </div>
       <div id="avisoConf" class="aviso hide">Nova conferência recebida: os dados anteriores foram substituídos pela leitura mais recente.</div>
       <div class="kpis k4">
         <div class="kpi"><div class="l">Fardos lidos</div><div class="v" id="cLidos">0</div></div>
@@ -352,14 +414,15 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
         <div class="kpi vio"><div class="l">Peso conferido</div><div class="v" id="cPeso">0<small>kg</small></div></div>
       </div>
       <div class="stack">
-        <div class="panel"><h3 style="margin-bottom:12px">1. Resumo comparativo por material</h3>
+        <div class="panel ctp" data-ct="resumo"><h3 style="margin-bottom:12px">Resumo comparativo por material</h3>
           <div class="table-wrap" style="border:0"><table><thead><tr><th>Material</th><th class="num">Lidos</th><th class="num">No sistema</th><th class="num">Diferença</th><th class="num">Peso conferido</th></tr></thead><tbody id="tbConfSub"></tbody></table></div></div>
-        <div class="panel"><h3 style="margin-bottom:12px;color:var(--ok)">2. Fardos lidos com correspondência no estoque</h3>
-          <div class="table-wrap" style="border:0;max-height:46vh"><table><thead><tr><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th>Status</th></tr></thead><tbody id="tbConfOk"></tbody></table></div></div>
-        <div class="panel alert"><h3 style="margin-bottom:12px;color:var(--err)">3. Fardos lidos SEM correspondência no estoque</h3>
-          <div class="table-wrap" style="border:0;max-height:46vh"><table><thead><tr><th>Etiqueta (EPC)</th><th>Situação</th><th>Observação</th></tr></thead><tbody id="tbConfSem"></tbody></table></div></div>
-        <div class="panel alert-warn hide" id="pnRep"><h3 style="margin-bottom:12px;color:var(--warn)">4. Etiquetas repetidas na ronda</h3>
-          <div class="table-wrap" style="border:0;max-height:40vh"><table><thead><tr><th>Etiqueta (EPC)</th><th>Material</th><th class="num">Releituras</th><th>Situação</th></tr></thead><tbody id="tbConfRep"></tbody></table></div></div>
+        <div class="panel ctp hide" data-ct="ok"><h3 style="margin-bottom:12px;color:var(--ok)">Fardos lidos com correspondência no estoque</h3>
+          <div class="chips" id="confMatChips"></div>
+          <div class="table-wrap" style="border:0;max-height:58vh"><table><thead><tr><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th>Status</th></tr></thead><tbody id="tbConfOk"></tbody></table></div></div>
+        <div class="panel alert ctp hide" data-ct="sem"><h3 style="margin-bottom:12px;color:var(--err)">Fardos lidos FORA do estoque (conferir fisicamente)</h3>
+          <div class="table-wrap" style="border:0;max-height:58vh"><table><thead><tr><th>Etiqueta (EPC)</th><th>Situação</th><th>Observação</th></tr></thead><tbody id="tbConfSem"></tbody></table></div></div>
+        <div class="panel alert-warn ctp hide" data-ct="rep" id="pnRep"><h3 style="margin-bottom:12px;color:var(--warn)">Etiquetas repetidas na ronda</h3>
+          <div class="table-wrap" style="border:0;max-height:58vh"><table><thead><tr><th>Etiqueta (EPC)</th><th>Material</th><th class="num">Releituras</th><th>Situação</th></tr></thead><tbody id="tbConfRep"></tbody></table></div></div>
       </div>
     </section>
   </main>
@@ -370,7 +433,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
@@ -404,6 +467,10 @@ let diasGrafico = 14;
 let ultimaConfId;          // id da conferência mais recente já exibida
 let avisoTimer;
 let viewAtual = "visao";
+let confTab = "resumo", confMat = "";   // aba e filtro de material da Conferência
+let cargasMovs = [];       // saídas (CARREGAMENTO) para a aba Carregamentos
+let diaCarga = "";
+const cargasFechadas = new Set();
 
 /* ---------- utilitários ---------- */
 const $ = id => document.getElementById(id);
@@ -731,7 +798,7 @@ function renderConferencia(){
     ["cLidos","cOk","cSem"].forEach(i => $(i).textContent = "0"); $("cPeso").innerHTML = "0<small>kg</small>";
     $("tbConfSub").innerHTML = vazio(5, "Nenhuma leitura em massa recebida.");
     $("tbConfOk").innerHTML = vazio(4, "—"); $("tbConfSem").innerHTML = vazio(3, "—");
-    $("resumoStatus").classList.add("hide"); $("pnRep").classList.add("hide"); return;
+    atualizarTabsConf(0, 0, 0); $("confMatChips").innerHTML = ""; return;
   }
   const extra = [];
   if (cf.duplicados) extra.push(`${fmtNum(cf.duplicados)} releitura(s) repetida(s) não contada(s)`);
@@ -752,18 +819,21 @@ function renderConferencia(){
   h += `<tr class="total"><td>Total geral</td><td class="num">${fmtNum(tl)}</td><td class="num">${fmtNum(ts)}</td><td class="num">${dt > 0 ? "+" + dt : dt}${cf.sem.length ? ` (+${cf.sem.length} sem estoque)` : ""}</td><td class="num">${fmtKg(tp)}</td></tr>`;
   $("tbConfSub").innerHTML = h;
 
-  $("tbConfOk").innerHTML = cf.ok.length ? cf.ok.map(i => `<tr><td>${badgeMat(i.mat)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td><span class="badge b-ok">${i.auditoria ? "NO ESTOQUE" : "Conferido no estoque"}</span></td></tr>`).join("")
-    + `<tr class="total"><td colspan="2">Subtotal: ${fmtNum(cf.ok.length)} fardo(s)</td><td class="num">${nf2.format(pesoOk)}</td><td></td></tr>` : vazio(4, "Nenhum fardo correspondente encontrado.");
+  // setores: filtro por material dentro de "No estoque"
+  const contOk = {}; cf.ok.forEach(i => contOk[i.mat] = (contOk[i.mat] || 0) + 1);
+  if (confMat && !contOk[confMat]) confMat = "";
+  $("confMatChips").innerHTML = cf.ok.length ? `<button data-m="" class="${confMat ? "" : "on"}">Todos <b>${cf.ok.length}</b></button>`
+    + listaMateriais(Object.keys(contOk)).filter(m => contOk[m]).map(m => `<button data-m="${esc(m)}" class="${confMat === m ? "on" : ""}">${esc(m)} <b>${contOk[m]}</b></button>`).join("") : "";
+  const okVis = confMat ? cf.ok.filter(i => i.mat === confMat) : cf.ok;
+  const pesoVis = okVis.reduce((a, i) => a + i.peso, 0);
+  $("tbConfOk").innerHTML = okVis.length ? okVis.map(i => `<tr><td>${badgeMat(i.mat)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td><span class="badge b-ok">${i.auditoria ? "NO ESTOQUE" : "Conferido no estoque"}</span></td></tr>`).join("")
+    + `<tr class="total"><td colspan="2">Subtotal${confMat ? " — " + esc(confMat) : ""}: ${fmtNum(okVis.length)} fardo(s)</td><td class="num">${nf2.format(pesoVis)}</td><td></td></tr>` : vazio(4, "Nenhum fardo correspondente encontrado.");
   $("tbConfSem").innerHTML = cf.sem.length ? cf.sem.map(i => `<tr><td class="mono" style="color:var(--err)">${esc(i.epc)}</td><td><span class="badge b-err">${i.auditoria ? "FORA DO ESTOQUE" : "Sem correspondência"}</span></td><td class="wrap">Fardo lido fisicamente, mas não consta no estoque atual do sistema${i.mat ? " · " + esc(i.mat) : ""}${i.peso ? " · " + nf2.format(i.peso) + " kg" : ""}. Conferir fisicamente.</td></tr>`).join("")
     + `<tr class="total" style="color:var(--err)"><td colspan="3">Subtotal sem correspondência: ${fmtNum(cf.sem.length)} fardo(s)</td></tr>`
     : `<tr class="empty"><td colspan="3" style="color:var(--ok);font-weight:700">Nenhuma divergência: todos os fardos lidos constam no estoque.</td></tr>`;
 
-  // resumo por status + seção de repetidos (não misturados com os fora do estoque)
-  const rs = $("resumoStatus");
-  rs.innerHTML = `<span class="badge b-ok">NO ESTOQUE: ${fmtNum(cf.ok.length)}</span><span class="badge b-err">FORA DO ESTOQUE: ${fmtNum(cf.sem.length)}</span>`
-    + (cf.repetidos.length ? `<span class="badge b-warn">REPETIDO NA RONDA: ${fmtNum(cf.repetidos.length)}</span>` : "");
-  rs.classList.remove("hide");
-  $("pnRep").classList.toggle("hide", !cf.repetidos.length);
+  // contadores nas abas (setores)
+  atualizarTabsConf(cf.ok.length, cf.sem.length, cf.repetidos.length);
   $("tbConfRep").innerHTML = cf.repetidos.map(r => `<tr><td class="mono" style="color:var(--warn)">${esc(r.epc)}</td><td>${r.material ? badgeMat(r.material) : "—"}</td><td class="num"><b>${fmtNum(r.vezes)}</b></td><td><span class="badge b-warn">REPETIDO NA RONDA</span><div class="muted" style="font-size:12.5px;margin-top:4px">Já lida antes nesta rodada. Não conta como fardo extra.</div></td></tr>`).join("");
 }
 
@@ -772,13 +842,116 @@ function limparConferencia(){
   $("tbConfSub").innerHTML = vazio(5, "Carregando nova conferência…");
   $("tbConfOk").innerHTML = vazio(4, "—"); $("tbConfSem").innerHTML = vazio(3, "—");
   $("infoConf").textContent = "";
-  $("resumoStatus").classList.add("hide"); $("pnRep").classList.add("hide");
+  atualizarTabsConf(0, 0, 0);
+}
+function aplicarConfTab(){
+  document.querySelectorAll("#confTabs button").forEach(b => b.classList.toggle("on", b.dataset.ct === confTab));
+  document.querySelectorAll("#v-conferencia .ctp").forEach(p => p.classList.toggle("hide", p.dataset.ct !== confTab));
+}
+function atualizarTabsConf(ok, sem, rep){
+  $("ctOk").textContent = fmtNum(ok); $("ctSem").textContent = fmtNum(sem); $("ctRep").textContent = fmtNum(rep);
+  $("ctRepBtn").classList.toggle("hide", !rep);
+  if (!rep && confTab === "rep") confTab = "resumo";
+  aplicarConfTab();
 }
 function avisarNovaConferencia(){
   const a = $("avisoConf"); a.classList.remove("hide");
   clearTimeout(avisoTimer); avisoTimer = setTimeout(() => a.classList.add("hide"), 10000);
 }
-function renderTudo(){ renderKpisEGraficos(); renderEstoque(); renderHistorico(); renderLog(); renderConferencia(); }
+/* ---------- Carregamentos (por data e por carga) ---------- */
+const fmtDiaKey = k => { const [a, m, d] = k.split("-"); return `${d}/${m}/${a}`; };
+const diaSemana = k => { const w = new Date(k + "T12:00:00-03:00").toLocaleDateString("pt-BR", { weekday: "long", timeZone: TZ }); return w.charAt(0).toUpperCase() + w.slice(1); };
+const fmtHora = d => d ? d.toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+const fmtDur = ms => { const m = Math.round(ms / 60000); if (m < 1) return "menos de 1 min"; const h = Math.floor(m / 60); return h ? `${h}h ${String(m % 60).padStart(2, "0")}min` : `${m} min`; };
+const pesoCurto = v => v >= 1000 ? compacto(v) : fmtNum(v) + " kg";
+
+function montarCargas(){
+  const porId = new Map();
+  cargasMovs.forEach(m => {
+    if (!m.ts) return;
+    const k = m.carga || ("SEM-ID-" + diaKey(m.ts));
+    if (!porId.has(k)) porId.set(k, { id: k, semId: !m.carga, itens: [] });
+    porId.get(k).itens.push(m);
+  });
+  const dias = new Map();
+  porId.forEach(c => {
+    c.itens.sort((a, b) => a.ts - b.ts);
+    c.ini = c.itens[0].ts; c.fim = c.itens[c.itens.length - 1].ts;
+    c.qtd = c.itens.length; c.peso = c.itens.reduce((a, i) => a + i.peso, 0);
+    c.mats = {}; c.itens.forEach(i => { (c.mats[i.material] ||= { qtd: 0, peso: 0 }); c.mats[i.material].qtd++; c.mats[i.material].peso += i.peso; });
+    c.dia = diaKey(c.ini);
+    if (!dias.has(c.dia)) dias.set(c.dia, { dia: c.dia, cargas: [], qtd: 0, peso: 0 });
+    const d = dias.get(c.dia); d.cargas.push(c); d.qtd += c.qtd; d.peso += c.peso;
+  });
+  const lista = [...dias.values()];
+  lista.forEach(d => d.cargas.sort((a, b) => a.ini - b.ini));
+  return lista.sort((a, b) => a.dia < b.dia ? 1 : -1);
+}
+function tabelaMats(mats, total){
+  const ordem = Object.keys(mats).sort((a, b) => { const ia = ORDEM_MATERIAIS.indexOf(a), ib = ORDEM_MATERIAIS.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+  const qtd = ordem.reduce((a, m) => a + mats[m].qtd, 0);
+  return `<div class="table-wrap" style="max-height:none"><table><thead><tr><th>Material</th><th class="num">Fardos</th><th class="num">Peso (kg)</th><th>% do peso</th></tr></thead><tbody>`
+    + ordem.map(m => { const p = total ? mats[m].peso / total * 100 : 0;
+      return `<tr><td>${badgeMat(m)}</td><td class="num"><b>${fmtNum(mats[m].qtd)}</b></td><td class="num">${nf2.format(mats[m].peso)}</td><td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div class="pct" style="flex:1"><i style="width:${p.toFixed(1)}%"></i></div><span style="font-size:12.5px;color:var(--txt2);width:46px;text-align:right">${p.toFixed(1).replace(".", ",")}%</span></div></td></tr>`; }).join("")
+    + `<tr class="total"><td>Total</td><td class="num">${fmtNum(qtd)}</td><td class="num">${nf2.format(total)}</td><td></td></tr></tbody></table></div>`;
+}
+function renderCarregamentos(){
+  const dias = montarCargas(), lista = $("listaDias"), det = $("carDetalhe");
+  if (!dias.length){
+    $("carDiasInfo").textContent = "";
+    lista.innerHTML = `<div class="muted" style="font-size:13.5px;padding:6px 2px">Nenhum carregamento registrado.</div>`;
+    det.innerHTML = `<div class="panel"><div class="vazio-box">Nenhum carregamento encontrado. Quando houver saídas confirmadas no Carregamento do coletor, elas aparecem aqui por data.</div></div>`;
+    return;
+  }
+  if (!dias.some(d => d.dia === diaCarga)) diaCarga = dias[0].dia;
+  const totCargas = dias.reduce((a, d) => a + d.cargas.length, 0);
+  $("carDiasInfo").textContent = `${dias.length} data(s) · ${totCargas} carregamento(s)`;
+  lista.innerHTML = dias.map(d => `<button class="dia-item ${d.dia === diaCarga ? "on" : ""}" data-dia="${d.dia}"><div><span class="d">${fmtDiaKey(d.dia)}</span><span class="w">${esc(diaSemana(d.dia))}</span></div><div class="m"><span>${d.cargas.length} carga(s) · ${fmtNum(d.qtd)} fardo(s)</span><b>${pesoCurto(d.peso)}</b></div></button>`).join("");
+
+  const dia = dias.find(d => d.dia === diaCarga);
+  const mats = {}; dia.cargas.forEach(c => Object.keys(c.mats).forEach(m => { (mats[m] ||= { qtd: 0, peso: 0 }); mats[m].qtd += c.mats[m].qtd; mats[m].peso += c.mats[m].peso; }));
+  const n = dia.cargas.length;
+  const cargasHtml = dia.cargas.map((c, idx) => {
+    const dur = c.fim - c.ini, ritmo = (dur >= 60000 && c.qtd > 1) ? fmtNum(c.qtd / (dur / 3600000)) : "—";
+    const linhas = c.itens.map((i, k) => `<tr><td class="num" style="color:var(--muted)">${k + 1}</td><td>${fmtHora(i.ts)}</td><td>${badgeMat(i.material)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td></tr>`).join("");
+    return `<div class="panel carga">
+      <div class="carga-h" data-toggle="${esc(c.id)}">
+        <div><div class="carga-t">Carregamento ${idx + 1} de ${n}<i>${cargasFechadas.has(c.id) ? "▸ toque para abrir" : "▾ toque para recolher"}</i></div>
+          <div class="carga-s">${c.semId ? "Sem identificação de carga" : "Carga " + esc(c.id)} · ${fmtHora(c.ini)} → ${fmtHora(c.fim)} · duração ${fmtDur(dur)}</div></div>
+        <div class="carga-m"><div><b>${fmtNum(c.qtd)}</b><span>fardos</span></div><div><b>${nf2.format(c.peso)}</b><span>kg</span></div><div><b>${ritmo}</b><span>fardos/hora</span></div></div>
+      </div>
+      <div class="carga-corpo ${cargasFechadas.has(c.id) ? "hide" : ""}">
+        <h4>Totais por material</h4>${tabelaMats(c.mats, c.peso)}
+        <h4>Fardos carregados, em ordem de horário</h4>
+        <div class="table-wrap" style="max-height:52vh"><table><thead><tr><th class="num">#</th><th>Hora</th><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th></tr></thead><tbody>${linhas}
+          <tr class="total"><td colspan="4">Total do carregamento: ${fmtNum(c.qtd)} fardo(s)</td><td class="num">${nf2.format(c.peso)}</td></tr></tbody></table></div>
+      </div></div>`;
+  }).join("");
+
+  det.innerHTML = `
+    <div class="car-top"><h2>${fmtDiaKey(dia.dia)}<span>${esc(diaSemana(dia.dia))}</span></h2>
+      <div class="acoes"><button class="btn sm" data-all="fechar">Recolher todos</button><button class="btn sm" data-all="abrir">Expandir todos</button><button class="btn sm" id="btnCsvDia">Baixar CSV do dia</button></div></div>
+    <div class="kpis k4">
+      <div class="kpi"><div class="l">Carregamentos</div><div class="v">${fmtNum(n)}</div></div>
+      <div class="kpi ok"><div class="l">Fardos carregados</div><div class="v">${fmtNum(dia.qtd)}</div></div>
+      <div class="kpi vio"><div class="l">Peso total</div><div class="v">${nf2.format(dia.peso)}<small>kg</small></div></div>
+      <div class="kpi warn"><div class="l">Peso médio por fardo</div><div class="v">${nf2.format(dia.qtd ? dia.peso / dia.qtd : 0)}<small>kg</small></div></div>
+    </div>
+    <div class="panel"><h3 style="margin-bottom:12px">Total do dia por material</h3>${tabelaMats(mats, dia.peso)}</div>
+    ${cargasHtml}`;
+}
+function baixarCsvDia(){
+  const dias = montarCargas(), dia = dias.find(d => d.dia === diaCarga); if (!dia) return;
+  const linhas = [["Data", "Carga", "Hora", "Material", "Etiqueta (EPC)", "Peso (kg)"]];
+  dia.cargas.forEach(c => c.itens.forEach(i => linhas.push([fmtDiaKey(dia.dia), c.semId ? "SEM IDENTIFICAÇÃO" : c.id, fmtHora(i.ts), i.material, i.epc, String(i.peso.toFixed(2)).replace(".", ",")])));
+  const csv = "﻿" + linhas.map(l => l.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `carregamentos_${dia.dia}.csv`; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function renderTudo(){ renderKpisEGraficos(); renderEstoque(); renderHistorico(); renderLog(); renderConferencia(); renderCarregamentos(); }
 
 /* ---------- navegação e eventos ---------- */
 function irPara(v){
@@ -802,6 +975,20 @@ document.querySelectorAll("#v-estoque th[data-sort]").forEach(th => th.addEventL
 ["fHistMat","fHistDe","fHistAte"].forEach(i => $(i).addEventListener("change", renderHistorico));
 $("btnHistLimpar").addEventListener("click", () => { $("fHistMat").value = ""; $("fHistDe").value = ""; $("fHistAte").value = ""; renderHistorico(); });
 $("fLog").addEventListener("input", renderLog); $("fLogTipo").addEventListener("change", renderLog);
+$("confTabs").addEventListener("click", e => { const b = e.target.closest("button[data-ct]"); if (b){ confTab = b.dataset.ct; aplicarConfTab(); } });
+$("confMatChips").addEventListener("click", e => { const b = e.target.closest("button[data-m]"); if (b){ confMat = b.dataset.m; renderConferencia(); } });
+$("listaDias").addEventListener("click", e => { const b = e.target.closest("button[data-dia]"); if (b){ diaCarga = b.dataset.dia; renderCarregamentos(); window.scrollTo({ top: 0 }); } });
+$("carDetalhe").addEventListener("click", e => {
+  if (e.target.closest("#btnCsvDia")) return baixarCsvDia();
+  const all = e.target.closest("button[data-all]");
+  if (all){
+    const dia = montarCargas().find(d => d.dia === diaCarga);
+    if (dia) dia.cargas.forEach(c => all.dataset.all === "fechar" ? cargasFechadas.add(c.id) : cargasFechadas.delete(c.id));
+    return renderCarregamentos();
+  }
+  const t = e.target.closest("[data-toggle]");
+  if (t){ const id = t.dataset.toggle; cargasFechadas.has(id) ? cargasFechadas.delete(id) : cargasFechadas.add(id); renderCarregamentos(); }
+});
 $("selConf").addEventListener("change", () => { renderConferencia(); desenharGraficos(); });
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(desenharGraficos, 150); });
 
@@ -841,6 +1028,13 @@ function iniciarListeners(){
     marcarAtualizacao(); renderKpisEGraficos(); renderHistorico();
   }, falha("movimentacoes_fardos")));
 
+  // Saídas (carregamentos): consulta própria, sem o limite de 500 do histórico geral
+  unsubs.push(onSnapshot(query(collection(db, "movimentacoes_fardos"), where("operacao", "==", "CARREGAMENTO"), limit(5000)), snap => {
+    cargasMovs = [];
+    snap.forEach(doc => { const d = doc.data(); cargasMovs.push({ epc: String(d.epc || doc.id).toUpperCase(), material: d.material || "—", peso: Number(d.peso_kg || 0), ts: toDate(d.criado_em), carga: d.id_carga || "" }); });
+    marcarAtualizacao(); renderCarregamentos();
+  }, falha("carregamentos")));
+
   unsubs.push(onSnapshot(query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500)), snap => {
     logs = [];
     snap.forEach(doc => { const d = doc.data(); logs.push({ ts: toDate(d.criado_em), tipo: d.operacao_tentada || "EVENTO", material: d.material || "", peso: Number(d.peso_kg || 0), epc: d.epc || "", motivo: d.motivo_bloqueio || "" }); });
@@ -858,7 +1052,7 @@ function iniciarListeners(){
     const chegouNova = ultimaConfId !== undefined && topoId !== null && topoId !== ultimaConfId;
     ultimaConfId = topoId;
     $("selConf").value = "0";                 // sempre mostra a conferência mais recente
-    if (chegouNova){ limparConferencia(); avisarNovaConferencia(); }
+    if (chegouNova){ confTab = "resumo"; confMat = ""; limparConferencia(); avisarNovaConferencia(); }
     marcarAtualizacao(); renderConferencia(); desenharGraficos();
   }, falha("conferencias_estoque")));
 }
@@ -871,7 +1065,7 @@ onAuthStateChanged(auth, user => {
     iniciarListeners(); irPara(viewAtual);
   } else {
     unsubs.forEach(u => u()); unsubs = [];
-    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = [];
+    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = [];
     $("telaErp").style.display = "none"; $("telaLogin").style.display = "flex";
     $("senhaInput").value = "";
   }
