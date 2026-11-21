@@ -611,7 +611,8 @@
           const data = doc.data();
           const idx = listaConferencias.length;
           listaConferencias.push({ id: doc.id, ...data });
-          optionsHtml += `<option value="${idx}">${formatarData(data.criado_em)} — ${data.total_lidos || 0} fardo(s)</option>`;
+          const tipoLabel = data.tipo_conferencia ? ` [${data.tipo_conferencia}]` : "";
+          optionsHtml += `<option value="${idx}">${formatarData(data.criado_em)}${tipoLabel} — ${data.total_lidos || 0} fardo(s)</option>`;
         });
 
         select.innerHTML = optionsHtml || `<option value="0">Nenhuma conferência enviada</option>`;
