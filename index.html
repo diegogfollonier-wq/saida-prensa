@@ -797,8 +797,8 @@
     const STORAGE_MOV_KEY = 'erp_rfid_movimentacoes_v1';
     const STORAGE_CFG_KEY = 'erp_rfid_endpoint_v1';
     let filtroTipoAtual = 'TODOS';
+    let processandoLeituraRFID = false;
 
-    // Dados iniciais de exemplo para visualização imediata
     const DADOS_EXEMPLO = [
       { id: 'FRD-20261120-001', epc: '3400E28011704000021C393F08D0', tipo: 'ENTRADA', material: 'Papelão Ondulado', peso: 242.5, data: '20/11/2026 08:15:10', obs: 'Saída da Prensa 01' },
       { id: 'FRD-20261120-002', epc: '3400E28011704000021C393F08D1', tipo: 'ENTRADA', material: 'Plástico PET', peso: 198.0, data: '20/11/2026 09:02:44', obs: 'Saída da Prensa 01' },
@@ -816,10 +816,8 @@
     document.getElementById('dataHojeChip').textContent = '📅 Hoje, ' + new Date().toLocaleDateString('pt-BR');
     document.getElementById('inputEndpointUrl').value = localStorage.getItem(STORAGE_CFG_KEY) || '';
 
-    // Calcula o estoque atual com base nas Entradas e Saídas
     function calcularEstoqueAtual() {
       const mapa = new Map();
-      // Processa do mais antigo para o mais recente
       const cronologico = [...movimentacoes].reverse();
       cronologico.forEach(mov => {
         if (mov.tipo === 'ENTRADA') {
@@ -831,25 +829,24 @@
       return Array.from(mapa.values()).reverse();
     }
 
-    // Função pronta para receber uma movimentação completa do coletor (Entrada ou Saída)
     window.receberMovimentacaoRFID = function(registro) {
-      if (!registro || !registro.epc) return;
+      if (!registro || !registro.epc) return false;
       const epc = String(registro.epc).replace(/\s+/g, '').toUpperCase();
       const tipo = (registro.tipo || 'ENTRADA').toUpperCase();
       const estoqueAtual = calcularEstoqueAtual();
       const jaEmEstoque = estoqueAtual.find(item => item.epc === epc);
 
-      // Se for ENTRADA e a tag já estiver gravada no estoque, alerta e pede confirmação para regravar
+      let obsFinal = registro.obs || (tipo === 'ENTRADA' ? 'Saída da Prensa (EF401)' : 'Saída Estoque (EF401)');
+
       if (tipo === 'ENTRADA' && jaEmEstoque) {
         const certeza = confirm(
-          `ALERTA DE DUPLICIDADE RFID!\n\nA etiqueta ${epc} já está gravada no estoque (${jaEmEstoque.id} - ${jaEmEstoque.peso} kg).\n\nTem certeza que deseja REGRAVAR este fardo?`
+          `ALERTA DE DUPLICIDADE RFID!\n\nA etiqueta ${epc} já está gravada no estoque (${jaEmEstoque.id} -${jaEmEstoque.peso} kg).\n\nDeseja RE gravar este fardo?`
         );
         if (!certeza) {
           return false;
         }
-        // Remove a entrada anterior desse EPC para regravar com os novos dados
         movimentacoes = movimentacoes.filter(m => !(m.epc === epc && m.tipo === 'ENTRADA'));
-        registro.obs = (registro.obs || 'Saída da Prensa') + ' (Regravado)';
+        obsFinal = obsFinal + ' (Regravado)';
       }
 
       const novoItem = {
@@ -859,7 +856,7 @@
         material: registro.material || 'Fardo Prensado',
         peso: Number(parseFloat(registro.peso || 0).toFixed(1)),
         data: registro.data || new Date().toLocaleString('pt-BR'),
-        obs: registro.obs || (tipo === 'ENTRADA' ? 'Saída da Prensa' : 'Saída Estoque')
+        obs: obsFinal
       };
 
       movimentacoes.unshift(novoItem);
@@ -868,37 +865,65 @@
       return true;
     };
 
-    // Compatibilidade direta caso a ponte envie apenas o EPC bruto
+    // Recebe o EPC lido pelo RFR900 via Android WebView e abre conferência antes de gravar
     window.receberRFID = function(epcBruto) {
-      const pesoSimulado = (Math.random() * (260 - 185) + 185).toFixed(1);
-      window.receberMovimentacaoRFID({
-        epc: epcBruto,
-        tipo: 'ENTRADA',
-        material: 'Fardo Prensado',
-        peso: pesoSimulado,
-        obs: 'Leitura Direta Coletor'
-      });
+      if (!epcBruto || processandoLeituraRFID) return false;
+      processandoLeituraRFID = true;
+
+      try {
+        const epc = String(epcBruto).replace(/\s+/g, '').toUpperCase();
+        const estoqueAtual = calcularEstoqueAtual();
+        const jaEmEstoque = estoqueAtual.find(item => item.epc === epc);
+
+        let observacaoExtra = 'Leitura RFR900 (EF401)';
+        if (jaEmEstoque) {
+          const certeza = confirm(
+            `ALERTA DE DUPLICIDADE RFID!\n\nA etiqueta ${epc} já está no estoque (${jaEmEstoque.id} -${jaEmEstoque.peso} kg).\n\nTem certeza que deseja RE gravar este fardo?`
+          );
+          if (!certeza) {
+            return false;
+          }
+          observacaoExtra = 'Leitura RFR900 (EF401) (Regravado)';
+        }
+
+        const tipo = confirm(
+          `EPC lido: ${epc}\n\nClique em OK para registrar ENTRADA (Saída da Prensa)\nou em CANCELAR para registrar SAÍDA (Expedição).`
+        ) ? 'ENTRADA' : 'SAIDA';
+
+        const pesoPadrao = tipo === 'ENTRADA'
+          ? (Math.random() * (265 - 180) + 180).toFixed(1)
+          : (jaEmEstoque ? jaEmEstoque.peso : '200.0');
+
+        const pesoDigitado = prompt(
+          `Tipo: ${tipo}\nEPC:${epc}\n\nConfirme ou altere o peso (kg):`,
+          pesoPadrao
+        );
+
+        if (pesoDigitado === null) return false;
+        const pesoFinal = parseFloat(String(pesoDigitado).replace(',', '.'));
+        if (isNaN(pesoFinal) || pesoFinal <= 0) {
+          alert('Peso inválido. Leitura descartada.');
+          return false;
+        }
+
+        const material = prompt('Material do fardo:', jaEmEstoque ? jaEmEstoque.material : 'Fardo Prensado') || 'Fardo Prensado';
+
+        return window.receberMovimentacaoRFID({
+          id: jaEmEstoque ? jaEmEstoque.id : undefined,
+          epc: epc,
+          tipo: tipo,
+          material: material,
+          peso: pesoFinal,
+          obs: observacaoExtra
+        });
+      } finally {
+        processandoLeituraRFID = false;
+      }
     };
 
     function gerarIdFardo() {
       const d = new Date();
-      const dataStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-      const seq = String(movimentacoes.length + 1).padStart(3, '0');
-      return `FRD-${dataStr}-${seq}`;
-    }
-
-    function atualizarInterface() {
-      const estoqueAtual = calcularEstoqueAtual();
-      const entradas = movimentacoes.filter(m => m.tipo === 'ENTRADA');
-      const saidas = movimentacoes.filter(m => m.tipo === 'SAIDA');
-      const regravacoes = movimentacoes.filter(m => (m.obs || '').includes('Regravado')).length;
-
-      const pesoEntradas = entradas.reduce((s, i) => s + Number(i.peso), 0);
-      const pesoSaidas = saidas.reduce((s, i) => s + Number(i.peso), 0);
-      const pesoSaldo = estoqueAtual.reduce((s, i) => s + Number(i.peso), 0);
-
-      document.getElementById('cardEntradasPeso').textContent = formatarKg(pesoEntradas);
-      document.getElementById('cardEntradasQtd').textContent = `${entradas.length} fardos recebidos`;
+      const dataStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; const seq = String(movimentacoes.length + 1).padStart(3, '0'); return `FRD-${dataStr}-${seq}`; }  function atualizarInterface() { const estoqueAtual = calcularEstoqueAtual(); const entradas = movimentacoes.filter(m => m.tipo === 'ENTRADA'); const saidas = movimentacoes.filter(m => m.tipo === 'SAIDA'); const regravacoes = movimentacoes.filter(m => (m.obs \vert{}\vert{} '').includes('Regravado')).length;  const pesoEntradas = entradas.reduce((s, i) => s + Number(i.peso), 0); const pesoSaidas = saidas.reduce((s, i) => s + Number(i.peso), 0); const pesoSaldo = estoqueAtual.reduce((s, i) => s + Number(i.peso), 0);  document.getElementById('cardEntradasPeso').textContent = formatarKg(pesoEntradas); document.getElementById('cardEntradasQtd').textContent = `${entradas.length} fardos recebidos`;
 
       document.getElementById('cardSaldoPeso').textContent = formatarKg(pesoSaldo);
       document.getElementById('cardSaldoQtd').textContent = `${estoqueAtual.length} fardos disponíveis`;
@@ -941,8 +966,7 @@
         return { mat, qtd, pct: pct.toFixed(1), inicio, fim: acumulado, cor };
       });
 
-      const gradiente = fatias.map(f => `${f.cor} ${f.inicio}% ${f.fim}%`).join(', ');
-      donutEl.style.background = `conic-gradient(${gradiente})`;
+      const gradiente = fatias.map(f => `${f.cor}${f.inicio}% ${f.fim}\%`).join(', '); donutEl.style.background = `conic-gradient(${gradiente})`;
 
       legendEl.innerHTML = fatias.map(f => `
         <div class="legend-row">
@@ -964,7 +988,7 @@
           <div>
             <span class="tag-tipo ${m.tipo === 'ENTRADA' ? 'tag-entrada' : 'tag-saida'}">${m.tipo}</span>
             <strong style="margin-left:6px;">${m.id}</strong>
-            <div style="font-size:11px;color:#64748b;margin-top:3px;">${m.material} • ${m.data}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:3px;">${m.material} •${m.data}</div>
           </div>
           <strong>${Number(m.peso).toFixed(1)} kg</strong>
         </div>
@@ -974,7 +998,6 @@
     function renderizarTabelas(estoqueAtual) {
       const termo = (document.getElementById('globalSearch').value || '').toLowerCase();
 
-      // Tabela Estoque Atual
       const estoqueFiltrado = estoqueAtual.filter(i =>
         i.id.toLowerCase().includes(termo) ||
         i.epc.toLowerCase().includes(termo) ||
@@ -994,7 +1017,6 @@
           `).join('')
         : '<tr><td colspan="6" style="text-align:center;color:#64748b;">Nenhum fardo encontrado no estoque.</td></tr>';
 
-      // Tabela Movimentações
       const movFiltradas = movimentacoes.filter(m => {
         const bateTipo = filtroTipoAtual === 'TODOS' || m.tipo === filtroTipoAtual;
         const bateTexto = m.id.toLowerCase().includes(termo) || m.epc.toLowerCase().includes(termo) || m.material.toLowerCase().includes(termo);
@@ -1009,138 +1031,4 @@
               <td class="mono">${m.epc}</td>
               <td>${m.material}</td>
               <td><strong>${Number(m.peso).toFixed(1)} kg</strong></td>
-              <td>${m.data}</td>
-              <td>${m.obs}</td>
-            </tr>
-          `).join('')
-        : '<tr><td colspan="7" style="text-align:center;color:#64748b;">Nenhuma movimentação encontrada.</td></tr>';
-    }
-
-    function formatarKg(val) {
-      return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kg';
-    }
-
-    function mudarTela(nome, btnEl) {
-      document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-      document.getElementById('view-' + nome).classList.add('active');
-      if (btnEl) {
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        btnEl.classList.add('active');
-      }
-    }
-
-    function setFiltroTipo(tipo, btn) {
-      filtroTipoAtual = tipo;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      atualizarInterface();
-    }
-
-    function filtrarTabela() {
-      atualizarInterface();
-    }
-
-    // Simulação de envio vindo do celular
-    function simularMovimentoCelular(tipo) {
-      const estoqueAtual = calcularEstoqueAtual();
-      const materiais = ['Papelão Ondulado', 'Plástico PET', 'Plástico Filme', 'Alumínio'];
-      const mat = materiais[Math.floor(Math.random() * materiais.length)];
-
-      if (tipo === 'SAIDA') {
-        if (estoqueAtual.length === 0) {
-          alert('Não há fardos em estoque para simular uma saída. Simule uma Entrada primeiro!');
-          return;
-        }
-        const alvo = estoqueAtual[0];
-        window.receberMovimentacaoRFID({
-          id: alvo.id,
-          epc: alvo.epc,
-          tipo: 'SAIDA',
-          material: alvo.material,
-          peso: alvo.peso,
-          obs: 'Expedição Coletor EF401'
-        });
-        return;
-      }
-
-      const hex = Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0');
-      const peso = (Math.random() * (265 - 180) + 180).toFixed(1);
-      window.receberMovimentacaoRFID({
-        epc: '3400E2801170400002' + hex,
-        tipo: 'ENTRADA',
-        material: mat,
-        peso: peso,
-        obs: 'Saída da Prensa (EF401)'
-      });
-    }
-
-    function testarTagDuplicada() {
-      const estoqueAtual = calcularEstoqueAtual();
-      if (estoqueAtual.length === 0) {
-        alert('Grave pelo menos 1 fardo de Entrada antes de testar a duplicidade.');
-        return;
-      }
-      const primeiro = estoqueAtual[0];
-      window.receberMovimentacaoRFID({
-        id: primeiro.id,
-        epc: primeiro.epc,
-        tipo: 'ENTRADA',
-        material: primeiro.material,
-        peso: (Number(primeiro.peso) + 3.5).toFixed(1),
-        obs: 'Saída da Prensa (EF401)'
-      });
-    }
-
-    function limparDadosDemo() {
-      if (confirm('Deseja zerar todas as movimentações e iniciar o estoque limpo?')) {
-        movimentacoes = [];
-        localStorage.setItem(STORAGE_MOV_KEY, JSON.stringify(movimentacoes));
-        atualizarInterface();
-      }
-    }
-
-    function exportarCSV() {
-      if (movimentacoes.length === 0) {
-        alert('Não há movimentações para exportar.');
-        return;
-      }
-      const cab = 'TIPO;ID_FARDO;EPC_RFID;MATERIAL;PESO_KG;DATA_HORA;OBSERVACAO\n';
-      const linhas = movimentacoes.map(m =>
-        `${m.tipo};${m.id};${m.epc};${m.material};${String(m.peso).replace('.', ',')};${m.data};${m.obs}`
-      ).join('\n');
-      const blob = new Blob(['\uFEFF' + cab + linhas], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `controle_estoque_rfid_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function salvarConfigEndpoint() {
-      const url = document.getElementById('inputEndpointUrl').value.trim();
-      localStorage.setItem(STORAGE_CFG_KEY, url);
-      alert('Endpoint salvo! Na próxima etapa vamos conectar o coletor EF401 a este endereço.');
-    }
-
-    function sincronizarAgora() {
-      const url = localStorage.getItem(STORAGE_CFG_KEY);
-      if (!url) {
-        alert('Cole a URL do endpoint de sincronização antes de sincronizar.');
-        return;
-      }
-      alert('Pronto para buscar dados de: ' + url);
-    }
-
-    // Atalho Ctrl+K para busca
-    document.addEventListener('keydown', e => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        document.getElementById('globalSearch').focus();
-      }
-    });
-
-    atualizarInterface();
-  </script>
-</body>
-</html>
+              <td>${m.data
