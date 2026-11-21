@@ -29,7 +29,6 @@
     .card-titulo { font-size: 0.82rem; color: #64748b; font-weight: 700; text-transform: uppercase; }
     .card-valor { font-size: 2rem; font-weight: 800; margin-top: 8px; color: #0f172a; }
 
-    /* GRADE ORDENADA DE TODOS OS MATERIAIS EM ESTOQUE */
     .resumo-materiais-box { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 22px; }
     .resumo-materiais-titulo { font-size: 0.85rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 14px; }
     .grid-materiais-estoque { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
@@ -42,10 +41,12 @@
     .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; flex-wrap: wrap; }
     .tab-btn { padding: 10px 20px; border: none; background: transparent; font-weight: 700; font-size: 0.95rem; color: #64748b; cursor: pointer; border-radius: 8px; }
     .tab-btn.active { background: #2563eb; color: #fff; }
+    .tab-btn.roxo.active { background: #7c3aed; color: #fff; }
 
-    .panel-tabela { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow-x: auto; }
-    
-    /* DUAS LISTAS PARALELAS NO HISTÓRICO */
+    .panel-tabela { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow-x: auto; margin-bottom: 20px; }
+    .panel-tabela.alerta-borda { border: 2px solid #ef4444; }
+    .panel-tabela h3 { margin: 0 0 14px; font-size: 1.02rem; text-transform: uppercase; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+
     .paralelo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 900px) { .paralelo-grid { grid-template-columns: 1fr; } }
     .coluna-paralela { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow-x: auto; }
@@ -53,15 +54,20 @@
     .titulo-entradas { color: #16a34a; }
     .titulo-saidas { color: #2563eb; }
 
+    .barra-filtro-conf { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #7c3aed; }
+    .select-conf { padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-weight: 600; min-width: 280px; }
+
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th, td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 0.88rem; }
     th { background: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 0.78rem; }
+    tr.subtotal-row { background: #f1f5f9; font-weight: 800; }
     
     .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 700; display: inline-block; }
     .badge-prensa { background: #dcfce7; color: #166534; }
     .badge-carregamento { background: #dbeafe; color: #1e40af; }
     .badge-erro { background: #fee2e2; color: #991b1b; }
     .badge-alerta { background: #ffedd5; color: #9a3412; }
+    .badge-roxo { background: #f3e8ff; color: #6b21a8; }
     .badge-material { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
     .mono { font-family: monospace; font-weight: 600; color: #0284c7; font-size: 0.82rem; }
   </style>
@@ -120,6 +126,7 @@
       <button class="tab-btn active" onclick="mudarAba('estoque', this)">Estoque Atual (Detalhado)</button>
       <button class="tab-btn" onclick="mudarAba('historico', this)">Histórico Paralelo (Entradas x Saídas)</button>
       <button class="tab-btn" onclick="mudarAba('bloqueios', this)">Log Completo / Linha do Tempo</button>
+      <button class="tab-btn roxo" onclick="mudarAba('conferencia', this)">Conferência de Estoque (Massa)</button>
     </div>
 
     <!-- ABA 1: ESTOQUE ATUAL -->
@@ -170,7 +177,7 @@
       </div>
     </div>
 
-    <!-- ABA 3: LOG COMPLETO DO TEMPO (TUDO REGISTRADO / ELIMINADO / BLOQUEADO) -->
+    <!-- ABA 3: LOG COMPLETO DO TEMPO -->
     <div id="aba-bloqueios" class="panel-tabela" style="display:none;">
       <table>
         <thead>
@@ -185,6 +192,65 @@
         </thead>
         <tbody id="tabelaBloqueios"></tbody>
       </table>
+    </div>
+
+    <!-- ABA 4: CONFERÊNCIA DE ESTOQUE (LEITURA EM MASSA) -->
+    <div id="aba-conferencia" style="display:none;">
+      <div class="barra-filtro-conf">
+        <div>
+          <strong style="color:#6b21a8; text-transform:uppercase; font-size:0.9rem;">Selecionar Leitura em Massa Enviada:</strong><br>
+          <span id="infoResumoConf" style="font-size:0.85rem; color:#475569;">Aguardando leituras...</span>
+        </div>
+        <select id="selectConferencias" class="select-conf" onchange="renderizarConferenciaSelecionada()"></select>
+      </div>
+
+      <!-- TABELA 4.1: SUBTOTAIS E TOTAIS POR MATERIAL (CONFERÊNCIA x ESTOQUE SISTEMA) -->
+      <div class="panel-tabela">
+        <h3 style="color:#6b21a8;">1. Resumo Comparativo por Material (Subtotais e Totais)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Fardos Lidos (Conferência)</th>
+              <th>Fardos no Estoque (Sistema)</th>
+              <th>Diferença (Fardos)</th>
+              <th>Peso Conferido (kg)</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaConfSubtotais"></tbody>
+        </table>
+      </div>
+
+      <!-- TABELA 4.2: FARDOS CONFERIDOS COM CORRESPONDÊNCIA NO ESTOQUE -->
+      <div class="panel-tabela">
+        <h3 style="color:#16a34a;">2. Fardos Lidos com Correspondência no Estoque</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Etiqueta (EPC)</th>
+              <th>Peso (kg)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaConfCorrespondentes"></tbody>
+        </table>
+      </div>
+
+      <!-- TABELA 4.3: FARDOS SEM CORRESPONDÊNCIA NO ESTOQUE (SEPARADOS) -->
+      <div class="panel-tabela alerta-borda">
+        <h3 style="color:#dc2626;">3. Fardos Lidos SEM Correspondência no Estoque (Fora do Cadastro)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Etiqueta (EPC)</th>
+              <th>Situação</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaConfSemCorrespondencia"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -206,7 +272,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Ordem oficial dos materiais para exibição fixa no painel
     const ORDEM_MATERIAIS = [
       "Pet Cristal",
       "Pet Azul",
@@ -223,6 +288,10 @@
     let unsubEstoque = null;
     let unsubHistorico = null;
     let unsubBloqueios = null;
+    let unsubConferencias = null;
+
+    let estoqueAtualMapa = {};     // EPC -> { material, peso_kg } em tempo real
+    let listaConferencias = [];    // Lista das conferências recebidas do coletor
 
     function formatarData(ts) {
       if (!ts || !ts.toDate) return "—";
@@ -255,16 +324,165 @@
       document.getElementById("aba-estoque").style.display = aba === "estoque" ? "block" : "none";
       document.getElementById("aba-historico").style.display = aba === "historico" ? "block" : "none";
       document.getElementById("aba-bloqueios").style.display = aba === "bloqueios" ? "block" : "none";
+      document.getElementById("aba-conferencia").style.display = aba === "conferencia" ? "block" : "none";
+      if (aba === "conferencia") {
+        renderizarConferenciaSelecionada();
+      }
+    };
+
+    window.renderizarConferenciaSelecionada = function() {
+      const select = document.getElementById("selectConferencias");
+      const idx = Number(select.value || 0);
+      const conf = listaConferencias[idx];
+
+      if (!conf) {
+        document.getElementById("infoResumoConf").textContent = "Nenhuma conferência em massa enviada ainda.";
+        document.getElementById("tabelaConfSubtotais").innerHTML = `<tr><td colspan="5" style="text-align:center;color:#64748b;">Nenhuma leitura em massa recebida.</td></tr>`;
+        document.getElementById("tabelaConfCorrespondentes").innerHTML = `<tr><td colspan="4" style="text-align:center;color:#64748b;">—</td></tr>`;
+        document.getElementById("tabelaConfSemCorrespondencia").innerHTML = `<tr><td colspan="3" style="text-align:center;color:#64748b;">—</td></tr>`;
+        return;
+      }
+
+      const itens = Array.isArray(conf.itens_lidos) ? conf.itens_lidos : [];
+      document.getElementById("infoResumoConf").textContent = `Data: ${formatarData(conf.criado_em)} • Total Lido: ${itens.length} fardo(s)`;
+
+      const subtotaisLidos = {};
+      const subtotaisSistema = {};
+      ORDEM_MATERIAIS.forEach(m => {
+        subtotaisLidos[m] = { qtd: 0, peso: 0 };
+        subtotaisSistema[m] = { qtd: 0, peso: 0 };
+      });
+
+      // Conta o estoque atual do sistema por material
+      Object.values(estoqueAtualMapa).forEach(est => {
+        const mat = est.material || "Outros";
+        if (!subtotaisSistema[mat]) subtotaisSistema[mat] = { qtd: 0, peso: 0 };
+        subtotaisSistema[mat].qtd++;
+        subtotaisSistema[mat].peso += Number(est.peso_kg || 0);
+      });
+
+      let htmlCorrespondentes = "";
+      let htmlSemCorrespondencia = "";
+      let qtdCorresp = 0;
+      let pesoCorresp = 0;
+      let qtdSemCorresp = 0;
+
+      itens.forEach(item => {
+        const epc = (item.epc || "").toUpperCase();
+        // Cruza com o estoque atual em tempo real (ou usa o dado capturado na hora da leitura)
+        const noEstoqueAgora = estoqueAtualMapa[epc];
+        const encontrado = Boolean(noEstoqueAgora || item.existe_estoque);
+
+        if (encontrado) {
+          const mat = (noEstoqueAgora && noEstoqueAgora.material) || item.material || "Outros";
+          const peso = Number((noEstoqueAgora && noEstoqueAgora.peso_kg) || item.peso_kg || 0);
+
+          if (!subtotaisLidos[mat]) subtotaisLidos[mat] = { qtd: 0, peso: 0 };
+          subtotaisLidos[mat].qtd++;
+          subtotaisLidos[mat].peso += peso;
+
+          qtdCorresp++;
+          pesoCorresp += peso;
+
+          htmlCorrespondentes += `
+            <tr>
+              <td><span class="badge badge-material">${mat}</span></td>
+              <td class="mono">${epc}</td>
+              <td><strong>${formatarPeso(peso)}</strong></td>
+              <td><span class="badge badge-prensa">CONFERIDO NO ESTOQUE</span></td>
+            </tr>
+          `;
+        } else {
+          qtdSemCorresp++;
+          htmlSemCorrespondencia += `
+            <tr>
+              <td class="mono" style="color:#dc2626;">${epc}</td>
+              <td><span class="badge badge-erro">SEM CORRESPONDÊNCIA COM ESTOQUE</span></td>
+              <td>Fardo lido fisicamente, mas não consta no estoque atual do sistema.</td>
+            </tr>
+          `;
+        }
+      });
+
+      // Linha de subtotal dos correspondentes
+      if (qtdCorresp > 0) {
+        htmlCorrespondentes += `
+          <tr class="subtotal-row">
+            <td colspan="2">SUBTOTAL DE FARDOS COM CORRESPONDÊNCIA: ${qtdCorresp} fardo(s)</td>
+            <td colspan="2">${formatarPeso(pesoCorresp)}</td>
+          </tr>
+        `;
+      } else {
+        htmlCorrespondentes = `<tr><td colspan="4" style="text-align:center;color:#64748b;">Nenhum fardo correspondente encontrado.</td></tr>`;
+      }
+
+      // Linha de subtotal dos sem correspondência
+      if (qtdSemCorresp > 0) {
+        htmlSemCorrespondencia += `
+          <tr class="subtotal-row" style="background:#fee2e2;color:#991b1b;">
+            <td colspan="3">SUBTOTAL SEM CORRESPONDÊNCIA NO ESTOQUE: ${qtdSemCorresp} fardo(s)</td>
+          </tr>
+        `;
+      } else {
+        htmlSemCorrespondencia = `<tr><td colspan="3" style="text-align:center;color:#16a34a;font-weight:700;">Nenhum fardo divergente! Todos os fardos lidos constam no estoque.</td></tr>`;
+      }
+
+      document.getElementById("tabelaConfCorrespondentes").innerHTML = htmlCorrespondentes;
+      document.getElementById("tabelaConfSemCorrespondencia").innerHTML = htmlSemCorrespondencia;
+
+      // Monta tabela comparativa de Subtotais e Totais por Material
+      const todosMateriais = [...new Set([...ORDEM_MATERIAIS, ...Object.keys(subtotaisLidos), ...Object.keys(subtotaisSistema)])];
+      let htmlSubtotais = "";
+      let totalLidosGeral = 0;
+      let totalSistemaGeral = 0;
+      let pesoLidoGeral = 0;
+
+      todosMateriais.forEach(mat => {
+        const lido = subtotaisLidos[mat] || { qtd: 0, peso: 0 };
+        const sist = subtotaisSistema[mat] || { qtd: 0, peso: 0 };
+        const diff = lido.qtd - sist.qtd;
+
+        totalLidosGeral += lido.qtd;
+        totalSistemaGeral += sist.qtd;
+        pesoLidoGeral += lido.peso;
+
+        const diffTexto = diff === 0 ? "0 (OK)" : (diff > 0 ? `+${diff}` : `${diff}`);
+        const diffCor = diff === 0 ? "#16a34a" : "#dc2626";
+
+        htmlSubtotais += `
+          <tr>
+            <td><span class="badge badge-material">${mat}</span></td>
+            <td><strong>${lido.qtd} fardo(s)</strong></td>
+            <td>${sist.qtd} fardo(s)</td>
+            <td style="font-weight:800; color:${diffCor};">${diffTexto}</td>
+            <td>${formatarPeso(lido.peso)}</td>
+          </tr>
+        `;
+      });
+
+      const diffTotal = totalLidosGeral - totalSistemaGeral;
+      htmlSubtotais += `
+        <tr class="subtotal-row">
+          <td>TOTAL GERAL CONFERIDO</td>
+          <td>${totalLidosGeral} fardo(s)</td>
+          <td>${totalSistemaGeral} fardo(s)</td>
+          <td>${diffTotal > 0 ? '+' + diffTotal : diffTotal} fardo(s) (+ ${qtdSemCorresp} sem estoque)</td>
+          <td>${formatarPeso(pesoLidoGeral)}</td>
+        </tr>
+      `;
+
+      document.getElementById("tabelaConfSubtotais").innerHTML = htmlSubtotais;
     };
 
     function iniciarListeners() {
-      // 1. ESTOQUE ATUAL + TODOS OS MATERIAIS EM ORDEM
+      // 1. ESTOQUE ATUAL
       const qEstoque = query(collection(db, "estoque_atual"), orderBy("data_entrada", "desc"));
       unsubEstoque = onSnapshot(qEstoque, (snap) => {
         let qtdTotal = 0;
         let pesoTotal = 0;
         let htmlTabela = "";
         const mapaMateriais = {};
+        estoqueAtualMapa = {};
 
         ORDEM_MATERIAIS.forEach(m => {
           mapaMateriais[m] = { qtd: 0, peso: 0 };
@@ -272,8 +490,11 @@
 
         snap.forEach((doc) => {
           const d = doc.data();
+          const epc = (d.epc || doc.id).toUpperCase();
           const mat = d.material || "Outros";
           const peso = Number(d.peso_kg || 0);
+
+          estoqueAtualMapa[epc] = { material: mat, peso_kg: peso };
 
           qtdTotal++;
           pesoTotal += peso;
@@ -287,7 +508,7 @@
           htmlTabela += `
             <tr>
               <td><span class="badge badge-material">${mat}</span></td>
-              <td class="mono">${d.epc}</td>
+              <td class="mono">${epc}</td>
               <td><strong>${formatarPeso(peso)}</strong></td>
               <td>${formatarData(d.data_entrada)}</td>
             </tr>
@@ -298,7 +519,6 @@
         document.getElementById("kpiPesoEstoque").textContent = formatarPeso(pesoTotal);
         document.getElementById("tabelaEstoque").innerHTML = htmlTabela || `<tr><td colspan="4" style="text-align:center;color:#64748b;">Nenhum fardo em estoque.</td></tr>`;
 
-        // Renderiza todos os materiais na ordem oficial + eventuais outros
         const todasChaves = [...ORDEM_MATERIAIS, ...Object.keys(mapaMateriais).filter(k => !ORDEM_MATERIAIS.includes(k))];
         document.getElementById("gridMateriaisEstoque").innerHTML = todasChaves.map(mat => {
           const info = mapaMateriais[mat];
@@ -310,9 +530,11 @@
             </div>
           `;
         }).join("");
+
+        renderizarConferenciaSelecionada();
       });
 
-      // 2. HISTÓRICO PARALELO (ENTRADAS NA PRENSA x SAÍDAS NO CARREGAMENTO)
+      // 2. HISTÓRICO PARALELO
       const qHist = query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(500));
       unsubHistorico = onSnapshot(qHist, (snap) => {
         let htmlEntradas = "";
@@ -347,7 +569,7 @@
         document.getElementById("tabelaSaidasParalela").innerHTML = htmlSaidas || `<tr><td colspan="3" style="text-align:center;color:#64748b;">Nenhuma saída registrada.</td></tr>`;
       });
 
-      // 3. LOG COMPLETO / LINHA DO TEMPO DE TODAS AS AÇÕES E BLOQUEIOS
+      // 3. LOG COMPLETO / LINHA DO TEMPO
       const qBloq = query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500));
       unsubBloqueios = onSnapshot(qBloq, (snap) => {
         document.getElementById("kpiBloqueios").textContent = snap.size;
@@ -359,6 +581,7 @@
           if (tipo.includes("REGISTRADO")) classeBadge = "badge-prensa";
           else if (tipo.includes("CARREGADO") || tipo.includes("FINALIZADA")) classeBadge = "badge-carregamento";
           else if (tipo.includes("ELIMINADO") || tipo.includes("CANCELADO")) classeBadge = "badge-alerta";
+          else if (tipo.includes("CONFERENCIA")) classeBadge = "badge-roxo";
 
           const mat = d.material || "—";
           const pesoTxt = d.peso_kg ? formatarPeso(d.peso_kg) : "—";
@@ -376,6 +599,24 @@
         });
         document.getElementById("tabelaBloqueios").innerHTML = html || `<tr><td colspan="6" style="text-align:center;color:#64748b;">Nenhum registro na linha do tempo.</td></tr>`;
       });
+
+      // 4. CONFERÊNCIAS DE ESTOQUE (LEITURAS EM MASSA)
+      const qConf = query(collection(db, "conferencias_estoque"), orderBy("criado_em", "desc"), limit(50));
+      unsubConferencias = onSnapshot(qConf, (snap) => {
+        listaConferencias = [];
+        const select = document.getElementById("selectConferencias");
+        let optionsHtml = "";
+
+        snap.forEach((doc) => {
+          const data = doc.data();
+          const idx = listaConferencias.length;
+          listaConferencias.push({ id: doc.id, ...data });
+          optionsHtml += `<option value="${idx}">${formatarData(data.criado_em)} — ${data.total_lidos || 0} fardo(s)</option>`;
+        });
+
+        select.innerHTML = optionsHtml || `<option value="0">Nenhuma conferência enviada</option>`;
+        renderizarConferenciaSelecionada();
+      });
     }
 
     onAuthStateChanged(auth, (user) => {
@@ -388,6 +629,7 @@
         if (unsubEstoque) unsubEstoque();
         if (unsubHistorico) unsubHistorico();
         if (unsubBloqueios) unsubBloqueios();
+        if (unsubConferencias) unsubConferencias();
         document.getElementById("telaErp").style.display = "none";
         document.getElementById("telaLogin").style.display = "flex";
       }
