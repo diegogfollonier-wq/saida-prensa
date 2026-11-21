@@ -74,6 +74,7 @@ input,select{font:inherit;color:var(--txt)}
 .kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue)}
 .kpi.ok::after{background:var(--ok)}.kpi.warn::after{background:var(--warn)}.kpi.err::after{background:var(--err)}.kpi.vio::after{background:var(--violet)}
 .kpi .l{font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+.aviso{background:rgba(94,170,236,.14);border:1px solid rgba(94,170,236,.4);color:#BFDDF8;padding:11px 14px;border-radius:10px;font-size:14px;font-weight:600;margin-bottom:14px}
 .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .kpi .v{font-size:28px;font-weight:700;margin-top:8px;white-space:nowrap}
 .kpi .v small{font-size:14px;font-weight:600;color:var(--muted);margin-left:4px}
@@ -107,6 +108,21 @@ input,select{font:inherit;color:var(--txt)}
 .mat .bar i{display:block;height:100%;background:var(--blue);border-radius:5px}
 
 /* ---------- TABELAS ---------- */
+.total-est{text-align:center;padding:26px 20px 22px;margin-bottom:16px;background:linear-gradient(180deg,var(--card2),var(--card))}
+.te-l{font-size:13px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+.te-l span{color:var(--warn);letter-spacing:.4px;text-transform:none;font-size:12.5px;margin-left:6px}
+.te-v{display:flex;align-items:flex-end;justify-content:center;gap:34px;margin:10px 0 4px;flex-wrap:wrap}
+.te-v b{display:block;font-size:64px;font-weight:700;line-height:1;color:var(--txt);letter-spacing:.5px}
+.te-v span{display:block;font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-top:6px}
+.te-sep{width:1px;align-self:stretch;background:var(--line);margin:6px 0}
+.te-sub{font-size:12px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin:20px 0 10px}
+.te-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;text-align:left}
+.te-m{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.te-m.zero{opacity:.45}
+.te-m .n{font-size:13px;font-weight:700;color:var(--txt2)}
+.te-m .q{font-size:24px;font-weight:700;margin-top:4px}
+.te-m .q small{font-size:12px;font-weight:700;color:var(--muted);margin-left:4px;text-transform:uppercase}
+.te-m .p{font-size:15px;font-weight:700;color:var(--blue);margin-top:2px}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .input{padding:10px 13px;background:var(--bg);border:1px solid var(--line);border-radius:10px;outline:none;font-size:14px;min-width:0}
 .input:focus{border-color:var(--blue)}
@@ -158,6 +174,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
   .lg-d{display:none!important}.lg-m{display:inline!important}
 }
 @media (max-width:640px){
+  .te-v b{font-size:42px}.te-v{gap:22px}.te-grid{grid-template-columns:1fr 1fr}
   .kpis,.kpis.k4{grid-template-columns:1fr 1fr}.kpi .v{font-size:23px}.kpis .kpi:last-child:nth-child(odd){grid-column:1/-1}
   .panel{padding:14px}
   th,td{padding:10px 10px;font-size:13px}
@@ -260,10 +277,19 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
     <!-- ===== ESTOQUE ===== -->
     <section class="view" id="v-estoque">
       <div class="page-head"><div><h1>Estoque atual</h1><p>Todos os fardos que entraram na Prensa e ainda não saíram.</p></div></div>
+      <div class="panel total-est">
+        <div class="te-l">Total em estoque <span id="teFiltro" class="hide">· filtro aplicado</span></div>
+        <div class="te-v">
+          <div><b id="teQtd">0</b><span>fardos</span></div>
+          <div class="te-sep"></div>
+          <div><b id="tePeso">0</b><span>kg</span></div>
+        </div>
+        <div class="te-sub">Subtotal por material</div>
+        <div class="te-grid" id="teMat"></div>
+      </div>
       <div class="toolbar">
         <input class="input grow" id="fEst" placeholder="Filtrar por material ou etiqueta (EPC)…">
         <select class="input" id="fEstMat"><option value="">Todos os materiais</option></select>
-        <span class="chip" id="chipEst"></span>
       </div>
       <div class="table-wrap"><table>
         <thead><tr>
@@ -314,6 +340,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
         <select class="input" id="selConf" style="min-width:300px;flex:1 1 300px;max-width:520px"></select>
         <span class="chip" id="infoConf">Aguardando leituras…</span>
       </div>
+      <div id="avisoConf" class="aviso hide">Nova conferência recebida: os dados anteriores foram substituídos pela leitura mais recente.</div>
       <div class="kpis k4">
         <div class="kpi"><div class="l">Fardos lidos</div><div class="v" id="cLidos">0</div></div>
         <div class="kpi ok"><div class="l">Com correspondência</div><div class="v" id="cOk">0</div></div>
@@ -364,6 +391,8 @@ let logs = [];             // {ts, tipo, material, peso, epc, motivo}
 let confs = [];            // conferências
 let sortEst = { k:"ts", dir:-1 };
 let diasGrafico = 14;
+let ultimaConfId;          // id da conferência mais recente já exibida
+let avisoTimer;
 let viewAtual = "visao";
 
 /* ---------- utilitários ---------- */
@@ -494,16 +523,30 @@ function resumoEstoque(){
   estoque.forEach(e => { (m[e.material] ||= { qtd: 0, peso: 0 }); m[e.material].qtd++; m[e.material].peso += e.peso; });
   return m;
 }
+/* Cada etiqueta física conta uma única vez por conferência: normaliza (trim + maiúsculas), ignora vazios e remove duplicados */
+function normalizarItens(lista){
+  const vistos = new Set(), itens = [];
+  let duplicados = 0, vazios = 0;
+  (Array.isArray(lista) ? lista : []).forEach(it => {
+    const bruto = (typeof it === "string") ? it : (it && it.epc);
+    const epc = String(bruto ?? "").trim().toUpperCase();
+    if (!epc){ vazios++; return; }
+    if (vistos.has(epc)){ duplicados++; return; }
+    vistos.add(epc);
+    itens.push(typeof it === "object" && it ? { ...it, epc } : { epc });
+  });
+  return { itens, duplicados, vazios };
+}
 function calcConferencia(conf){
   if (!conf) return null;
-  const itens = Array.isArray(conf.itens_lidos) ? conf.itens_lidos : [];
+  const { itens, duplicados, vazios } = normalizarItens(conf.itens_lidos);
   const lidos = {}, sist = {};
   const mats = listaMateriais([...Object.values(estoqueMapa).map(e => e.material), ...itens.map(i => i.material).filter(Boolean)]);
   mats.forEach(m => { lidos[m] = { qtd: 0, peso: 0 }; sist[m] = { qtd: 0, peso: 0 }; });
   Object.values(estoqueMapa).forEach(e => { const m = e.material || "Outros"; (sist[m] ||= { qtd: 0, peso: 0 }); sist[m].qtd++; sist[m].peso += e.peso_kg; });
   const ok = [], sem = [];
   itens.forEach(it => {
-    const epc = String(it.epc || "").toUpperCase();
+    const epc = it.epc;
     const no = estoqueMapa[epc];
     if (no || it.existe_estoque){
       const mat = (no && no.material) || it.material || "Outros";
@@ -512,7 +555,7 @@ function calcConferencia(conf){
       ok.push({ epc, mat, peso });
     } else sem.push({ epc });
   });
-  return { itens, lidos, sist, ok, sem, mats: Object.keys({ ...lidos, ...sist }) };
+  return { itens, duplicados, vazios, lidos, sist, ok, sem, mats: Object.keys({ ...lidos, ...sist }) };
 }
 
 /* ---------- renderização ---------- */
@@ -612,7 +655,17 @@ function renderEstoque(){
   });
   document.querySelectorAll("#v-estoque th[data-sort]").forEach(th => th.querySelector(".ar").textContent = th.dataset.sort === k ? (d > 0 ? "▲" : "▼") : "");
   const peso = lista.reduce((a, e) => a + e.peso, 0);
-  $("chipEst").textContent = `${fmtNum(lista.length)} fardo(s) · ${fmtKg(peso)}`;
+  const filtrando = Boolean(termo || mat);
+  $("teQtd").textContent = fmtNum(lista.length); $("tePeso").textContent = nf2.format(peso);
+  $("teFiltro").classList.toggle("hide", !filtrando);
+  const sub = {};
+  lista.forEach(e => { (sub[e.material] ||= { qtd: 0, peso: 0 }); sub[e.material].qtd++; sub[e.material].peso += e.peso; });
+  const ordem = filtrando ? Object.keys(sub) : listaMateriais(Object.keys(sub));
+  const pos = m => { const i = ORDEM_MATERIAIS.indexOf(m); return i < 0 ? 999 : i; };
+  ordem.sort((a, b) => pos(a) - pos(b));
+  $("teMat").innerHTML = ordem.length ? ordem.map(m => { const i = sub[m] || { qtd: 0, peso: 0 };
+    return `<div class="te-m ${i.qtd ? "" : "zero"}"><div class="n">${esc(m)}</div><div class="q">${fmtNum(i.qtd)}<small>fardo(s)</small></div><div class="p">${fmtKg(i.peso)}</div></div>`; }).join("")
+    : `<div class="muted" style="grid-column:1/-1;text-align:center">Nenhum fardo no filtro.</div>`;
   const MAX = 1500;
   $("tbEst").innerHTML = lista.length ? lista.slice(0, MAX).map(e => `<tr><td>${badgeMat(e.material)}</td><td class="mono" style="color:var(--blue)">${esc(e.epc)}</td><td class="num"><b>${nf2.format(e.peso)}</b></td><td>${fmtData(e.ts)}</td></tr>`).join("")
     + (lista.length > MAX ? vazio(4, `Mostrando ${MAX} de ${lista.length}. Use o filtro para refinar.`) : "") : vazio(4, "Nenhum fardo encontrado.");
@@ -651,7 +704,10 @@ function renderConferencia(){
     $("tbConfSub").innerHTML = vazio(5, "Nenhuma leitura em massa recebida.");
     $("tbConfOk").innerHTML = vazio(4, "—"); $("tbConfSem").innerHTML = vazio(3, "—"); return;
   }
-  $("infoConf").textContent = `Enviada em ${fmtData(conf.criado_em)}${conf.tipo_conferencia ? " · " + conf.tipo_conferencia : ""}`;
+  const extra = [];
+  if (cf.duplicados) extra.push(`${fmtNum(cf.duplicados)} leitura(s) duplicada(s) ignorada(s)`);
+  if (cf.vazios) extra.push(`${fmtNum(cf.vazios)} vazia(s) ignorada(s)`);
+  $("infoConf").textContent = `Enviada em ${fmtData(conf.criado_em)}${conf.tipo_conferencia ? " · " + conf.tipo_conferencia : ""}${extra.length ? " · " + extra.join(" · ") : ""}`;
   const pesoOk = cf.ok.reduce((a, i) => a + i.peso, 0);
   $("cLidos").textContent = fmtNum(cf.itens.length); $("cOk").textContent = fmtNum(cf.ok.length); $("cSem").textContent = fmtNum(cf.sem.length);
   $("cPeso").innerHTML = `${nf2.format(pesoOk)}<small>kg</small>`;
@@ -673,6 +729,16 @@ function renderConferencia(){
     : `<tr class="empty"><td colspan="3" style="color:var(--ok);font-weight:700">Nenhuma divergência: todos os fardos lidos constam no estoque.</td></tr>`;
 }
 
+function limparConferencia(){
+  ["cLidos","cOk","cSem"].forEach(i => $(i).textContent = "0"); $("cPeso").innerHTML = "0<small>kg</small>";
+  $("tbConfSub").innerHTML = vazio(5, "Carregando nova conferência…");
+  $("tbConfOk").innerHTML = vazio(4, "—"); $("tbConfSem").innerHTML = vazio(3, "—");
+  $("infoConf").textContent = "";
+}
+function avisarNovaConferencia(){
+  const a = $("avisoConf"); a.classList.remove("hide");
+  clearTimeout(avisoTimer); avisoTimer = setTimeout(() => a.classList.add("hide"), 10000);
+}
 function renderTudo(){ renderKpisEGraficos(); renderEstoque(); renderHistorico(); renderLog(); renderConferencia(); }
 
 /* ---------- navegação e eventos ---------- */
@@ -743,14 +809,17 @@ function iniciarListeners(){
   }, falha("logs_bloqueios")));
 
   unsubs.push(onSnapshot(query(collection(db, "conferencias_estoque"), orderBy("criado_em", "desc"), limit(50)), snap => {
-    const antes = $("selConf").value;
     confs = []; let opts = "";
     snap.forEach(doc => {
       const d = doc.data(), i = confs.length; confs.push({ id: doc.id, ...d });
-      opts += `<option value="${i}">${fmtData(d.criado_em)}${d.tipo_conferencia ? " [" + esc(d.tipo_conferencia) + "]" : ""} — ${d.total_lidos || (Array.isArray(d.itens_lidos) ? d.itens_lidos.length : 0)} fardo(s)</option>`;
+      opts += `<option value="${i}">${fmtData(d.criado_em)}${d.tipo_conferencia ? " [" + esc(d.tipo_conferencia) + "]" : ""} — ${Array.isArray(d.itens_lidos) ? normalizarItens(d.itens_lidos).itens.length : (d.total_lidos || 0)} fardo(s)</option>`;
     });
     $("selConf").innerHTML = opts || `<option value="0">Nenhuma conferência enviada</option>`;
-    if (antes && Number(antes) < confs.length) $("selConf").value = antes;
+    const topoId = confs.length ? confs[0].id : null;
+    const chegouNova = ultimaConfId !== undefined && topoId !== null && topoId !== ultimaConfId;
+    ultimaConfId = topoId;
+    $("selConf").value = "0";                 // sempre mostra a conferência mais recente
+    if (chegouNova){ limparConferencia(); avisarNovaConferencia(); }
     marcarAtualizacao(); renderConferencia(); desenharGraficos();
   }, falha("conferencias_estoque")));
 }
