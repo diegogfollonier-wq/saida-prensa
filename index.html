@@ -376,6 +376,7 @@
     let modoAtual = null;
     let materialPrensa = null;
     let idCargaAtual = null;
+    let sessaoInicioMs = null;
     let qtdFardosCarga = 0;
     let pesoTotalCarga = 0;
     let fardosValidados = [];
@@ -1159,7 +1160,8 @@
       encerraAntenaMassaSeAtiva();
       modoAtual = "CARREGAMENTO";
       materialPrensa = null;
-      idCargaAtual = "CARGA-" + Date.now();
+      sessaoInicioMs = Date.now();
+      idCargaAtual = "CARGA-" + sessaoInicioMs;
       qtdFardosCarga = 0;
       pesoTotalCarga = 0;
       const header = document.getElementById("headerOperacao");
@@ -1207,6 +1209,7 @@
       qtdFardosCarga = 0;
       pesoTotalCarga = 0;
       idCargaAtual = null;
+      sessaoInicioMs = null;
       irParaInicio();
     };
 
@@ -1476,7 +1479,7 @@
               const dados = snap.data();
               const matFardo = dados.material || "Sem Material";
               const peso = Number(dados.peso_kg || 0);
-              fardosValidados.push({ epc, material: matFardo, peso_kg: peso });
+              fardosValidados.push({ epc, material: matFardo, peso_kg: peso, lido_ms: Date.now() });
             }
           }
 
@@ -1566,6 +1569,8 @@
             material: item.material,
             id_carga: idCargaAtual,
             peso_kg: item.peso_kg,
+            sessao_inicio_ms: sessaoInicioMs,
+            lido_ms: item.lido_ms || null,
             dispositivo: "Bluebird-EF401",
             criado_em: serverTimestamp()
           });
