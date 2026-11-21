@@ -3,181 +3,253 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Estoque RFID</title>
+  <title>Fardos RFID</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: Arial, sans-serif;
       background: #0f172a;
       color: #f8fafc;
       margin: 0;
-      padding: 10px;
+      padding: 14px;
     }
-    .topo {
-      background: #1e293b;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .topo h2 {
-      margin: 0 0 4px 0;
-      font-size: 16px;
-      color: #38bdf8;
-    }
-    .cards {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .card {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      color: #fff;
-      font-weight: bold;
-    }
-    .c-saldo { background: #2563eb; }
-    .c-ent { background: #16a34a; }
-    .c-sai { background: #ea580c; }
-    .card span { font-size: 11px; display: block; opacity: 0.9; }
-    .card strong { font-size: 16px; display: block; margin-top: 4px; }
-    .box-leitura {
+    .tela {
       display: none;
-      background: #172554;
-      border: 2px solid #38bdf8;
-      border-radius: 8px;
+    }
+    .tela.ativa {
+      display: block;
+    }
+    .modo-topo {
+      text-align: center;
+      font-size: 15px;
+      font-weight: bold;
       padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      background: #1e293b;
+    }
+    .modo-entrada {
+      background: #14532d;
+      color: #86efac;
+      border: 1px solid #22c55e;
+    }
+    .modo-saida {
+      background: #7c2d12;
+      color: #fdba74;
+      border: 1px solid #f97316;
+    }
+    .grid-acao {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 10px;
+    }
+    .btn-grande {
+      width: 100%;
+      padding: 22px 16px;
+      font-size: 22px;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      color: #ffffff;
+      cursor: pointer;
+    }
+    .btn-entrada {
+      background: #16a34a;
+    }
+    .btn-saida {
+      background: #ea580c;
+    }
+    .btn-confirmar {
+      width: 100%;
+      padding: 18px 14px;
+      font-size: 19px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      background: #16a34a;
+      color: #ffffff;
+      cursor: pointer;
       margin-bottom: 10px;
     }
-    .box-leitura.visivel { display: block; }
-    .box-leitura.duplicada { background: #450a0a; border-color: #f87171; }
-    .epc-txt {
-      background: #0f172a;
-      padding: 8px;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 12px;
-      word-break: break-all;
-      margin: 6px 0;
-      color: #7dd3fc;
-    }
-    input, select {
+    .btn-refazer {
       width: 100%;
-      box-sizing: border-box;
-      padding: 8px;
-      margin: 4px 0 8px 0;
-      border-radius: 6px;
-      border: 1px solid #475569;
-      background: #0f172a;
-      color: #fff;
-      font-size: 14px;
+      padding: 16px 14px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      background: #475569;
+      color: #ffffff;
+      cursor: pointer;
     }
-    button {
-      padding: 9px 12px;
+    .painel {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .epc-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 15px;
+      color: #38bdf8;
+      word-break: break-all;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .peso-box {
+      background: #0f172a;
+      border: 2px solid #22c55e;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .peso-label {
+      font-size: 13px;
+      color: #94a3b8;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .peso-valor {
+      font-size: 30px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+    .alerta-box {
+      background: #450a0a;
+      border: 2px solid #ef4444;
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .alerta-titulo {
+      font-size: 28px;
+      font-weight: bold;
+      color: #fca5a5;
+      margin-bottom: 10px;
+    }
+    .alerta-texto {
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffffff;
+      line-height: 1.35;
+      margin-bottom: 12px;
+    }
+    .status-rodape {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+      color: #cbd5e1;
+      min-height: 20px;
+    }
+    .teste-discreto {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #1e293b;
+      text-align: center;
+    }
+    .btn-teste {
+      background: #334155;
+      color: #e2e8f0;
       border: none;
       border-radius: 6px;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      margin-right: 6px;
-      margin-bottom: 6px;
-    }
-    .b-verde { background: #16a34a; }
-    .b-laranja { background: #ea580c; }
-    .b-azul { background: #2563eb; }
-    .b-cinza { background: #475569; }
-    .b-vermelho { background: #dc2626; }
-    .lista {
-      background: #ffffff;
-      color: #0f172a;
-      border-radius: 8px;
-      padding: 10px;
-    }
-    .item {
-      border-bottom: 1px solid #e2e8f0;
-      padding: 8px 0;
+      padding: 8px 12px;
       font-size: 12px;
+      cursor: pointer;
     }
-    .item:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
-  <div class="topo">
-    <h2>CONTROLE DE ESTOQUE RFID</h2>
-    <div id="msgStatus" style="font-size:12px;color:#cbd5e1;">Pronto para ler 1 etiqueta por vez</div>
 
-    <label style="font-size:11px;color:#cbd5e1;display:block;margin-top:6px;">Informar / Testar EPC da Etiqueta:</label>
-    <input type="text" id="epcManualInp" placeholder="Ex: 3400E28011704000021C393F08D0" />
+  <!-- TELA 1: INICIAL (SOMENTE ENTRADA E SAIDA) -->
+  <div id="telaInicial" class="tela ativa">
+    <div id="badgeOperacao" class="modo-topo">OPERAÇÃO: SELECIONE</div>
 
-    <div style="margin-top:4px;">
-      <button type="button" class="b-verde" onclick="enviarEpcManual()">Ler EPC Informado</button>
-      <button type="button" class="b-azul" onclick="simularTag()">Simular Tag</button>
-      <button type="button" class="b-vermelho" onclick="limparLista()">Limpar</button>
+    <div class="grid-acao">
+      <button type="button" class="btn-grande btn-entrada" onclick="escolherOperacao('ENTRADA')">
+        ENTRADA
+      </button>
+      <button type="button" class="btn-grande btn-saida" onclick="escolherOperacao('SAIDA')">
+        SAÍDA
+      </button>
+    </div>
+
+    <div id="statusInicial" class="status-rodape"></div>
+
+    <div class="teste-discreto">
+      <button type="button" class="btn-teste" onclick="simularLeituraRfid()">Simular Tag RFID</button>
     </div>
   </div>
 
-  <div class="cards">
-    <div class="card c-saldo">
-      <span>SALDO</span>
-      <strong id="vSaldo">0,0 kg</strong>
-      <small id="qSaldo">0 fardos</small>
-    </div>
-    <div class="card c-ent">
-      <span>ENTRADAS</span>
-      <strong id="vEnt">0,0 kg</strong>
-      <small id="qEnt">0 fardos</small>
-    </div>
-    <div class="card c-sai">
-      <span>SAÍDAS</span>
-      <strong id="vSai">0,0 kg</strong>
-      <small id="qSai">0 fardos</small>
-    </div>
-  </div>
+  <!-- TELA 2: NOVO FARDO (PESO AUTOMATICO SIMULADO -> CONFIRMAR OU REFAZER) -->
+  <div id="telaNovo" class="tela">
+    <div id="topoNovo" class="modo-topo modo-entrada">ENTRADA - NOVO FARDO</div>
 
-  <div id="boxLeitura" class="box-leitura">
-    <div id="avisoTag" style="font-weight:bold;color:#fde047;font-size:13px;">Etiqueta lida</div>
-    <div id="epcLido" class="epc-txt">---</div>
+    <div class="painel">
+      <div id="epcNovo" class="epc-box">---</div>
 
-    <div>
-      <button type="button" id="btnTipoEnt" class="b-verde" onclick="setTipo('ENTRADA')">ENTRADA</button>
-      <button type="button" id="btnTipoSai" class="b-laranja" onclick="setTipo('SAIDA')">SAÍDA</button>
-    </div>
+      <div class="peso-box">
+        <span class="peso-label">PESO (SIMULADO)</span>
+        <span id="pesoNovo" class="peso-valor">220,0 kg</span>
+      </div>
 
-    <label style="font-size:12px;">Peso (kg):</label>
-    <input type="text" id="pesoInp" value="210.0" />
-
-    <label style="font-size:12px;">Material:</label>
-    <select id="matInp">
-      <option value="Papelao">Papelao</option>
-      <option value="Plastico">Plastico</option>
-      <option value="Fardo">Fardo</option>
-    </select>
-
-    <div>
-      <button type="button" class="b-verde" onclick="salvarTag()">GRAVAR</button>
-      <button type="button" class="b-cinza" onclick="fecharBox()">CANCELAR</button>
+      <button type="button" class="btn-confirmar" onclick="confirmarGravacao()">
+        CONFIRMAR GRAVAÇÃO
+      </button>
+      <button type="button" class="btn-refazer" onclick="refazerLeitura()">
+        REFAZER
+      </button>
     </div>
   </div>
 
-  <div class="lista">
-    <strong style="display:block;margin-bottom:6px;">Movimentações</strong>
-    <div id="listaMov">Nenhuma movimentação.</div>
+  <!-- TELA 3: FARDO JA CADASTRADO -->
+  <div id="telaExistente" class="tela">
+    <div class="alerta-box">
+      <div class="alerta-titulo">ATENÇÃO</div>
+      <div class="alerta-texto">ESTE FARDO JÁ ESTÁ CADASTRADO, MODIFICAR?</div>
+      <div id="epcExistente" class="epc-box">---</div>
+      <div id="pesoExistente" class="peso-label" style="font-size:16px;color:#fecaca;"></div>
+    </div>
+
+    <button type="button" class="btn-confirmar" onclick="confirmarGravacao()">
+      MODIFICAR / GRAVAR
+    </button>
+    <button type="button" class="btn-refazer" onclick="refazerLeitura()">
+      CANCELAR / REFAZER
+    </button>
   </div>
 
   <script>
-    var STORAGE_KEY = 'rfid_simples_v1';
-    var registros = [];
-    var tagAtual = '';
-    var tipoAtual = 'ENTRADA';
-    var jaExiste = false;
+    var STORAGE_KEY = 'fardos_rfid_cadastrados_v1';
+    var fardos = {};
+    var operacaoAtual = 'ENTRADA';
+    var epcAtual = '';
+    var pesoAtual = 0;
 
     try {
       var salvo = localStorage.getItem(STORAGE_KEY);
-      if (salvo) registros = JSON.parse(salvo);
+      if (salvo) {
+        fardos = JSON.parse(salvo) || {};
+      }
     } catch (e) {
-      registros = [];
+      fardos = {};
     }
 
-    function notificarAndroidLiberado() {
+    function salvarStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(fardos));
+      } catch (e) {}
+    }
+
+    function liberarAndroid() {
       try {
         if (window.AndroidSingleTag && typeof window.AndroidSingleTag.liberarProximaEtiqueta === 'function') {
           window.AndroidSingleTag.liberarProximaEtiqueta();
@@ -185,170 +257,103 @@
       } catch (e) {}
     }
 
-    function setTipo(t) {
-      tipoAtual = t;
-      document.getElementById('btnTipoEnt').style.outline = (t === 'ENTRADA') ? '2px solid #fff' : 'none';
-      document.getElementById('btnTipoSai').style.outline = (t === 'SAIDA') ? '2px solid #fff' : 'none';
+    function mostrarTela(idTela) {
+      document.getElementById('telaInicial').className = 'tela';
+      document.getElementById('telaNovo').className = 'tela';
+      document.getElementById('telaExistente').className = 'tela';
+      document.getElementById(idTela).className = 'tela ativa';
     }
 
-    function buscarEmEstoque(epc) {
-      for (var i = registros.length - 1; i >= 0; i--) {
-        if (registros[i].epc === epc) {
-          return registros[i].tipo === 'ENTRADA' ? registros[i] : null;
-        }
+    function atualizarBadgeOperacao() {
+      var badge = document.getElementById('badgeOperacao');
+      if (operacaoAtual === 'SAIDA') {
+        badge.className = 'modo-topo modo-saida';
+        badge.innerHTML = 'OPERAÇÃO ATUAL: SAÍDA';
+      } else {
+        badge.className = 'modo-topo modo-entrada';
+        badge.innerHTML = 'OPERAÇÃO ATUAL: ENTRADA';
       }
-      return null;
+    }
+
+    function escolherOperacao(tipo) {
+      operacaoAtual = tipo;
+      atualizarBadgeOperacao();
+      document.getElementById('statusInicial').innerHTML = 'Aproxime a etiqueta RFID do fardo...';
+    }
+
+    function gerarPesoSimulado() {
+      var kg = Math.floor(Math.random() * 121) + 180; // 180 a 300 kg
+      return Number(kg).toFixed(1);
     }
 
     window.receberRFID = function(codigo) {
-      if (!codigo || tagAtual) return;
+      if (!codigo || epcAtual) return;
       var limpo = String(codigo).replace(/\s+/g, '').toUpperCase();
-      tagAtual = limpo;
-      document.getElementById('epcManualInp').value = limpo;
+      if (!limpo) return;
 
-      var achado = buscarEmEstoque(limpo);
-      jaExiste = achado !== null;
+      epcAtual = limpo;
 
-      var box = document.getElementById('boxLeitura');
-      var aviso = document.getElementById('avisoTag');
-
-      document.getElementById('epcLido').innerHTML = limpo;
-
-      if (jaExiste) {
-        box.className = 'box-leitura visivel duplicada';
-        aviso.innerHTML = 'ALERTA: RFID já está em estoque (' + achado.peso + ' kg). Escolha SAÍDA ou GRAVAR para regravar.';
-        setTipo('SAIDA');
-        document.getElementById('pesoInp').value = achado.peso;
+      if (Object.prototype.hasOwnProperty.call(fardos, limpo)) {
+        var registro = fardos[limpo];
+        pesoAtual = registro.peso || gerarPesoSimulado();
+        document.getElementById('epcExistente').innerHTML = limpo;
+        document.getElementById('pesoExistente').innerHTML = 'Último peso: ' + String(pesoAtual).replace('.', ',') + ' kg';
+        mostrarTela('telaExistente');
       } else {
-        box.className = 'box-leitura visivel';
-        aviso.innerHTML = 'Etiqueta recebida — escolha ENTRADA ou SAÍDA e clique em GRAVAR.';
-        setTipo('ENTRADA');
-        document.getElementById('pesoInp').value = (Math.floor(Math.random() * 70) + 190) + '.0';
+        pesoAtual = gerarPesoSimulado();
+        var topoNovo = document.getElementById('topoNovo');
+        if (operacaoAtual === 'SAIDA') {
+          topoNovo.className = 'modo-topo modo-saida';
+          topoNovo.innerHTML = 'SAÍDA - NOVO FARDO';
+        } else {
+          topoNovo.className = 'modo-topo modo-entrada';
+          topoNovo.innerHTML = 'ENTRADA - NOVO FARDO';
+        }
+        document.getElementById('epcNovo').innerHTML = limpo;
+        document.getElementById('pesoNovo').innerHTML = String(pesoAtual).replace('.', ',') + ' kg';
+        mostrarTela('telaNovo');
       }
-
-      document.getElementById('msgStatus').innerHTML = 'Tag travada para conferência: ' + limpo;
     };
 
-    function enviarEpcManual() {
-      var val = document.getElementById('epcManualInp').value;
-      if (!val || !String(val).trim()) {
-        document.getElementById('msgStatus').innerHTML = 'Digite ou cole um código EPC.';
-        return;
-      }
-      window.receberRFID(val);
+    function confirmarGravacao() {
+      if (!epcAtual) return;
+      fardos[epcAtual] = {
+        epc: epcAtual,
+        peso: pesoAtual,
+        operacao: operacaoAtual,
+        atualizadoEm: new Date().toISOString()
+      };
+      salvarStorage();
+
+      var gravado = epcAtual;
+      epcAtual = '';
+      mostrarTela('telaInicial');
+      atualizarBadgeOperacao();
+      document.getElementById('statusInicial').innerHTML = 'Gravado: ' + gravado;
+      liberarAndroid();
     }
 
-    function salvarTag() {
-      if (!tagAtual) return;
-      var pTxt = String(document.getElementById('pesoInp').value).replace(',', '.');
-      var pesoNum = parseFloat(pTxt);
-      if (isNaN(pesoNum) || pesoNum <= 0) {
-        document.getElementById('msgStatus').innerHTML = 'Peso invalido!';
-        return;
-      }
-
-      var obs = 'RFR900';
-      if (tipoAtual === 'ENTRADA' && jaExiste) {
-        obs = 'RFR900 (Regravado)';
-      }
-
-      var agora = new Date();
-      var horaStr = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR');
-
-      registros.push({
-        tipo: tipoAtual,
-        epc: tagAtual,
-        material: document.getElementById('matInp').value,
-        peso: pesoNum.toFixed(1),
-        data: horaStr,
-        obs: obs
-      });
-
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
-      } catch (e) {}
-
-      var gravada = tagAtual;
-      fecharBox();
-      document.getElementById('msgStatus').innerHTML = 'Gravado: ' + gravada + ' — pronto para próxima etiqueta';
-      atualizarTela();
+    function refazerLeitura() {
+      epcAtual = '';
+      mostrarTela('telaInicial');
+      atualizarBadgeOperacao();
+      document.getElementById('statusInicial').innerHTML = 'Leitura cancelada. Pronto para nova leitura.';
+      liberarAndroid();
     }
 
-    function fecharBox() {
-      tagAtual = '';
-      jaExiste = false;
-      document.getElementById('boxLeitura').className = 'box-leitura';
-      notificarAndroidLiberado();
+    function simularLeituraRfid() {
+      if (epcAtual) return;
+      // Alterna entre gerar um novo fardo e reutilizar um já gravado para teste rápido
+      var chaves = Object.keys(fardos);
+      if (chaves.length > 0 && Math.random() < 0.45) {
+        window.receberRFID(chaves[chaves.length - 1]);
+      } else {
+        var sufixo = Math.floor(Math.random() * 899999 + 100000);
+        window.receberRFID('3400E2801170400002' + sufixo);
+      }
     }
 
-    function simularTag() {
-      if (tagAtual) return;
-      var rnd = Math.floor(Math.random() * 899999 + 100000);
-      window.receberRFID('3400E2801170400002' + rnd);
-    }
-
-    function limparLista() {
-      registros = [];
-      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-      fecharBox();
-      document.getElementById('msgStatus').innerHTML = 'Lista limpa.';
-      atualizarTela();
-    }
-
-    function atualizarTela() {
-      var entPeso = 0, entQtd = 0;
-      var saiPeso = 0, saiQtd = 0;
-      var mapaSaldo = {};
-
-      for (var i = 0; i < registros.length; i++) {
-        var r = registros[i];
-        var p = parseFloat(r.peso) || 0;
-        if (r.tipo === 'ENTRADA') {
-          entPeso += p;
-          entQtd++;
-          mapaSaldo[r.epc] = p;
-        } else if (r.tipo === 'SAIDA') {
-          saiPeso += p;
-          saiQtd++;
-          delete mapaSaldo[r.epc];
-        }
-      }
-
-      var saldoPeso = 0, saldoQtd = 0;
-      for (var k in mapaSaldo) {
-        if (mapaSaldo.hasOwnProperty(k)) {
-          saldoPeso += mapaSaldo[k];
-          saldoQtd++;
-        }
-      }
-
-      document.getElementById('vSaldo').innerHTML = saldoPeso.toFixed(1).replace('.', ',') + ' kg';
-      document.getElementById('qSaldo').innerHTML = saldoQtd + ' fardos';
-
-      document.getElementById('vEnt').innerHTML = entPeso.toFixed(1).replace('.', ',') + ' kg';
-      document.getElementById('qEnt').innerHTML = entQtd + ' fardos';
-
-      document.getElementById('vSai').innerHTML = saiPeso.toFixed(1).replace('.', ',') + ' kg';
-      document.getElementById('qSai').innerHTML = saiQtd + ' fardos';
-
-      if (registros.length === 0) {
-        document.getElementById('listaMov').innerHTML = 'Nenhuma movimentação.';
-        return;
-      }
-
-      var html = '';
-      for (var j = registros.length - 1; j >= 0; j--) {
-        var item = registros[j];
-        html += '<div class="item">' +
-          '<strong>[' + item.tipo + ']</strong> ' + item.peso + ' kg - ' + item.material + '<br/>' +
-          '<span style="font-family:monospace;">' + item.epc + '</span><br/>' +
-          '<span style="color:#64748b;">' + item.data + ' • ' + item.obs + '</span>' +
-          '</div>';
-      }
-      document.getElementById('listaMov').innerHTML = html;
-    }
-
-    atualizarTela();
+    atualizarBadgeOperacao();
   </script>
 </body>
 </html>
