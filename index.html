@@ -109,6 +109,19 @@
   </style>
 </head>
 <body>
+  <script>
+    /* Diagnóstico: se algum erro de JavaScript impedir o app de funcionar, mostra a mensagem no topo da tela */
+    window.addEventListener("error", function (e) {
+      var d = document.getElementById("diagErroJs");
+      if (!d) {
+        d = document.createElement("div");
+        d.id = "diagErroJs";
+        d.style.cssText = "background:#7f1d1d;color:#fecaca;padding:8px;font-size:12px;font-weight:700;border-radius:8px;margin-bottom:8px;word-break:break-all;";
+        document.body.insertBefore(d, document.body.firstChild);
+      }
+      d.textContent = "ERRO NO APP: " + (e.message || "desconhecido") + (e.lineno ? " (linha " + e.lineno + ")" : "");
+    });
+  </script>
 
   <!-- JANELA 1: MENU INICIAL -->
   <div id="win-inicio" class="janela ativa menu-inicial">
@@ -636,7 +649,7 @@
     // no estoque do sistema. Não espera tempo e NÃO envia nada ao sistema.
     // ------------------------------------------------------------------
     function escHtml(v) {
-      return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      return String(v === null || v === undefined ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
 
     function avisoTatil(longo) {
