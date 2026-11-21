@@ -17,19 +17,27 @@
     .btn-primary:hover { background: #1d4ed8; }
     .erro-login { color: #dc2626; font-size: 0.9rem; margin-top: 12px; text-align: center; }
 
-    .erp-container { display: none; max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: #fff; padding: 16px 24px; border-radius: 12px; margin-bottom: 24px; }
+    .erp-container { display: none; max-width: 1240px; margin: 0 auto; padding: 20px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: #fff; padding: 16px 24px; border-radius: 12px; margin-bottom: 20px; }
     .topbar h1 { margin: 0; font-size: 1.3rem; }
     .btn-sair { background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
 
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
     .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #2563eb; }
     .card.verde { border-left-color: #16a34a; }
     .card.vermelho { border-left-color: #dc2626; }
-    .card-titulo { font-size: 0.85rem; color: #64748b; font-weight: 700; text-transform: uppercase; }
+    .card-titulo { font-size: 0.82rem; color: #64748b; font-weight: 700; text-transform: uppercase; }
     .card-valor { font-size: 2rem; font-weight: 800; margin-top: 8px; color: #0f172a; }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
+    /* RESUMO POR MATERIAL */
+    .resumo-materiais-box { background: #fff; border-radius: 12px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 22px; }
+    .resumo-materiais-titulo { font-size: 0.82rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 12px; }
+    .chips-materiais { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip-mat { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 14px; font-size: 0.88rem; display: flex; flex-direction: column; gap: 2px; }
+    .chip-mat-nome { font-weight: 800; color: #0f172a; text-transform: uppercase; font-size: 0.8rem; }
+    .chip-mat-dados { color: #2563eb; font-weight: 700; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; flex-wrap: wrap; }
     .tab-btn { padding: 10px 20px; border: none; background: transparent; font-weight: 700; font-size: 0.95rem; color: #64748b; cursor: pointer; border-radius: 8px; }
     .tab-btn.active { background: #2563eb; color: #fff; }
 
@@ -37,11 +45,13 @@
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th, td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-size: 0.92rem; }
     th { background: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 0.8rem; }
-    .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; display: inline-block; }
     .badge-prensa { background: #dcfce7; color: #166534; }
     .badge-carregamento { background: #dbeafe; color: #1e40af; }
     .badge-erro { background: #fee2e2; color: #991b1b; }
+    .badge-material { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
     .mono { font-family: monospace; font-weight: 600; color: #0284c7; }
+    .carga-tag { font-family: monospace; font-size: 0.8rem; color: #64748b; }
   </style>
 </head>
 <body>
@@ -88,6 +98,13 @@
       </div>
     </div>
 
+    <div class="resumo-materiais-box">
+      <div class="resumo-materiais-titulo">Saldo Atual por Tipo de Material</div>
+      <div id="chipsMateriais" class="chips-materiais">
+        <span style="color:#64748b; font-size:0.9rem;">Nenhum material em estoque no momento.</span>
+      </div>
+    </div>
+
     <div class="tabs">
       <button class="tab-btn active" onclick="mudarAba('estoque', this)">Estoque Atual</button>
       <button class="tab-btn" onclick="mudarAba('historico', this)">Histórico (Entradas / Saídas)</button>
@@ -98,6 +115,7 @@
       <table>
         <thead>
           <tr>
+            <th>Material</th>
             <th>Etiqueta (EPC)</th>
             <th>Peso (kg)</th>
             <th>Data/Hora Entrada (Prensa)</th>
@@ -113,9 +131,10 @@
           <tr>
             <th>Data/Hora</th>
             <th>Operação</th>
+            <th>Material</th>
             <th>Etiqueta (EPC)</th>
             <th>Peso (kg)</th>
-            <th>Coletor</th>
+            <th>ID Carga / Coletor</th>
           </tr>
         </thead>
         <tbody id="tabelaHistorico"></tbody>
@@ -190,47 +209,77 @@
     };
 
     function iniciarListeners() {
-      // 1. Estoque Atual
+      // 1. Estoque Atual + Agrupamento por Material
       const qEstoque = query(collection(db, "estoque_atual"), orderBy("data_entrada", "desc"));
       unsubEstoque = onSnapshot(qEstoque, (snap) => {
         let qtd = 0;
         let pesoTotal = 0;
         let html = "";
+        const porMaterial = {};
+
         snap.forEach((doc) => {
           const d = doc.data();
+          const mat = d.material || "Não informado";
+          const peso = Number(d.peso_kg || 0);
+
           qtd++;
-          pesoTotal += Number(d.peso_kg || 0);
+          pesoTotal += peso;
+
+          if (!porMaterial[mat]) {
+            porMaterial[mat] = { qtd: 0, peso: 0 };
+          }
+          porMaterial[mat].qtd++;
+          porMaterial[mat].peso += peso;
+
           html += `
             <tr>
+              <td><span class="badge badge-material">${mat}</span></td>
               <td class="mono">${d.epc}</td>
-              <td><strong>${Number(d.peso_kg || 0).toFixed(2)} kg</strong></td>
+              <td><strong>${peso.toFixed(2)} kg</strong></td>
               <td>${formatarData(d.data_entrada)}</td>
             </tr>
           `;
         });
+
         document.getElementById("kpiQtdEstoque").textContent = qtd;
         document.getElementById("kpiPesoEstoque").textContent = pesoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kg";
-        document.getElementById("tabelaEstoque").innerHTML = html || `<tr><td colspan="3" style="text-align:center;color:#64748b;">Nenhum fardo em estoque.</td></tr>`;
+        document.getElementById("tabelaEstoque").innerHTML = html || `<tr><td colspan="4" style="text-align:center;color:#64748b;">Nenhum fardo em estoque.</td></tr>`;
+
+        // Renderizar chips por material
+        const listaMats = Object.keys(porMaterial).sort();
+        if (listaMats.length === 0) {
+          document.getElementById("chipsMateriais").innerHTML = `<span style="color:#64748b; font-size:0.9rem;">Nenhum material em estoque no momento.</span>`;
+        } else {
+          document.getElementById("chipsMateriais").innerHTML = listaMats.map(m => `
+            <div class="chip-mat">
+              <span class="chip-mat-nome">${m}</span>
+              <span class="chip-mat-dados">${porMaterial[m].qtd} fardo(s) • ${porMaterial[m].peso.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg</span>
+            </div>
+          `).join("");
+        }
       });
 
       // 2. Histórico
-      const qHist = query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(200));
+      const qHist = query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(300));
       unsubHistorico = onSnapshot(qHist, (snap) => {
         let html = "";
         snap.forEach((doc) => {
           const d = doc.data();
           const badge = d.operacao === "PRENSA" ? "badge-prensa" : "badge-carregamento";
+          const mat = d.material || "—";
+          const infoExtra = d.id_carga ? `<span class="carga-tag">${d.id_carga}</span>` : (d.dispositivo || "—");
           html += `
             <tr>
               <td>${formatarData(d.criado_em)}</td>
               <td><span class="badge ${badge}">${d.operacao}</span></td>
+              <td><span class="badge badge-material">${mat}</span></td>
               <td class="mono">${d.epc}</td>
               <td>${Number(d.peso_kg || 0).toFixed(2)} kg</td>
-              <td>${d.dispositivo || "—"}</td>
+              <td>${infoExtra}</td>
             </tr>
           `;
         });
-        document.getElementById("tabelaHistorico").innerHTML = html || `<tr><td colspan="5" style="text-align:center;color:#64748b;">Nenhuma movimentação registrada.</td></tr>`;
+        document.getElementById("tabelaHistorico").innerHTML = html || `<tr><td colspan="6" style="text-align:center;color:#64748b;">Nenhuma movimentação registrada.</td></tr>`;
       });
 
       // 3. Bloqueios
