@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fardos RFID</title>
+  <title>Fardos RFID • Prensa e Carregamento</title>
   <style>
     * {
       box-sizing: border-box;
@@ -23,19 +23,19 @@
     }
     .modo-topo {
       text-align: center;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: bold;
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 14px;
       background: #1e293b;
     }
-    .modo-entrada {
+    .modo-prensa {
       background: #14532d;
       color: #86efac;
       border: 1px solid #22c55e;
     }
-    .modo-saida {
+    .modo-carregamento {
       background: #7c2d12;
       color: #fdba74;
       border: 1px solid #f97316;
@@ -56,10 +56,10 @@
       color: #ffffff;
       cursor: pointer;
     }
-    .btn-entrada {
+    .btn-prensa {
       background: #16a34a;
     }
-    .btn-saida {
+    .btn-carregamento {
       background: #ea580c;
     }
     .btn-confirmar {
@@ -70,6 +70,18 @@
       border: none;
       border-radius: 10px;
       background: #16a34a;
+      color: #ffffff;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .btn-baixa {
+      width: 100%;
+      padding: 18px 14px;
+      font-size: 19px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      background: #ea580c;
       color: #ffffff;
       cursor: pointer;
       margin-bottom: 10px;
@@ -103,22 +115,22 @@
       text-align: center;
       margin-bottom: 14px;
     }
-    .peso-box {
+    .info-box {
       background: #0f172a;
-      border: 2px solid #22c55e;
+      border: 2px solid #38bdf8;
       border-radius: 10px;
       padding: 14px;
       text-align: center;
       margin-bottom: 14px;
     }
-    .peso-label {
+    .info-label {
       font-size: 13px;
       color: #94a3b8;
       display: block;
       margin-bottom: 4px;
     }
-    .peso-valor {
-      font-size: 30px;
+    .info-valor {
+      font-size: 28px;
       font-weight: bold;
       color: #ffffff;
     }
@@ -169,83 +181,118 @@
 </head>
 <body>
 
-  <!-- TELA 1: INICIAL (SOMENTE ENTRADA E SAIDA) -->
+  <!-- TELA 1: INICIAL (PRENSA E CARREGAMENTO) -->
   <div id="telaInicial" class="tela ativa">
-    <div id="badgeOperacao" class="modo-topo">OPERAÇÃO: SELECIONE</div>
+    <div id="badgeOperacao" class="modo-topo modo-prensa">OPERAÇÃO ATUAL: PRENSA</div>
 
     <div class="grid-acao">
-      <button type="button" class="btn-grande btn-entrada" onclick="escolherOperacao('ENTRADA')">
-        ENTRADA
+      <button type="button" class="btn-grande btn-prensa" onclick="escolherOperacao('PRENSA')">
+        PRENSA
       </button>
-      <button type="button" class="btn-grande btn-saida" onclick="escolherOperacao('SAIDA')">
-        SAÍDA
+      <button type="button" class="btn-grande btn-carregamento" onclick="escolherOperacao('CARREGAMENTO')">
+        CARREGAMENTO
       </button>
     </div>
 
-    <div id="statusInicial" class="status-rodape"></div>
+    <div id="statusInicial" class="status-rodape">Aproxime a etiqueta RFID do fardo...</div>
 
     <div class="teste-discreto">
       <button type="button" class="btn-teste" onclick="simularLeituraRfid()">Simular Tag RFID</button>
     </div>
   </div>
 
-  <!-- TELA 2: NOVO FARDO (PESO AUTOMATICO SIMULADO -> CONFIRMAR OU REFAZER) -->
-  <div id="telaNovo" class="tela">
-    <div id="topoNovo" class="modo-topo modo-entrada">ENTRADA - NOVO FARDO</div>
+  <!-- TELA 2: PRENSA - NOVO FARDO (PESO AUTOMATICO SIMULADO) -->
+  <div id="telaPrensaNovo" class="tela">
+    <div class="modo-topo modo-prensa">PRENSA • NOVO FARDO</div>
 
     <div class="painel">
-      <div id="epcNovo" class="epc-box">---</div>
+      <div id="epcPrensaNovo" class="epc-box">---</div>
 
-      <div class="peso-box">
-        <span class="peso-label">PESO (SIMULADO)</span>
-        <span id="pesoNovo" class="peso-valor">220,0 kg</span>
+      <div class="info-box">
+        <span class="info-label">PESO (SIMULADO)</span>
+        <span id="pesoPrensaNovo" class="info-valor">220,0 kg</span>
       </div>
 
-      <button type="button" class="btn-confirmar" onclick="confirmarGravacao()">
+      <button type="button" class="btn-confirmar" onclick="confirmarPrensa()">
         CONFIRMAR GRAVAÇÃO
       </button>
-      <button type="button" class="btn-refazer" onclick="refazerLeitura()">
+      <button type="button" class="btn-refazer" onclick="voltarInicio('Leitura cancelada. Pronto para nova leitura.')">
         REFAZER
       </button>
     </div>
   </div>
 
-  <!-- TELA 3: FARDO JA CADASTRADO -->
-  <div id="telaExistente" class="tela">
+  <!-- TELA 3: PRENSA - BLOQUEIO SE JA ESTA NO ESTOQUE -->
+  <div id="telaPrensaBloqueado" class="tela">
+    <div class="modo-topo modo-prensa">PRENSA • BLOQUEADO</div>
+
     <div class="alerta-box">
       <div class="alerta-titulo">ATENÇÃO</div>
-      <div class="alerta-texto">ESTE FARDO JÁ ESTÁ CADASTRADO, MODIFICAR?</div>
-      <div id="epcExistente" class="epc-box">---</div>
-      <div id="pesoExistente" class="peso-label" style="font-size:16px;color:#fecaca;"></div>
+      <div class="alerta-texto">ESTE FARDO JÁ ESTÁ NO ESTOQUE! NÃO PODE DAR ENTRADA NOVAMENTE.</div>
+      <div id="epcPrensaBloqueado" class="epc-box">---</div>
+      <div id="infoPrensaBloqueado" class="info-label" style="font-size:16px;color:#fecaca;"></div>
     </div>
 
-    <button type="button" class="btn-confirmar" onclick="confirmarGravacao()">
-      MODIFICAR / GRAVAR
+    <button type="button" class="btn-refazer" onclick="voltarInicio('Entrada bloqueada: fardo já está no estoque.')">
+      REFAZER
     </button>
-    <button type="button" class="btn-refazer" onclick="refazerLeitura()">
-      CANCELAR / REFAZER
+  </div>
+
+  <!-- TELA 4: CARREGAMENTO - FARDO ENCONTRADO NO ESTOQUE (CONFIRMAR BAIXA) -->
+  <div id="telaCarregamentoConfirmar" class="tela">
+    <div class="modo-topo modo-carregamento">CARREGAMENTO • FARDO NO ESTOQUE</div>
+
+    <div class="painel">
+      <div id="epcCarregamentoOk" class="epc-box">---</div>
+
+      <div class="info-box">
+        <span class="info-label">PESO EM ESTOQUE</span>
+        <span id="pesoCarregamentoOk" class="info-valor">0,0 kg</span>
+      </div>
+
+      <button type="button" class="btn-baixa" onclick="confirmarBaixa()">
+        CONFIRMAR BAIXA
+      </button>
+      <button type="button" class="btn-refazer" onclick="voltarInicio('Baixa cancelada. Pronto para nova leitura.')">
+        REFAZER
+      </button>
+    </div>
+  </div>
+
+  <!-- TELA 5: CARREGAMENTO - FARDO NAO ESTA NO ESTOQUE -->
+  <div id="telaCarregamentoAusente" class="tela">
+    <div class="modo-topo modo-carregamento">CARREGAMENTO • NÃO ENCONTRADO</div>
+
+    <div class="alerta-box">
+      <div class="alerta-titulo">ATENÇÃO</div>
+      <div class="alerta-texto">ESTE FARDO NÃO ESTÁ NO ESTOQUE!</div>
+      <div id="epcCarregamentoAusente" class="epc-box">---</div>
+    </div>
+
+    <button type="button" class="btn-refazer" onclick="voltarInicio('Saída bloqueada: fardo não consta no estoque.')">
+      REFAZER
     </button>
   </div>
 
   <script>
-    var STORAGE_KEY = 'fardos_rfid_cadastrados_v1';
-    var fardos = {};
-    var operacaoAtual = 'ENTRADA';
+    var STORAGE_KEY = 'fardos_rfid_estoque_v2';
+    var estoque = {};
+    var operacaoAtual = 'PRENSA';
     var epcAtual = '';
     var pesoAtual = 0;
 
     try {
       var salvo = localStorage.getItem(STORAGE_KEY);
       if (salvo) {
-        fardos = JSON.parse(salvo) || {};
+        estoque = JSON.parse(salvo) || {};
       }
     } catch (e) {
-      fardos = {};
+      estoque = {};
     }
 
     function salvarStorage() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(fardos));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(estoque));
       } catch (e) {}
     }
 
@@ -259,30 +306,32 @@
 
     function mostrarTela(idTela) {
       document.getElementById('telaInicial').className = 'tela';
-      document.getElementById('telaNovo').className = 'tela';
-      document.getElementById('telaExistente').className = 'tela';
+      document.getElementById('telaPrensaNovo').className = 'tela';
+      document.getElementById('telaPrensaBloqueado').className = 'tela';
+      document.getElementById('telaCarregamentoConfirmar').className = 'tela';
+      document.getElementById('telaCarregamentoAusente').className = 'tela';
       document.getElementById(idTela).className = 'tela ativa';
     }
 
     function atualizarBadgeOperacao() {
       var badge = document.getElementById('badgeOperacao');
-      if (operacaoAtual === 'SAIDA') {
-        badge.className = 'modo-topo modo-saida';
-        badge.innerHTML = 'OPERAÇÃO ATUAL: SAÍDA';
+      if (operacaoAtual === 'CARREGAMENTO') {
+        badge.className = 'modo-topo modo-carregamento';
+        badge.innerHTML = 'OPERAÇÃO ATUAL: CARREGAMENTO';
       } else {
-        badge.className = 'modo-topo modo-entrada';
-        badge.innerHTML = 'OPERAÇÃO ATUAL: ENTRADA';
+        badge.className = 'modo-topo modo-prensa';
+        badge.innerHTML = 'OPERAÇÃO ATUAL: PRENSA';
       }
     }
 
     function escolherOperacao(tipo) {
       operacaoAtual = tipo;
       atualizarBadgeOperacao();
-      document.getElementById('statusInicial').innerHTML = 'Aproxime a etiqueta RFID do fardo...';
+      document.getElementById('statusInicial').innerHTML = 'Modo ' + tipo + ' selecionado. Aproxime a etiqueta RFID...';
     }
 
     function gerarPesoSimulado() {
-      var kg = Math.floor(Math.random() * 121) + 180; // 180 a 300 kg
+      var kg = Math.floor(Math.random() * 121) + 180;
       return Number(kg).toFixed(1);
     }
 
@@ -292,60 +341,68 @@
       if (!limpo) return;
 
       epcAtual = limpo;
+      var noEstoque = Object.prototype.hasOwnProperty.call(estoque, limpo) ? estoque[limpo] : null;
 
-      if (Object.prototype.hasOwnProperty.call(fardos, limpo)) {
-        var registro = fardos[limpo];
-        pesoAtual = registro.peso || gerarPesoSimulado();
-        document.getElementById('epcExistente').innerHTML = limpo;
-        document.getElementById('pesoExistente').innerHTML = 'Último peso: ' + String(pesoAtual).replace('.', ',') + ' kg';
-        mostrarTela('telaExistente');
-      } else {
-        pesoAtual = gerarPesoSimulado();
-        var topoNovo = document.getElementById('topoNovo');
-        if (operacaoAtual === 'SAIDA') {
-          topoNovo.className = 'modo-topo modo-saida';
-          topoNovo.innerHTML = 'SAÍDA - NOVO FARDO';
+      if (operacaoAtual === 'PRENSA') {
+        if (noEstoque) {
+          document.getElementById('epcPrensaBloqueado').innerHTML = limpo;
+          document.getElementById('infoPrensaBloqueado').innerHTML =
+            'Peso cadastrado: ' + String(noEstoque.peso).replace('.', ',') + ' kg';
+          mostrarTela('telaPrensaBloqueado');
         } else {
-          topoNovo.className = 'modo-topo modo-entrada';
-          topoNovo.innerHTML = 'ENTRADA - NOVO FARDO';
+          pesoAtual = gerarPesoSimulado();
+          document.getElementById('epcPrensaNovo').innerHTML = limpo;
+          document.getElementById('pesoPrensaNovo').innerHTML = String(pesoAtual).replace('.', ',') + ' kg';
+          mostrarTela('telaPrensaNovo');
         }
-        document.getElementById('epcNovo').innerHTML = limpo;
-        document.getElementById('pesoNovo').innerHTML = String(pesoAtual).replace('.', ',') + ' kg';
-        mostrarTela('telaNovo');
+      } else {
+        if (noEstoque) {
+          pesoAtual = noEstoque.peso;
+          document.getElementById('epcCarregamentoOk').innerHTML = limpo;
+          document.getElementById('pesoCarregamentoOk').innerHTML = String(pesoAtual).replace('.', ',') + ' kg';
+          mostrarTela('telaCarregamentoConfirmar');
+        } else {
+          document.getElementById('epcCarregamentoAusente').innerHTML = limpo;
+          mostrarTela('telaCarregamentoAusente');
+        }
       }
     };
 
-    function confirmarGravacao() {
+    function confirmarPrensa() {
       if (!epcAtual) return;
-      fardos[epcAtual] = {
+      estoque[epcAtual] = {
         epc: epcAtual,
         peso: pesoAtual,
-        operacao: operacaoAtual,
-        atualizadoEm: new Date().toISOString()
+        entradaEm: new Date().toISOString()
       };
       salvarStorage();
-
       var gravado = epcAtual;
-      epcAtual = '';
-      mostrarTela('telaInicial');
-      atualizarBadgeOperacao();
-      document.getElementById('statusInicial').innerHTML = 'Gravado: ' + gravado;
-      liberarAndroid();
+      voltarInicio('Prensa gravada: ' + gravado);
     }
 
-    function refazerLeitura() {
+    function confirmarBaixa() {
+      if (!epcAtual) return;
+      if (Object.prototype.hasOwnProperty.call(estoque, epcAtual)) {
+        delete estoque[epcAtual];
+        salvarStorage();
+      }
+      var baixado = epcAtual;
+      voltarInicio('Baixa confirmada (Carregamento): ' + baixado);
+    }
+
+    function voltarInicio(mensagem) {
       epcAtual = '';
+      pesoAtual = 0;
       mostrarTela('telaInicial');
       atualizarBadgeOperacao();
-      document.getElementById('statusInicial').innerHTML = 'Leitura cancelada. Pronto para nova leitura.';
+      document.getElementById('statusInicial').innerHTML = mensagem || 'Pronto para nova leitura.';
       liberarAndroid();
     }
 
     function simularLeituraRfid() {
       if (epcAtual) return;
-      // Alterna entre gerar um novo fardo e reutilizar um já gravado para teste rápido
-      var chaves = Object.keys(fardos);
-      if (chaves.length > 0 && Math.random() < 0.45) {
+      var chaves = Object.keys(estoque);
+      if (chaves.length > 0 && Math.random() < 0.5) {
         window.receberRFID(chaves[chaves.length - 1]);
       } else {
         var sufixo = Math.floor(Math.random() * 899999 + 100000);
