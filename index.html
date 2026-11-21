@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Coletor RFID - Prensa & Carregamento</title>
+  <title>Coletor RFID - Prensa, Carregamento & Massa</title>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { margin: 0; padding: 14px; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; }
@@ -12,14 +12,16 @@
     .janela { display: none; flex-direction: column; flex: 1; }
     .janela.ativa { display: flex; }
 
-    .menu-inicial { justify-content: center; gap: 18px; }
-    .btn-op { padding: 34px 20px; font-size: 1.5rem; font-weight: 800; border: none; border-radius: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
+    .menu-inicial { justify-content: center; gap: 16px; }
+    .btn-op { padding: 28px 20px; font-size: 1.4rem; font-weight: 800; border: none; border-radius: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
     .btn-prensa { background: #16a34a; color: #fff; }
     .btn-carregamento { background: #2563eb; color: #fff; }
+    .btn-massa { background: #7c3aed; color: #fff; }
 
     .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; font-weight: 800; font-size: 1rem; }
     .bg-verde { background: #16a34a; color: #fff; }
     .bg-azul { background: #2563eb; color: #fff; }
+    .bg-roxo { background: #7c3aed; color: #fff; }
     .bg-escuro { background: #1e293b; color: #f8fafc; border: 1px solid #334155; }
     .btn-topo { background: rgba(0,0,0,0.35); color: #fff; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
@@ -33,6 +35,16 @@
     .epc-tag { font-family: monospace; font-size: 0.88rem; background: #0f172a; padding: 8px 10px; border-radius: 8px; color: #38bdf8; word-break: break-all; width: 100%; }
     .peso-valor { font-size: 2.3rem; font-weight: 900; color: #facc15; margin: 2px 0; }
     
+    /* TELA DE SENHA */
+    .input-senha { width: 100%; max-width: 240px; padding: 16px; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 8px; border-radius: 12px; border: 2px solid #7c3aed; background: #0f172a; color: #fff; margin: 8px 0; }
+
+    /* LISTA DE CONTAGEM EM MASSA */
+    .lista-massa { width: 100%; max-height: 44vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
+    .item-massa { background: #0f172a; border: 1px solid #334155; border-left: 4px solid #a855f7; border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .item-massa.sem-cadastro { border-left-color: #ef4444; background: #450a0a; }
+    .item-massa-nome { font-weight: 800; font-size: 1rem; text-transform: uppercase; }
+    .item-massa-qtd { font-weight: 900; font-size: 1.2rem; color: #facc15; }
+
     .fardo-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px; width: 100%; display: flex; justify-content: space-between; align-items: center; text-align: left; gap: 8px; }
     .fardo-card.invalido { border-color: #ef4444; background: #450a0a; }
     .fardo-info { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
@@ -45,10 +57,11 @@
 
     .alerta-erro { background: #7f1d1d; border: 2px solid #ef4444; color: #fecaca; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.92rem; width: 100%; }
     .alerta-ok { background: #14532d; border: 2px solid #22c55e; color: #bbf7d0; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 1.05rem; width: 100%; }
-    .acoes-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 8px; }
-    .btn-acao { padding: 16px; font-size: 1.05rem; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; width: 100%; }
+    .acoes-grid { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 6px; }
+    .btn-acao { padding: 14px; font-size: 1rem; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; width: 100%; }
     .btn-confirmar { background: #22c55e; color: #052e16; }
     .btn-continuar { background: #2563eb; color: #fff; }
+    .btn-roxo { background: #7c3aed; color: #fff; }
     .btn-finalizar { background: #f59e0b; color: #0f172a; }
     .btn-refazer { background: #dc2626; color: #fff; }
     .btn-neutro { background: #475569; color: #fff; }
@@ -62,6 +75,24 @@
     <h1>Selecione a Operação</h1>
     <button class="btn-op btn-prensa" onclick="abrirSelecaoPrensa()">PRENSA</button>
     <button class="btn-op btn-carregamento" onclick="iniciarCarregamentoDireto()">CARREGAMENTO</button>
+    <button class="btn-op btn-massa" onclick="abrirSenhaMassa()">LEITURA EM MASSA</button>
+  </div>
+
+  <!-- JANELA 1B: SENHA PARA LEITURA EM MASSA (0770) -->
+  <div id="win-senha-massa" class="janela">
+    <div class="header-bar bg-roxo">
+      <span>ACESSO RESTRITO</span>
+      <button class="btn-topo" onclick="irParaInicio()">VOLTAR</button>
+    </div>
+    <div class="status-box">
+      <div style="font-size: 1.15rem; font-weight: 800; color: #e2e8f0;">DIGITE A SENHA PARA LEITURA EM MASSA</div>
+      <input type="password" id="inputSenhaMassa" class="input-senha" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <div id="erroSenhaMassa" style="color:#fca5a5; font-weight:700; min-height:20px;"></div>
+      <div class="acoes-grid">
+        <button class="btn-acao btn-roxo" onclick="validarSenhaMassa()">ENTRAR</button>
+        <button class="btn-acao btn-neutro" onclick="irParaInicio()">CANCELAR</button>
+      </div>
+    </div>
   </div>
 
   <!-- JANELA 2: ESCOLHA DO MATERIAL EXATO (SOMENTE PRENSA) -->
@@ -84,7 +115,7 @@
     </div>
   </div>
 
-  <!-- JANELA 3: OPERAÇÃO DE LEITURA E CONFIRMAÇÃO -->
+  <!-- JANELA 3: OPERAÇÃO DE LEITURA (PRENSA E CARREGAMENTO) -->
   <div id="win-operacao" class="janela">
     <div id="headerOperacao" class="header-bar bg-verde">
       <span id="tituloOperacao">PRENSA</span>
@@ -97,6 +128,47 @@
     </div>
 
     <div id="areaConteudo" class="status-box"></div>
+  </div>
+
+  <!-- JANELA 3B: OPERAÇÃO DE LEITURA EM MASSA (INVENTÁRIO GERAL) -->
+  <div id="win-massa" class="janela">
+    <div class="header-bar bg-roxo">
+      <span>LEITURA EM MASSA</span>
+      <span id="badgeTotalMassa" style="background:rgba(0,0,0,0.35);padding:6px 10px;border-radius:8px;font-size:0.9rem;">0 fardos</span>
+    </div>
+
+    <div class="status-box" style="justify-content: flex-start;">
+      <div style="font-size: 0.9rem; color: #cbd5e1;">
+        Aperte o gatilho para varrer o galpão. Quando parar de apitar, todos os fardos ao redor foram lidos.
+      </div>
+
+      <div id="listaContagemMassa" class="lista-massa">
+        <div style="color:#94a3b8; padding:24px 0;">Nenhum fardo lido ainda...</div>
+      </div>
+
+      <div class="acoes-grid" style="margin-top: auto;">
+        <button id="btnEnviarMassa" class="btn-acao btn-confirmar" onclick="enviarLeituraMassa()" disabled>ENVIAR PARA CONFERÊNCIA</button>
+        <button class="btn-acao btn-continuar" onclick="continuarLendoMassa()">CONTINUAR LENDO</button>
+        <button class="btn-acao btn-finalizar" onclick="iniciarNovamenteMassa()">INICIAR NOVAMENTE</button>
+        <button class="btn-acao btn-refazer" onclick="irParaInicio()">SAIR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JANELA 3C: CONFIRMAÇÃO DE ENVIO DA LEITURA EM MASSA -->
+  <div id="win-massa-enviada" class="janela">
+    <div class="header-bar bg-roxo">
+      <span>CONFERÊNCIA ENVIADA</span>
+    </div>
+    <div class="status-box">
+      <div class="alerta-ok">
+        TODA A LEITURA FOI ENVIADA PARA O ERP!<br>
+        <span id="resumoEnvioMassa" style="font-size:0.95rem; font-weight:600; display:block; margin-top:8px;"></span>
+      </div>
+      <div class="acoes-grid" style="margin-top: 16px;">
+        <button class="btn-acao btn-neutro" onclick="irParaInicio()">SAIR</button>
+      </div>
+    </div>
   </div>
 
   <!-- JANELA 4: PÓS-ACEITE NO CARREGAMENTO -->
@@ -131,7 +203,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, deleteDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
@@ -154,6 +226,10 @@
     let fardosInvalidos = [];
     let processando = false;
     let timerRetornoPrensa = null;
+
+    // VARIÁVEIS DA LEITURA EM MASSA
+    let estoqueCacheMassa = {};     // Mapa EPC -> { material, peso_kg } carregado ao entrar no modo MASSA
+    let epcsLidosMassa = new Map(); // EPC -> { epc, material, peso_kg, existe_estoque }
 
     function limparTimerPrensa() {
       if (timerRetornoPrensa) {
@@ -226,10 +302,157 @@
     window.irParaInicio = function() {
       modoAtual = null;
       materialPrensa = null;
+      epcsLidosMassa.clear();
+      estoqueCacheMassa = {};
       liberarColetor();
       mostrarJanela("win-inicio");
     };
 
+    // FLUXO SENHA LEITURA EM MASSA (SEMPRE EXIGE 0770)
+    window.abrirSenhaMassa = function() {
+      modoAtual = null;
+      liberarColetor();
+      document.getElementById("inputSenhaMassa").value = "";
+      document.getElementById("erroSenhaMassa").textContent = "";
+      mostrarJanela("win-senha-massa");
+      setTimeout(() => document.getElementById("inputSenhaMassa").focus(), 150);
+    };
+
+    window.validarSenhaMassa = async function() {
+      const senha = document.getElementById("inputSenhaMassa").value.trim();
+      if (senha !== "0770") {
+        document.getElementById("erroSenhaMassa").textContent = "Senha incorreta! Tente novamente.";
+        document.getElementById("inputSenhaMassa").value = "";
+        document.getElementById("inputSenhaMassa").focus();
+        return;
+      }
+
+      document.getElementById("erroSenhaMassa").textContent = "Carregando base de estoque...";
+      try {
+        // Baixa snapshot do estoque atual para identificar instantaneamente cada etiqueta sem atraso na leitura em massa
+        const snap = await getDocs(collection(db, "estoque_atual"));
+        estoqueCacheMassa = {};
+        snap.forEach(d => {
+          estoqueCacheMassa[d.id.toUpperCase()] = d.data();
+        });
+      } catch (e) {
+        console.error("Erro ao pré-carregar estoque:", e);
+      }
+
+      epcsLidosMassa.clear();
+      modoAtual = "MASSA";
+      if (window.AndroidSingleTag) {
+        if (typeof window.AndroidSingleTag.configurarModo === "function") {
+          window.AndroidSingleTag.configurarModo("MASSA");
+        }
+        if (typeof window.AndroidSingleTag.limparMemoriaMassa === "function") {
+          window.AndroidSingleTag.limparMemoriaMassa();
+        }
+      }
+      renderizarResumoMassa();
+      mostrarJanela("win-massa");
+    };
+
+    function renderizarResumoMassa() {
+      const total = epcsLidosMassa.size;
+      document.getElementById("badgeTotalMassa").textContent = `${total} fardo(s)`;
+      document.getElementById("btnEnviarMassa").disabled = total === 0;
+
+      const container = document.getElementById("listaContagemMassa");
+      if (total === 0) {
+        container.innerHTML = `<div style="color:#94a3b8; padding:24px 0;">Nenhum fardo lido ainda...</div>`;
+        return;
+      }
+
+      const contagemPorMaterial = {};
+      let qtdSemEstoque = 0;
+
+      epcsLidosMassa.forEach((item) => {
+        if (!item.existe_estoque) {
+          qtdSemEstoque++;
+        } else {
+          const mat = item.material || "Outros";
+          contagemPorMaterial[mat] = (contagemPorMaterial[mat] || 0) + 1;
+        }
+      });
+
+      let html = "";
+      Object.keys(contagemPorMaterial).forEach(mat => {
+        html += `
+          <div class="item-massa">
+            <span class="item-massa-nome">${mat}</span>
+            <span class="item-massa-qtd">${contagemPorMaterial[mat]}</span>
+          </div>
+        `;
+      });
+
+      if (qtdSemEstoque > 0) {
+        html += `
+          <div class="item-massa sem-cadastro">
+            <span class="item-massa-nome" style="color:#fca5a5;">Sem Correspondência no Estoque</span>
+            <span class="item-massa-qtd" style="color:#fca5a5;">${qtdSemEstoque}</span>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    window.continuarLendoMassa = function() {
+      modoAtual = "MASSA";
+      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.liberarProximaEtiqueta === "function") {
+        window.AndroidSingleTag.liberarProximaEtiqueta();
+      }
+    };
+
+    window.iniciarNovamenteMassa = function() {
+      epcsLidosMassa.clear();
+      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.limparMemoriaMassa === "function") {
+        window.AndroidSingleTag.limparMemoriaMassa();
+      }
+      renderizarResumoMassa();
+    };
+
+    window.enviarLeituraMassa = async function() {
+      if (epcsLidosMassa.size === 0) return;
+      const btn = document.getElementById("btnEnviarMassa");
+      btn.disabled = true;
+      btn.textContent = "ENVIANDO...";
+
+      try {
+        const listaItens = Array.from(epcsLidosMassa.values());
+        const totalLidos = listaItens.length;
+        const semCorrespondencia = listaItens.filter(i => !i.existe_estoque).length;
+
+        await addDoc(collection(db, "conferencias_estoque"), {
+          criado_em: serverTimestamp(),
+          dispositivo: "Bluebird-EF401",
+          total_lidos: totalLidos,
+          total_sem_correspondencia: semCorrespondencia,
+          itens_lidos: listaItens
+        });
+
+        await registrarLogAuditoria(
+          "INVENTARIO_MASSA",
+          "CONFERENCIA_ENVIADA",
+          `Conferência em massa enviada ao ERP: ${totalLidos} fardo(s) lido(s), ${semCorrespondencia} sem correspondência no estoque.`
+        );
+
+        epcsLidosMassa.clear();
+        modoAtual = null;
+        liberarColetor();
+
+        document.getElementById("resumoEnvioMassa").textContent = `Total enviado: ${totalLidos} fardo(s).`;
+        mostrarJanela("win-massa-enviada");
+      } catch (err) {
+        alert("Erro ao enviar conferência: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "ENVIAR PARA CONFERÊNCIA";
+      }
+    };
+
+    // PRENSA & CARREGAMENTO
     window.abrirSelecaoPrensa = function() {
       liberarColetor();
       mostrarJanela("win-sel-prensa");
@@ -410,17 +633,50 @@
       renderizarTelaEspera();
     };
 
+    // RECEBIMENTO DO RFID VINDO DO ANDROID
     window.receberLoteRFID = async function(listaEpcs) {
       const epcs = (Array.isArray(listaEpcs) ? listaEpcs : [listaEpcs])
         .map(e => (e || "").trim().toUpperCase())
         .filter(Boolean);
 
       if (epcs.length === 0) {
-        liberarColetor();
+        if (modoAtual !== "MASSA") liberarColetor();
         return;
       }
 
-      if (!modoAtual || (modoAtual === "PRENSA" && !materialPrensa)) {
+      if (!modoAtual) return;
+
+      // MODO LEITURA EM MASSA (ACUMULA CONTAGEM SEM TRAVAR)
+      if (modoAtual === "MASSA") {
+        let houveNovo = false;
+        for (const epc of epcs) {
+          if (!epcsLidosMassa.has(epc)) {
+            houveNovo = true;
+            const infoEstoque = estoqueCacheMassa[epc];
+            if (infoEstoque) {
+              epcsLidosMassa.set(epc, {
+                epc: epc,
+                material: infoEstoque.material || "Outros",
+                peso_kg: Number(infoEstoque.peso_kg || 0),
+                existe_estoque: true
+              });
+            } else {
+              epcsLidosMassa.set(epc, {
+                epc: epc,
+                material: "Sem Correspondência no Estoque",
+                peso_kg: 0,
+                existe_estoque: false
+              });
+            }
+          }
+        }
+        if (houveNovo) {
+          renderizarResumoMassa();
+        }
+        return;
+      }
+
+      if (modoAtual === "PRENSA" && !materialPrensa) {
         liberarColetor();
         return;
       }
