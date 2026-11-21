@@ -6,26 +6,53 @@
   <title>Coletor RFID - Prensa & Carregamento</title>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { margin: 0; padding: 16px; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; }
-    h1 { font-size: 1.2rem; text-align: center; margin: 0 0 16px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-    .menu-grid { display: flex; flex-direction: column; gap: 16px; flex: 1; justify-content: center; }
-    .btn-op { padding: 32px 20px; font-size: 1.5rem; font-weight: 800; border: none; border-radius: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); transition: transform 0.1s; }
-    .btn-op:active { transform: scale(0.98); }
+    body { margin: 0; padding: 14px; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; }
+    h1 { font-size: 1.15rem; text-align: center; margin: 0 0 14px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    
+    /* JANELAS */
+    .janela { display: none; flex-direction: column; flex: 1; }
+    .janela.ativa { display: flex; }
+
+    /* BOTÕES INICIAIS */
+    .menu-inicial { justify-content: center; gap: 18px; }
+    .btn-op { padding: 34px 20px; font-size: 1.5rem; font-weight: 800; border: none; border-radius: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
     .btn-prensa { background: #16a34a; color: #fff; }
     .btn-carregamento { background: #2563eb; color: #fff; }
-    .painel-op { display: none; flex-direction: column; flex: 1; }
-    .header-op { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 800; font-size: 1.1rem; }
-    .header-prensa { background: #16a34a; }
-    .header-carregamento { background: #2563eb; }
-    .btn-voltar { background: rgba(0,0,0,0.3); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-    .status-box { background: #1e293b; border: 2px dashed #475569; border-radius: 16px; padding: 28px 16px; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; }
-    .epc-tag { font-family: monospace; font-size: 1.05rem; background: #0f172a; padding: 8px 12px; border-radius: 8px; color: #38bdf8; word-break: break-all; }
-    .peso-valor { font-size: 2.8rem; font-weight: 900; color: #facc15; margin: 8px 0; }
-    .alerta-erro { background: #7f1d1d; border: 2px solid #ef4444; color: #fecaca; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 1.05rem; width: 100%; }
-    .alerta-ok { background: #14532d; border: 2px solid #22c55e; color: #bbf7d0; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 1.05rem; width: 100%; }
-    .acoes-grid { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 12px; }
-    .btn-acao { padding: 18px; font-size: 1.15rem; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; width: 100%; }
+
+    /* CABEÇALHO DAS JANELAS */
+    .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-weight: 800; font-size: 1rem; }
+    .bg-verde { background: #16a34a; color: #fff; }
+    .bg-azul { background: #2563eb; color: #fff; }
+    .bg-escuro { background: #1e293b; color: #f8fafc; border: 1px solid #334155; }
+    .btn-topo { background: rgba(0,0,0,0.35); color: #fff; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+
+    /* GRADE DE MATERIAIS (PRENSA) */
+    .grid-materiais-prensa { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 1; }
+    .btn-mat-prensa { background: #1e293b; color: #f8fafc; border: 2px solid #22c55e; border-radius: 12px; font-weight: 800; font-size: 1rem; padding: 16px 8px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .btn-mat-prensa:active { background: #16a34a; }
+
+    /* ÁREA DE LEITURA E CONFIRMAÇÃO */
+    .status-box { background: #1e293b; border: 2px dashed #475569; border-radius: 16px; padding: 18px 14px; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
+    .resumo-carga { background: #0f172a; border: 1px solid #3b82f6; border-radius: 10px; padding: 10px 14px; width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; font-weight: 700; color: #93c5fd; margin-bottom: 4px; }
+    .badge-material { background: #facc15; color: #0f172a; padding: 6px 14px; border-radius: 999px; font-weight: 900; font-size: 1.1rem; text-transform: uppercase; }
+    .epc-tag { font-family: monospace; font-size: 0.9rem; background: #0f172a; padding: 8px 10px; border-radius: 8px; color: #38bdf8; word-break: break-all; width: 100%; }
+    .peso-valor { font-size: 2.4rem; font-weight: 900; color: #facc15; margin: 2px 0; }
+    
+    /* CARDS DE FARDOS NO CARREGAMENTO */
+    .fardo-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; width: 100%; display: flex; justify-content: space-between; align-items: center; text-align: left; }
+    .fardo-card.invalido { border-color: #ef4444; background: #450a0a; }
+    .fardo-info { display: flex; flex-direction: column; gap: 3px; padding-right: 8px; }
+    .fardo-mat { font-weight: 800; font-size: 1rem; color: #f8fafc; text-transform: uppercase; }
+    .fardo-epc { font-family: monospace; font-size: 0.78rem; color: #38bdf8; word-break: break-all; }
+    .fardo-peso { font-weight: 800; font-size: 1.1rem; color: #facc15; white-space: nowrap; }
+
+    /* ALERTAS E BOTÕES DE AÇÃO */
+    .alerta-erro { background: #7f1d1d; border: 2px solid #ef4444; color: #fecaca; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; width: 100%; }
+    .alerta-ok { background: #14532d; border: 2px solid #22c55e; color: #bbf7d0; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; width: 100%; }
+    .acoes-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 10px; }
+    .btn-acao { padding: 16px; font-size: 1.05rem; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; width: 100%; }
     .btn-confirmar { background: #22c55e; color: #052e16; }
+    .btn-finalizar { background: #f59e0b; color: #0f172a; }
     .btn-refazer { background: #dc2626; color: #fff; }
     .btn-neutro { background: #475569; color: #fff; }
     .btn-acao:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -33,23 +60,64 @@
 </head>
 <body>
 
-  <!-- TELA INICIAL -->
-  <div id="telaInicial" class="menu-grid">
+  <!-- JANELA 1: ESCOLHA DA OPERAÇÃO -->
+  <div id="win-inicio" class="janela ativa menu-inicial">
     <h1>Selecione a Operação</h1>
-    <button class="btn-op btn-prensa" onclick="selecionarOperacao('PRENSA')">PRENSA</button>
-    <button class="btn-op btn-carregamento" onclick="selecionarOperacao('CARREGAMENTO')">CARREGAMENTO</button>
+    <button class="btn-op btn-prensa" onclick="abrirSelecaoPrensa()">PRENSA</button>
+    <button class="btn-op btn-carregamento" onclick="iniciarCarregamentoDireto()">CARREGAMENTO</button>
   </div>
 
-  <!-- TELA DE OPERAÇÃO ATIVA -->
-  <div id="telaOperacao" class="painel-op">
-    <div id="headerOp" class="header-op">
-      <span id="tituloOp">PRENSA</span>
-      <button class="btn-voltar" onclick="voltarInicio()">TROCAR</button>
+  <!-- JANELA 2: ESCOLHA DO MATERIAL EXATO (SOMENTE PRENSA) -->
+  <div id="win-sel-prensa" class="janela">
+    <div class="header-bar bg-verde">
+      <span>PRENSA — ESCOLHA O MATERIAL</span>
+      <button class="btn-topo" onclick="irParaInicio()">VOLTAR</button>
+    </div>
+    <div class="grid-materiais-prensa">
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('Pet Cristal')">Pet Cristal</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('Pet Azul')">Pet Azul</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('Pet Verde')">Pet Verde</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('Pet Cor')">Pet Cor</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('PP Cor')">PP Cor</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('PP Bandeja')">PP Bandeja</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('Pead BR')">Pead BR</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('Pead Cor')">Pead Cor</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('Flexivel')">Flexivel</button>
+      <button class="btn-mat-prensa" onclick="iniciarPrensa('Lata')">Lata</button>
+    </div>
+  </div>
+
+  <!-- JANELA 3: OPERAÇÃO DE LEITURA E CONFIRMAÇÃO -->
+  <div id="win-operacao" class="janela">
+    <div id="headerOperacao" class="header-bar bg-verde">
+      <span id="tituloOperacao">PRENSA</span>
+      <button id="btnTrocarMaterial" class="btn-topo" onclick="acaoBotaoTopo()">MUDAR MATERIAL</button>
     </div>
 
-    <div id="areaConteudo" class="status-box">
-      <div style="font-size: 1.2rem; color: #94a3b8;">Aguardando leitura de 1 etiqueta RFID...</div>
-      <div style="font-size: 0.9rem; color: #64748b;">Pressione o gatilho do coletor</div>
+    <div id="barraResumoCarga" class="resumo-carga" style="display:none;">
+      <span id="txtQtdCarga">Carga: 0 fardos</span>
+      <span id="txtPesoCarga">0,00 kg</span>
+    </div>
+
+    <div id="areaConteudo" class="status-box"></div>
+
+    <div id="rodapeFinalizarCarga" class="acoes-grid" style="display:none;">
+      <button class="btn-acao btn-finalizar" onclick="abrirConfirmacaoFinalizar()">FINALIZAR CARREGAMENTO</button>
+    </div>
+  </div>
+
+  <!-- JANELA 4: CONFIRMAÇÃO DE ENCERRAMENTO DO CAMINHÃO -->
+  <div id="win-confirmar-fim" class="janela">
+    <div class="header-bar bg-escuro">
+      <span>ENCERRAR CARREGAMENTO</span>
+    </div>
+    <div class="status-box">
+      <div style="font-size: 1.2rem; font-weight: 800; color: #facc15;">TEM CERTEZA QUE DESEJA FINALIZAR A CARGA DO CAMINHÃO?</div>
+      <div id="resumoFinalCaminhao" style="font-size: 1.05rem; color: #e2e8f0; margin: 10px 0;"></div>
+      <div class="acoes-grid">
+        <button class="btn-acao btn-confirmar" onclick="confirmarEncerramentoCaminhao()">SIM, FINALIZAR CARGA</button>
+        <button class="btn-acao btn-neutro" onclick="voltarParaCarregamento()">VOLTAR E CONTINUAR LENDO</button>
+      </div>
     </div>
   </div>
 
@@ -69,50 +137,132 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let operacaoAtual = null;
-    let epcAtual = null;
-    let pesoAtual = null;
+    let modoAtual = null;           // 'PRENSA' ou 'CARREGAMENTO'
+    let materialPrensa = null;      // Material exato escolhido na PRENSA
+    let idCargaAtual = null;
+    let qtdFardosCarga = 0;
+    let pesoTotalCarga = 0;
+    let fardosValidados = [];
     let processando = false;
 
+    function mostrarJanela(idJanela) {
+      document.querySelectorAll(".janela").forEach(j => j.classList.remove("ativa"));
+      document.getElementById(idJanela).classList.add("ativa");
+    }
+
     function liberarColetor() {
-      epcAtual = null;
-      pesoAtual = null;
+      fardosValidados = [];
       processando = false;
       if (window.AndroidSingleTag && typeof window.AndroidSingleTag.liberarProximaEtiqueta === "function") {
         window.AndroidSingleTag.liberarProximaEtiqueta();
       }
     }
 
-    function resetarTelaEspera(mensagemExtra = "") {
+    function atualizarBarraCarga() {
+      const barra = document.getElementById("barraResumoCarga");
+      const rodape = document.getElementById("rodapeFinalizarCarga");
+      if (modoAtual === "CARREGAMENTO") {
+        barra.style.display = "flex";
+        document.getElementById("txtQtdCarga").textContent = `Carga: ${qtdFardosCarga} fardo(s)`;
+        document.getElementById("txtPesoCarga").textContent = `${pesoTotalCarga.toFixed(2)} kg`;
+        rodape.style.display = processando ? "none" : "flex";
+      } else {
+        barra.style.display = "none";
+        rodape.style.display = "none";
+      }
+    }
+
+    function renderizarTelaEspera(mensagemExtra = "") {
       liberarColetor();
-      const area = document.getElementById("areaConteudo");
-      area.innerHTML = `
+      atualizarBarraCarga();
+      const instrucao = modoAtual === "PRENSA"
+        ? `Aproxime 30–50 cm de 1 fardo de <strong>${materialPrensa}</strong>`
+        : `Aponte para a empilhadeira (até 3 fardos próximos)`;
+
+      document.getElementById("areaConteudo").innerHTML = `
         ${mensagemExtra}
-        <div style="font-size: 1.2rem; color: #94a3b8;">Aguardando leitura de 1 etiqueta RFID...</div>
-        <div style="font-size: 0.9rem; color: #64748b;">Pressione o gatilho do coletor</div>
+        <div style="font-size: 1.15rem; color: #94a3b8;">Aguardando leitura RFID...</div>
+        <div style="font-size: 0.92rem; color: #cbd5e1;">${instrucao}</div>
       `;
     }
 
-    window.selecionarOperacao = function(op) {
-      operacaoAtual = op;
-      document.getElementById("telaInicial").style.display = "none";
-      document.getElementById("telaOperacao").style.display = "flex";
-      const header = document.getElementById("headerOp");
-      const titulo = document.getElementById("tituloOp");
-      titulo.textContent = op;
-      header.className = "header-op " + (op === "PRENSA" ? "header-prensa" : "header-carregamento");
-      resetarTelaEspera();
+    // NAVEGAÇÃO ENTRE JANELAS
+    window.irParaInicio = function() {
+      modoAtual = null;
+      materialPrensa = null;
+      liberarColetor();
+      mostrarJanela("win-inicio");
     };
 
-    window.voltarInicio = function() {
-      operacaoAtual = null;
+    window.abrirSelecaoPrensa = function() {
       liberarColetor();
-      document.getElementById("telaOperacao").style.display = "none";
-      document.getElementById("telaInicial").style.display = "flex";
+      mostrarJanela("win-sel-prensa");
+    };
+
+    window.iniciarPrensa = function(materialExato) {
+      modoAtual = "PRENSA";
+      materialPrensa = materialExato;
+      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.configurarModo === "function") {
+        window.AndroidSingleTag.configurarModo("PRENSA");
+      }
+      const header = document.getElementById("headerOperacao");
+      header.className = "header-bar bg-verde";
+      document.getElementById("tituloOperacao").textContent = `PRENSA: ${materialExato.toUpperCase()}`;
+      document.getElementById("btnTrocarMaterial").textContent = "MUDAR MATERIAL";
+      mostrarJanela("win-operacao");
+      renderizarTelaEspera();
+    };
+
+    window.iniciarCarregamentoDireto = function() {
+      modoAtual = "CARREGAMENTO";
+      materialPrensa = null;
+      idCargaAtual = "CARGA-" + Date.now();
+      qtdFardosCarga = 0;
+      pesoTotalCarga = 0;
+      if (window.AndroidSingleTag && typeof window.AndroidSingleTag.configurarModo === "function") {
+        window.AndroidSingleTag.configurarModo("CARREGAMENTO");
+      }
+      const header = document.getElementById("headerOperacao");
+      header.className = "header-bar bg-azul";
+      document.getElementById("tituloOperacao").textContent = "CARREGAMENTO";
+      document.getElementById("btnTrocarMaterial").textContent = "SAIR";
+      mostrarJanela("win-operacao");
+      renderizarTelaEspera();
+    };
+
+    window.acaoBotaoTopo = function() {
+      if (modoAtual === "PRENSA") {
+        abrirSelecaoPrensa();
+      } else if (modoAtual === "CARREGAMENTO") {
+        if (qtdFardosCarga > 0) {
+          abrirConfirmacaoFinalizar();
+        } else {
+          irParaInicio();
+        }
+      }
+    };
+
+    window.abrirConfirmacaoFinalizar = function() {
+      document.getElementById("resumoFinalCaminhao").innerHTML = `
+        Total Carregado: <strong>${qtdFardosCarga} fardo(s)</strong><br>
+        Peso Total: <strong>${pesoTotalCarga.toFixed(2)} kg</strong>
+      `;
+      mostrarJanela("win-confirmar-fim");
+    };
+
+    window.voltarParaCarregamento = function() {
+      mostrarJanela("win-operacao");
+      renderizarTelaEspera();
+    };
+
+    window.confirmarEncerramentoCaminhao = function() {
+      qtdFardosCarga = 0;
+      pesoTotalCarga = 0;
+      idCargaAtual = null;
+      irParaInicio();
     };
 
     function gerarPesoSimulado() {
-      // Gera peso realista entre 180.00 kg e 245.00 kg
       return Number((180 + Math.random() * 65).toFixed(2));
     }
 
@@ -120,47 +270,51 @@
       try {
         await addDoc(collection(db, "logs_bloqueios"), {
           epc: epc,
-          operacao_tentada: operacaoAtual,
+          operacao_tentada: modoAtual,
           motivo_bloqueio: motivo,
           dispositivo: "Bluebird-EF401",
           criado_em: serverTimestamp()
         });
       } catch (e) {
-        console.error("Erro ao gravar log de bloqueio:", e);
+        console.error("Erro ao gravar log:", e);
       }
     }
 
-    // Função chamada pelo Android (InventoryFragment.java)
-    window.receberRFID = async function(epcRecebido) {
-      const epc = (epcRecebido || "").trim().toUpperCase();
-      if (!epc) {
+    // RECEBIMENTO DO RFID VINDO DO ANDROID
+    window.receberLoteRFID = async function(listaEpcs) {
+      const epcs = (Array.isArray(listaEpcs) ? listaEpcs : [listaEpcs])
+        .map(e => (e || "").trim().toUpperCase())
+        .filter(Boolean);
+
+      if (epcs.length === 0) {
         liberarColetor();
         return;
       }
 
-      if (!operacaoAtual) {
-        alert("Selecione PRENSA ou CARREGAMENTO antes de ler uma etiqueta.");
+      if (!modoAtual || (modoAtual === "PRENSA" && !materialPrensa)) {
+        alert("Selecione a operação antes de ler.");
         liberarColetor();
         return;
       }
 
       if (processando) return;
       processando = true;
-      epcAtual = epc;
+      fardosValidados = [];
+      atualizarBarraCarga();
 
       const area = document.getElementById("areaConteudo");
-      area.innerHTML = `<div style="color:#38bdf8; font-weight:700;">Consultando nuvem...</div><div class="epc-tag">${epc}</div>`;
+      area.innerHTML = `<div style="color:#38bdf8; font-weight:700;">Consultando nuvem...</div>`;
 
       try {
-        const estoqueRef = doc(db, "estoque_atual", epc);
-        const snap = await getDoc(estoqueRef);
+        if (modoAtual === "PRENSA") {
+          const epc = epcs[0];
+          const snap = await getDoc(doc(db, "estoque_atual", epc));
 
-        if (operacaoAtual === "PRENSA") {
           if (snap.exists()) {
-            const motivo = "Etiqueta já está em estoque (tentativa duplicada na PRENSA).";
-            await registrarBloqueio(epc, motivo);
+            const matExistente = snap.data().material || "Não informado";
+            await registrarBloqueio(epc, `Etiqueta já está em estoque como ${matExistente} (duplicada na PRENSA).`);
             area.innerHTML = `
-              <div class="alerta-erro">BLOQUEADO!<br>Esta etiqueta JÁ ESTÁ EM ESTOQUE.</div>
+              <div class="alerta-erro">BLOQUEADO!<br>Esta etiqueta JÁ ESTÁ EM ESTOQUE (${matExistente}).</div>
               <div class="epc-tag">${epc}</div>
               <div class="acoes-grid">
                 <button class="btn-acao btn-neutro" onclick="cancelarLeitura()">LER PRÓXIMA ETIQUETA</button>
@@ -169,46 +323,80 @@
             return;
           }
 
-          pesoAtual = gerarPesoSimulado();
+          const peso = gerarPesoSimulado();
+          fardosValidados = [{ epc, material: materialPrensa, peso_kg: peso }];
+
           area.innerHTML = `
-            <div style="color:#94a3b8; font-weight:700;">ETIQUETA LIBERADA PARA PRENSA</div>
+            <div class="badge-material">${materialPrensa}</div>
             <div class="epc-tag">${epc}</div>
-            <div class="peso-valor">${pesoAtual.toFixed(2)} kg</div>
+            <div class="peso-valor">${peso.toFixed(2)} kg</div>
             <div class="acoes-grid">
               <button id="btnConfirmar" class="btn-acao btn-confirmar" onclick="confirmarPrensa()">CONFIRMAR GRAVAÇÃO</button>
               <button class="btn-acao btn-refazer" onclick="cancelarLeitura()">REFAZER</button>
             </div>
           `;
 
-        } else if (operacaoAtual === "CARREGAMENTO") {
-          if (!snap.exists()) {
-            const motivo = "Etiqueta não encontrada no estoque (tentativa de CARREGAMENTO sem entrada).";
-            await registrarBloqueio(epc, motivo);
-            area.innerHTML = `
-              <div class="alerta-erro">BLOQUEADO!<br>Esta etiqueta NÃO ESTÁ NO ESTOQUE.</div>
-              <div class="epc-tag">${epc}</div>
-              <div class="acoes-grid">
-                <button class="btn-acao btn-neutro" onclick="cancelarLeitura()">LER PRÓXIMA ETIQUETA</button>
-              </div>
-            `;
-            return;
+        } else if (modoAtual === "CARREGAMENTO") {
+          const loteMax3 = epcs.slice(0, 3);
+          let cardsHtml = "";
+          let pesoLote = 0;
+          let algumBloqueado = false;
+
+          for (const epc of loteMax3) {
+            const snap = await getDoc(doc(db, "estoque_atual", epc));
+            if (!snap.exists()) {
+              algumBloqueado = true;
+              await registrarBloqueio(epc, "Etiqueta não encontrada no estoque (CARREGAMENTO bloqueado).");
+              cardsHtml += `
+                <div class="fardo-card invalido">
+                  <div class="fardo-info">
+                    <span class="fardo-mat" style="color:#fca5a5;">NÃO ESTÁ NO ESTOQUE</span>
+                    <span class="fardo-epc">${epc}</span>
+                  </div>
+                  <div class="fardo-peso" style="color:#fca5a5;">BLOQUEADO</div>
+                </div>
+              `;
+            } else {
+              const dados = snap.data();
+              const matFardo = dados.material || "Sem Material";
+              const peso = Number(dados.peso_kg || 0);
+
+              pesoLote += peso;
+              fardosValidados.push({ epc, material: matFardo, peso_kg: peso });
+              cardsHtml += `
+                <div class="fardo-card">
+                  <div class="fardo-info">
+                    <span class="fardo-mat">${matFardo}</span>
+                    <span class="fardo-epc">${epc}</span>
+                  </div>
+                  <div class="fardo-peso">${peso.toFixed(2)} kg</div>
+                </div>
+              `;
+            }
           }
 
-          const dadosEstoque = snap.data();
-          pesoAtual = Number(dadosEstoque.peso_kg || 0);
+          const avisoBloqueio = algumBloqueado
+            ? `<div class="alerta-erro" style="padding:8px;font-size:0.85rem;">Atenção: Etiquetas fora de estoque foram bloqueadas.</div>`
+            : "";
+
+          const botaoConfirmar = fardosValidados.length > 0
+            ? `<button id="btnConfirmar" class="btn-acao btn-confirmar" onclick="confirmarCarregamento()">CONFIRMAR BAIXA (${fardosValidados.length} FARDO${fardosValidados.length > 1 ? 'S' : ''})</button>`
+            : "";
+
           area.innerHTML = `
-            <div style="color:#94a3b8; font-weight:700;">FARDO LOCALIZADO NO ESTOQUE</div>
-            <div class="epc-tag">${epc}</div>
-            <div class="peso-valor">${pesoAtual.toFixed(2)} kg</div>
+            <div style="color:#94a3b8; font-weight:700; font-size:0.9rem;">FARDOS LIDOS (${loteMax3.length})</div>
+            ${avisoBloqueio}
+            ${cardsHtml}
+            ${fardosValidados.length > 0 ? `<div class="peso-valor" style="font-size:1.85rem;">Lote: ${pesoLote.toFixed(2)} kg</div>` : ""}
             <div class="acoes-grid">
-              <button id="btnConfirmar" class="btn-acao btn-confirmar" onclick="confirmarCarregamento()">CONFIRMAR BAIXA</button>
-              <button class="btn-acao btn-refazer" onclick="cancelarLeitura()">CANCELAR</button>
+              ${botaoConfirmar}
+              <button class="btn-acao btn-refazer" onclick="cancelarLeitura()">${fardosValidados.length > 0 ? 'CANCELAR / LER OUTRO' : 'LER OUTRO FARDO'}</button>
             </div>
           `;
         }
       } catch (err) {
         area.innerHTML = `
-          <div class="alerta-erro">Erro de conexão com a nuvem:<br>${err.message}</div>
+          <div class="alerta-erro">Erro de conexão:<br>${err.message}</div>
           <div class="acoes-grid">
             <button class="btn-acao btn-neutro" onclick="cancelarLeitura()">TENTAR NOVAMENTE</button>
           </div>
@@ -216,26 +404,34 @@
       }
     };
 
+    window.receberRFID = function(epc) {
+      window.receberLoteRFID([epc]);
+    };
+
     window.confirmarPrensa = async function() {
+      if (fardosValidados.length === 0) return;
       const btn = document.getElementById("btnConfirmar");
       if (btn) btn.disabled = true;
 
       try {
-        await setDoc(doc(db, "estoque_atual", epcAtual), {
-          epc: epcAtual,
-          peso_kg: pesoAtual,
+        const item = fardosValidados[0];
+        await setDoc(doc(db, "estoque_atual", item.epc), {
+          epc: item.epc,
+          material: item.material,
+          peso_kg: item.peso_kg,
           data_entrada: serverTimestamp()
         });
 
         await addDoc(collection(db, "movimentacoes_fardos"), {
-          epc: epcAtual,
+          epc: item.epc,
           operacao: "PRENSA",
-          peso_kg: pesoAtual,
+          material: item.material,
+          peso_kg: item.peso_kg,
           dispositivo: "Bluebird-EF401",
           criado_em: serverTimestamp()
         });
 
-        resetarTelaEspera(`<div class="alerta-ok">ENTRADA GRAVADA (${pesoAtual.toFixed(2)} kg)!</div>`);
+        renderizarTelaEspera(`<div class="alerta-ok">GRAVADO: ${item.material} (${item.peso_kg.toFixed(2)} kg)</div>`);
       } catch (err) {
         alert("Erro ao gravar entrada: " + err.message);
         if (btn) btn.disabled = false;
@@ -243,21 +439,32 @@
     };
 
     window.confirmarCarregamento = async function() {
+      if (fardosValidados.length === 0) return;
       const btn = document.getElementById("btnConfirmar");
       if (btn) btn.disabled = true;
 
       try {
-        await deleteDoc(doc(db, "estoque_atual", epcAtual));
+        let pesoLoteConfirmado = 0;
+        const qtdLote = fardosValidados.length;
 
-        await addDoc(collection(db, "movimentacoes_fardos"), {
-          epc: epcAtual,
-          operacao: "CARREGAMENTO",
-          peso_kg: pesoAtual,
-          dispositivo: "Bluebird-EF401",
-          criado_em: serverTimestamp()
-        });
+        for (const item of fardosValidados) {
+          pesoLoteConfirmado += item.peso_kg;
+          await deleteDoc(doc(db, "estoque_atual", item.epc));
+          await addDoc(collection(db, "movimentacoes_fardos"), {
+            epc: item.epc,
+            operacao: "CARREGAMENTO",
+            material: item.material,
+            id_carga: idCargaAtual,
+            peso_kg: item.peso_kg,
+            dispositivo: "Bluebird-EF401",
+            criado_em: serverTimestamp()
+          });
+        }
 
-        resetarTelaEspera(`<div class="alerta-ok">BAIXA CONFIRMADA (${pesoAtual.toFixed(2)} kg)!</div>`);
+        qtdFardosCarga += qtdLote;
+        pesoTotalCarga += pesoLoteConfirmado;
+
+        renderizarTelaEspera(`<div class="alerta-ok">+${qtdLote} FARDO(S) CARREGADO(S) (${pesoLoteConfirmado.toFixed(2)} kg)</div>`);
       } catch (err) {
         alert("Erro ao confirmar baixa: " + err.message);
         if (btn) btn.disabled = false;
@@ -265,7 +472,7 @@
     };
 
     window.cancelarLeitura = function() {
-      resetarTelaEspera();
+      renderizarTelaEspera();
     };
   </script>
 </body>
