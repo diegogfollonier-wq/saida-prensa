@@ -103,9 +103,14 @@
 <body>
   <div class="topo">
     <h2>CONTROLE DE ESTOQUE RFID</h2>
-    <div id="msgStatus" style="font-size:12px;color:#cbd5e1;">Pronto para leitura RFID</div>
-    <div style="margin-top:8px;">
-      <button type="button" class="b-azul" onclick="simularTag()">Simular Leitura</button>
+    <div id="msgStatus" style="font-size:12px;color:#cbd5e1;">Pronto para ler 1 etiqueta por vez</div>
+
+    <label style="font-size:11px;color:#cbd5e1;display:block;margin-top:6px;">Informar / Testar EPC da Etiqueta:</label>
+    <input type="text" id="epcManualInp" placeholder="Ex: 3400E28011704000021C393F08D0" />
+
+    <div style="margin-top:4px;">
+      <button type="button" class="b-verde" onclick="enviarEpcManual()">Ler EPC Informado</button>
+      <button type="button" class="b-azul" onclick="simularTag()">Simular Tag</button>
       <button type="button" class="b-vermelho" onclick="limparLista()">Limpar</button>
     </div>
   </div>
@@ -172,6 +177,14 @@
       registros = [];
     }
 
+    function notificarAndroidLiberado() {
+      try {
+        if (window.AndroidSingleTag && typeof window.AndroidSingleTag.liberarProximaEtiqueta === 'function') {
+          window.AndroidSingleTag.liberarProximaEtiqueta();
+        }
+      } catch (e) {}
+    }
+
     function setTipo(t) {
       tipoAtual = t;
       document.getElementById('btnTipoEnt').style.outline = (t === 'ENTRADA') ? '2px solid #fff' : 'none';
@@ -188,9 +201,10 @@
     }
 
     window.receberRFID = function(codigo) {
-      if (!codigo) return;
+      if (!codigo || tagAtual) return;
       var limpo = String(codigo).replace(/\s+/g, '').toUpperCase();
       tagAtual = limpo;
+      document.getElementById('epcManualInp').value = limpo;
 
       var achado = buscarEmEstoque(limpo);
       jaExiste = achado !== null;
@@ -207,13 +221,22 @@
         document.getElementById('pesoInp').value = achado.peso;
       } else {
         box.className = 'box-leitura visivel';
-        aviso.innerHTML = 'Nova leitura RFID — escolha ENTRADA ou SAÍDA e clique em GRAVAR.';
+        aviso.innerHTML = 'Etiqueta recebida — escolha ENTRADA ou SAÍDA e clique em GRAVAR.';
         setTipo('ENTRADA');
         document.getElementById('pesoInp').value = (Math.floor(Math.random() * 70) + 190) + '.0';
       }
 
-      document.getElementById('msgStatus').innerHTML = 'Tag recebida: ' + limpo;
+      document.getElementById('msgStatus').innerHTML = 'Tag travada para conferência: ' + limpo;
     };
+
+    function enviarEpcManual() {
+      var val = document.getElementById('epcManualInp').value;
+      if (!val || !String(val).trim()) {
+        document.getElementById('msgStatus').innerHTML = 'Digite ou cole um código EPC.';
+        return;
+      }
+      window.receberRFID(val);
+    }
 
     function salvarTag() {
       if (!tagAtual) return;
@@ -245,8 +268,9 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
       } catch (e) {}
 
+      var gravada = tagAtual;
       fecharBox();
-      document.getElementById('msgStatus').innerHTML = 'Gravado: ' + tagAtual;
+      document.getElementById('msgStatus').innerHTML = 'Gravado: ' + gravada + ' — pronto para próxima etiqueta';
       atualizarTela();
     }
 
@@ -254,9 +278,11 @@
       tagAtual = '';
       jaExiste = false;
       document.getElementById('boxLeitura').className = 'box-leitura';
+      notificarAndroidLiberado();
     }
 
     function simularTag() {
+      if (tagAtual) return;
       var rnd = Math.floor(Math.random() * 899999 + 100000);
       window.receberRFID('3400E2801170400002' + rnd);
     }
