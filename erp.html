@@ -517,7 +517,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
   <h3 id="mTitulo"></h3>
   <div id="mCorpo"></div>
   <div class="m-senha"><label>Confirma alteração? Digite a senha para confirmar</label>
-    <input class="input" id="mSenha" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Senha"></div>
+    <input class="input" id="mSenha" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="Senha"></div>
   <div class="m-erro" id="mErro"></div>
   <div class="m-acoes"><button class="btn" id="mCancel">Cancelar</button><button class="btn pri" id="mOk">Confirmar</button></div>
 </div></div>
@@ -1245,6 +1245,10 @@ function abrirModal(cfg){
     $("mTitulo").textContent = cfg.titulo; $("mCorpo").innerHTML = cfg.html || "";
     $("mSenha").value = ""; $("mErro").textContent = "";
     $("mOk").textContent = cfg.ok || "Confirmar"; $("mOk").className = "btn " + (cfg.perigo ? "danger" : "pri");
+    $("mCorpo").querySelectorAll("input:not([type=checkbox]):not([type=password])").forEach((el, i) => {
+      el.setAttribute("autocomplete", "off"); el.setAttribute("name", "mf_" + Date.now() + "_" + i);
+      if (el.type === "text" || el.type === "") { el.readOnly = true; el.addEventListener("focus", () => { el.readOnly = false; }, { once: true }); }
+    });
     $("modalBg").classList.remove("hide");
     setTimeout(() => { const f = $("mCorpo").querySelector("input:not([type=checkbox]),select"); (f || $("mSenha")).focus(); }, 40);
   });
@@ -1854,7 +1858,7 @@ function montarViewMateriais(){
     <div class="toolbar"><button class="btn pri" data-mbtn="novo" style="width:auto;padding:12px 22px;font-size:15px">+ Incluir Material</button>
       <input class="input grow" id="expMatQ" name="busca_cadastro_mat" autocomplete="off" readonly data-ro placeholder="Buscar material, código ou observação…"></div>
     <div class="sub" id="expMatInfo" style="margin-bottom:10px"></div>
-    <div class="table-wrap"><table><thead><tr><th>Material</th><th>Código / NCM</th><th>Unidade</th><th class="num">R$ por kg</th><th class="num">Em notas</th><th class="num">Peso lançado (kg)</th><th>Observação</th><th></th></tr></thead><tbody id="tbMateriais"></tbody></table></div>`;
+    <div class="table-wrap"><table><thead><tr><th>Material</th><th>Código / NCM</th><th>Unidade</th><th class="num">R$ por kg</th><th>Observação</th><th></th></tr></thead><tbody id="tbMateriais"></tbody></table></div>`;
   sec.addEventListener("click", e => { if (e.target.closest("button[data-mbtn]")) run(() => editarMaterial(null)); });
   $("expMatQ").addEventListener("input", renderMateriais);
 }
@@ -1867,9 +1871,9 @@ function renderMateriais(){
     .sort((a, b) => a.p.material.localeCompare(b.p.material, "pt-BR"));
   const livres = Object.keys(uso).filter(k => !cad.has(k)).map(k => uso[k]).filter(o => !q || o.nome.toLowerCase().includes(q)).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   $("expMatInfo").textContent = `${fmtNum(expPrecos.length)} material(is) cadastrado(s)` + (livres.length ? ` · ${fmtNum(livres.length)} usado(s) em notas e ainda não cadastrado(s)` : "");
-  tb.innerHTML = linhas.map(({ p, u }) => `<tr><td>${badgeMat(p.material)}</td><td class="mono">${esc(p.codigo) || "—"}</td><td>${esc(p.unidade || "kg")}</td><td class="num">${nf2.format(p.preco)}</td><td class="num">${u ? fmtNum(u.notas.size) : "—"}</td><td class="num">${u ? fmtNum(u.kg) : "—"}</td><td class="muted">${esc(p.obs)}</td><td class="ac"><button class="btn xs" data-act="mat-edit" data-id="${esc(p.id)}">Editar</button> <button class="btn xs danger" data-act="mat-del" data-id="${esc(p.id)}">Excluir</button></td></tr>`).join("")
-    + livres.map(o => `<tr><td>${badgeMat(o.nome)} <span class="badge b-warn">não cadastrado</span></td><td>—</td><td>—</td><td class="num">—</td><td class="num">${fmtNum(o.notas.size)}</td><td class="num">${fmtNum(o.kg)}</td><td class="muted">usado nas notas, sem cadastro</td><td class="ac"><button class="btn xs pri" data-act="mat-cad" data-nome="${esc(o.nome)}">Cadastrar</button></td></tr>`).join("")
-    || vazio(8, "Nenhum material. Use “Incluir Material” ou importe os preços da planilha na aba Preços.");
+  tb.innerHTML = linhas.map(({ p, u }) => `<tr><td>${badgeMat(p.material)}</td><td class="mono">${esc(p.codigo) || "—"}</td><td>${esc(p.unidade || "kg")}</td><td class="num">${nf2.format(p.preco)}</td><td class="muted">${esc(p.obs)}</td><td class="ac"><button class="btn xs" data-act="mat-edit" data-id="${esc(p.id)}">Editar</button> <button class="btn xs danger" data-act="mat-del" data-id="${esc(p.id)}">Excluir</button></td></tr>`).join("")
+    + livres.map(o => `<tr><td>${badgeMat(o.nome)} <span class="badge b-warn">não cadastrado</span></td><td>—</td><td>—</td><td class="num">—</td><td class="muted">usado nas notas, sem cadastro</td><td class="ac"><button class="btn xs pri" data-act="mat-cad" data-nome="${esc(o.nome)}">Cadastrar</button></td></tr>`).join("")
+    || vazio(6, "Nenhum material. Use “Incluir Material” ou importe os preços da planilha na aba Preços.");
 }
 async function editarMaterial(p, nomeInicial){
   const novo = !p;
