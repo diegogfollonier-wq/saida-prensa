@@ -47,6 +47,28 @@
     .tecla:active { background: #64748b; }
     .tecla.apagar { background: #b45309; }
     .tecla.limpar { background: #7f1d1d; font-size: 1rem; }
+    /* TELA DE PESO: ocupa exatamente a área visível; teclado e botões se ajustam à altura da tela, sem rolar */
+    body.modo-peso { height: 100vh; min-height: 0; overflow: hidden; padding: 6px; }
+    body.modo-peso .janela.ativa { min-height: 0; }
+    body.modo-peso .header-bar { padding: 5px 8px; margin-bottom: 6px; font-size: 0.78rem; }
+    body.modo-peso .btn-topo { padding: 5px 8px; font-size: 0.7rem; }
+    body.modo-peso #areaConteudo { padding: 6px; gap: 5px; justify-content: flex-start; min-height: 0; overflow: hidden; }
+    .peso-tela { display: flex; flex-direction: column; gap: 5px; width: 100%; flex: 1; min-height: 0; }
+    .peso-tela .teclado { flex: 1; min-height: 0; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 5px; }
+    .peso-tela .tecla { padding: 0; min-height: 0; height: 100%; font-size: 1.5rem; }
+    .peso-tela .tecla.limpar { font-size: 0.9rem; }
+    .peso-tela .peso-display { flex: none; font-size: 2.4rem; padding: 0 6px; line-height: 1.2; }
+    .peso-tela .btn-acao { padding: 10px 6px; font-size: 0.95rem; }
+    .peso-tela .linha-fardo { display: flex; align-items: center; gap: 6px; width: 100%; }
+    .peso-tela .linha-fardo .badge-material { font-size: 0.8rem; padding: 4px 10px; white-space: nowrap; }
+    .peso-tela .linha-fardo .epc-tag { width: auto; flex: 1; font-size: 0.6rem; padding: 4px 6px; }
+    .peso-tela .peso-grande { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 4rem; font-weight: 900; color: #facc15; min-height: 0; }
+    .peso-tela .peso-grande small { font-size: 1.5rem; color: #c4b5fd; margin-left: 6px; }
+    @media (max-height: 520px) {
+      .peso-tela .tecla { font-size: 1.25rem; }
+      .peso-tela .peso-display { font-size: 2rem; }
+      .peso-tela .peso-grande { font-size: 3rem; }
+    }
     /* Telas pequenas (coletor Bluebird): teclado de peso mais compacto para caber sem rolar */
     @media (max-height: 640px) {
       body { padding: 8px; }
@@ -455,6 +477,7 @@
     }
 
     function mostrarJanela(idJanela) {
+      document.body.classList.remove("modo-peso");
       limparTimerPrensa();
       document.querySelectorAll(".janela").forEach(j => j.classList.remove("ativa"));
       document.getElementById(idJanela).classList.add("ativa");
@@ -510,6 +533,7 @@
     }
 
     function renderizarTelaEspera(mensagemExtra = "") {
+      document.body.classList.remove("modo-peso");
       liberarColetor();
       atualizarBarraCarga();
       const instrucao = modoAtual === "PRENSA"
@@ -1528,31 +1552,28 @@
 
     function cabecalhoFardoPrensa() {
       const it = fardosValidados[0] || {};
-      return `
-        <div style="display:flex; align-items:center; gap:8px; width:100%; justify-content:space-between;">
-          <span class="badge-material" style="font-size:0.95rem; padding:5px 12px;">${escHtml(it.material || "")}</span>
-          <span class="epc-tag" style="width:auto; flex:1; font-size:0.72rem; padding:6px 8px;">${escHtml(it.epc || "")}</span>
-        </div>`;
+      return `<div class="linha-fardo"><span class="badge-material">${escHtml(it.material || "")}</span><span class="epc-tag">${escHtml(it.epc || "")}</span></div>`;
     }
 
     function renderTecladoPeso() {
+      document.body.classList.add("modo-peso");
       const area = document.getElementById("areaConteudo");
       const teclas = ["1","2","3","4","5","6","7","8","9"].map(d => `<button class="tecla" onclick="teclaPeso('${d}')">${d}</button>`).join("");
       const pronto = pesoDigitos.length > 0 && Number(pesoDigitos) >= PESO_MIN_KG;
       area.innerHTML = `
-        ${cabecalhoFardoPrensa()}
-        <div style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">DIGITE O PESO DA BALANÇA (kg)</div>
-        <div class="peso-display">${pesoDigitos === "" ? '<span style="color:#475569;">---</span>' : pesoDigitos}<small> kg</small></div>
-        <div id="pesoStatus" class="peso-status"></div>
-        <div class="teclado">
-          ${teclas}
-          <button class="tecla limpar" onclick="limparPeso()">LIMPAR</button>
-          <button class="tecla" onclick="teclaPeso('0')">0</button>
-          <button class="tecla apagar" onclick="apagarPeso()">⌫</button>
-        </div>
-        <div class="acoes-grid" style="flex-direction:row; gap:8px;">
-          <button id="btnConfirmarPeso" class="btn-acao btn-confirmar" style="flex:2;" onclick="confirmarPesoDigitado()" ${pronto ? "" : "disabled"}>CONFIRMAR</button>
-          <button class="btn-acao btn-refazer" style="flex:1;" onclick="cancelarPrensa()">CANCELAR</button>
+        <div class="peso-tela">
+          ${cabecalhoFardoPrensa()}
+          <div class="peso-display">${pesoDigitos === "" ? '<span style="color:#475569;">---</span>' : pesoDigitos}<small> kg</small></div>
+          <div class="teclado">
+            ${teclas}
+            <button class="tecla limpar" onclick="limparPeso()">LIMPAR</button>
+            <button class="tecla" onclick="teclaPeso('0')">0</button>
+            <button class="tecla apagar" onclick="apagarPeso()">⌫</button>
+          </div>
+          <div class="acoes-grid" style="flex-direction:row; gap:6px; margin-top:0;">
+            <button id="btnConfirmarPeso" class="btn-acao btn-confirmar" style="flex:2;" onclick="confirmarPesoDigitado()" ${pronto ? "" : "disabled"}>CONFIRMAR</button>
+            <button class="btn-acao btn-refazer" style="flex:1;" onclick="cancelarPrensa()">CANCELAR</button>
+          </div>
         </div>
       `;
     }
@@ -1578,15 +1599,18 @@
       const v = Number(pesoDigitos);
       if (!(v >= PESO_MIN_KG && v <= PESO_MAX_KG) || fardosValidados.length === 0) return;
       fardosValidados[0].peso_kg = v;
+      document.body.classList.add("modo-peso");
       const area = document.getElementById("areaConteudo");
       area.innerHTML = `
-        ${cabecalhoFardoPrensa()}
-        <div style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">CONFIRA O PESO</div>
-        <div class="peso-valor" style="font-size:4rem; line-height:1.05;">${v}<small style="font-size:1.6rem;"> kg</small></div>
-        <div class="acoes-grid">
-          <button id="btnConfirmar" class="btn-acao btn-confirmar" style="padding:20px; font-size:1.25rem;" onclick="confirmarPrensa()">GRAVAR FARDO</button>
-          <button class="btn-acao btn-finalizar" style="padding:16px;" onclick="alterarPeso()">ALTERAR PESO</button>
-          <button class="btn-acao btn-refazer" onclick="cancelarPrensa()">CANCELAR</button>
+        <div class="peso-tela">
+          ${cabecalhoFardoPrensa()}
+          <div style="font-size:0.8rem; color:#cbd5e1; font-weight:700; text-align:center;">CONFIRA O PESO</div>
+          <div class="peso-grande">${v}<small>kg</small></div>
+          <div class="acoes-grid" style="margin-top:0; gap:6px;">
+            <button id="btnConfirmar" class="btn-acao btn-confirmar" style="padding:14px; font-size:1.1rem;" onclick="confirmarPrensa()">GRAVAR FARDO</button>
+            <button class="btn-acao btn-finalizar" onclick="alterarPeso()">ALTERAR PESO</button>
+            <button class="btn-acao btn-refazer" onclick="cancelarPrensa()">CANCELAR</button>
+          </div>
         </div>
       `;
     };
