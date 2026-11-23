@@ -36,6 +36,11 @@
     .badge-material { background: #facc15; color: #0f172a; padding: 6px 14px; border-radius: 999px; font-weight: 900; font-size: 1.1rem; text-transform: uppercase; }
     .epc-tag { font-family: monospace; font-size: 0.88rem; background: #0f172a; padding: 8px 10px; border-radius: 8px; color: #38bdf8; word-break: break-all; width: 100%; }
     .peso-valor { font-size: 2.3rem; font-weight: 900; color: #facc15; margin: 2px 0; }
+    .peso-input { width: 100%; box-sizing: border-box; font-size: 2.4rem; font-weight: 900; text-align: center; color: #facc15; background: #0f172a; border: 2px solid #475569; border-radius: 12px; padding: 8px 6px; }
+    .peso-input:focus { outline: none; border-color: #38bdf8; }
+    .btn-foto { background: #0ea5e9; color: #fff; }
+    .peso-status { font-size: 0.85rem; font-weight: 600; color: #94a3b8; min-height: 1.2em; text-align: center; }
+    .foto-mini { max-width: 100%; max-height: 110px; border-radius: 10px; border: 1px solid #334155; }
 
     /* CAMPO DE SENHA COMPATÍVEL COM TECLADO INJETADO PELO APP */
     .input-senha { width: 100%; max-width: 240px; padding: 14px; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 10px; border-radius: 12px; border: 2px solid #7c3aed; background: #0f172a; color: #facc15; margin: 6px 0; outline: none; }
@@ -380,6 +385,11 @@
     let qtdFardosCarga = 0;
     let pesoTotalCarga = 0;
     let fardosValidados = [];
+    let pesoOrigemPrensa = "";
+    let pesoOcrTexto = "";
+    let pesoOcrValor = null;
+    let ocrWorker = null;
+    let ocrCarregando = null;
     let fardosInvalidos = [];
     let processando = false;
     let timerRetornoPrensa = null;
@@ -1450,15 +1460,24 @@
             return;
           }
 
-          const peso = gerarPesoSimulado();
-          fardosValidados = [{ epc, material: materialPrensa, peso_kg: peso }];
+          fardosValidados = [{ epc, material: materialPrensa, peso_kg: 0 }];
+          pesoOrigemPrensa = "";
+          pesoOcrTexto = "";
+          pesoOcrValor = null;
 
           area.innerHTML = `
             <div class="badge-material">${materialPrensa}</div>
             <div class="epc-tag">${epc}</div>
-            <div class="peso-valor">${peso.toFixed(2)} kg</div>
+            <div class="peso-status" style="color:#e2e8f0;">Fotografe o visor da balança ou digite o peso</div>
+            <input id="fotoBalanca" type="file" accept="image/*" capture="environment" style="display:none" onchange="processarFotoBalanca(this)">
+            <div class="acoes-grid" style="margin-top:2px;">
+              <button class="btn-acao btn-foto" onclick="abrirCameraBalanca()">FOTOGRAFAR BALANÇA</button>
+            </div>
+            <div id="fotoPreview" style="text-align:center;"></div>
+            <input id="pesoInput" class="peso-input" type="text" inputmode="decimal" placeholder="0,0 kg" autocomplete="off" oninput="pesoDigitado()">
+            <div id="pesoStatus" class="peso-status"></div>
             <div class="acoes-grid">
-              <button id="btnConfirmar" class="btn-acao btn-confirmar" onclick="confirmarPrensa()">ACEITAR E GRAVAR</button>
+              <button id="btnConfirmar" class="btn-acao btn-confirmar" onclick="confirmarPrensa()" disabled style="opacity:0.45;">ACEITAR E GRAVAR</button>
               <button class="btn-acao btn-refazer" onclick="cancelarPrensa()">CANCELAR</button>
             </div>
           `;
@@ -1501,8 +1520,191 @@
 
     window.renderizarTelaEspera = renderizarTelaEspera;
 
+
+    // ===== PESO DA PRENSA POR FOTO DA BALANÇA (OCR no aparelho) =====
+    const OCR_URL = "https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js";
+    const PESO_MIN_KG = 5;
+    const PESO_MAX_KG = 3000;
+
+    function lerPesoTexto(txt) {
+      let t = String(txt || "").replace(/\s+/g, "").replace(",", ".");
+      t = t.replace(/[^0-9.]/g, "");
+      const partes = t.split(".");
+      if (partes.length > 2) t = partes.slice(0, -1).join("") + "." + partes[partes.length - 1];
+      const v = parseFloat(t);
+      return isNaN(v) ? null : v;
+    }
+
+    function atualizarEstadoPeso(texto, cor) {
+      const el = document.getElementById("pesoStatus");
+      if (el) { el.textContent = texto || ""; el.style.color = cor || "#94a3b8"; }
+    }
+
+    window.pesoDigitado = function() {
+      const inp = document.getElementById("pesoInput");
+      const btn = document.getElementById("btnConfirmar");
+      if (!inp) return;
+      const v = lerPesoTexto(inp.value);
+      const ok = v !== null && v >= PESO_MIN_KG && v <= PESO_MAX_KG;
+      if (fardosValidados.length > 0) fardosValidados[0].peso_kg = ok ? Math.round(v * 100) / 100 : 0;
+      if (pesoOcrValor !== null && ok && Math.abs(v - pesoOcrValor) < 0.005) pesoOrigemPrensa = "FOTO_OCR";
+      else if (pesoOcrValor !== null) pesoOrigemPrensa = "FOTO_CORRIGIDO";
+      else pesoOrigemPrensa = "DIGITADO";
+      if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? "1" : "0.45"; }
+      if (!ok && inp.value.trim() !== "") atualizarEstadoPeso("Peso fora do esperado (" + PESO_MIN_KG + " a " + PESO_MAX_KG + " kg).", "#f87171");
+      else if (ok) atualizarEstadoPeso("Confira o peso no visor antes de gravar.", "#facc15");
+    };
+
+    window.abrirCameraBalanca = function() {
+      const f = document.getElementById("fotoBalanca");
+      if (f) { f.value = ""; f.click(); }
+    };
+
+    function carregarOcr() {
+      if (window.Tesseract) return Promise.resolve();
+      if (ocrCarregando) return ocrCarregando;
+      ocrCarregando = new Promise(function(resolve, reject) {
+        const sc = document.createElement("script");
+        sc.src = OCR_URL;
+        sc.onload = function() { resolve(); };
+        sc.onerror = function() { ocrCarregando = null; reject(new Error("Não foi possível baixar o leitor de imagem (sem internet?).")); };
+        document.head.appendChild(sc);
+      });
+      return ocrCarregando;
+    }
+
+    async function obterWorkerOcr() {
+      if (ocrWorker) return ocrWorker;
+      await carregarOcr();
+      const w = await window.Tesseract.createWorker("eng");
+      await w.setParameters({ tessedit_char_whitelist: "0123456789.,", tessedit_pageseg_mode: "11" });
+      ocrWorker = w;
+      return w;
+    }
+
+    function carregarImagemArquivo(file) {
+      return new Promise(function(resolve, reject) {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = function() { resolve({ img: img, url: url }); };
+        img.onerror = function() { URL.revokeObjectURL(url); reject(new Error("Não foi possível abrir a foto.")); };
+        img.src = url;
+      });
+    }
+
+    // Gera versões da imagem para leitura: normal e invertida (visor claro/escuro), em tons de cinza com contraste e limiar
+    function prepararImagens(img) {
+      const maxL = 1400;
+      let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+      const esc = Math.min(1, maxL / Math.max(w, h));
+      w = Math.round(w * esc); h = Math.round(h * esc);
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      const cx = cv.getContext("2d");
+      cx.drawImage(img, 0, 0, w, h);
+      const dados = cx.getImageData(0, 0, w, h);
+      const px = dados.data, n = w * h;
+      const cinza = new Uint8Array(n);
+      const hist = new Array(256).fill(0);
+      for (let i = 0; i < n; i++) {
+        const g = Math.round(px[i * 4] * 0.299 + px[i * 4 + 1] * 0.587 + px[i * 4 + 2] * 0.114);
+        cinza[i] = g; hist[g]++;
+      }
+      // Otsu
+      let soma = 0; for (let t = 0; t < 256; t++) soma += t * hist[t];
+      let somaB = 0, wB = 0, maxVar = 0, limiar = 128;
+      for (let t = 0; t < 256; t++) {
+        wB += hist[t]; if (wB === 0) continue;
+        const wF = n - wB; if (wF === 0) break;
+        somaB += t * hist[t];
+        const mB = somaB / wB, mF = (soma - somaB) / wF;
+        const v = wB * wF * (mB - mF) * (mB - mF);
+        if (v > maxVar) { maxVar = v; limiar = t; }
+      }
+      function montar(inverter) {
+        const c2 = document.createElement("canvas");
+        c2.width = w; c2.height = h;
+        const x2 = c2.getContext("2d");
+        const d2 = x2.createImageData(w, h);
+        for (let i = 0; i < n; i++) {
+          let claro = cinza[i] > limiar;
+          if (inverter) claro = !claro;
+          const val = claro ? 255 : 0;
+          d2.data[i * 4] = val; d2.data[i * 4 + 1] = val; d2.data[i * 4 + 2] = val; d2.data[i * 4 + 3] = 255;
+        }
+        x2.putImageData(d2, 0, 0);
+        return c2;
+      }
+      return { original: cv, normal: montar(false), invertida: montar(true) };
+    }
+
+    // Escolhe, entre as palavras lidas, o número de maior altura (o dígito grande do visor) dentro da faixa plausível
+    function melhorCandidato(data) {
+      const palavras = (data && data.words) ? data.words : [];
+      let melhor = null;
+      for (let i = 0; i < palavras.length; i++) {
+        const p = palavras[i];
+        const txt = String(p.text || "").replace(/[^0-9.,]/g, "");
+        if (!/[0-9]/.test(txt)) continue;
+        const v = lerPesoTexto(txt);
+        if (v === null || v < PESO_MIN_KG || v > PESO_MAX_KG) continue;
+        const altura = p.bbox ? (p.bbox.y1 - p.bbox.y0) : 0;
+        const conf = Number(p.confidence || 0);
+        const pontos = altura * (0.4 + conf / 100) + txt.replace(/[^0-9]/g, "").length * 3;
+        if (!melhor || pontos > melhor.pontos) melhor = { valor: v, texto: txt, pontos: pontos, conf: conf };
+      }
+      return melhor;
+    }
+
+    window.processarFotoBalanca = async function(input) {
+      const file = input && input.files && input.files[0];
+      if (!file) return;
+      const prev = document.getElementById("fotoPreview");
+      const inp = document.getElementById("pesoInput");
+      atualizarEstadoPeso("Lendo o peso da foto... (na primeira vez pode demorar)", "#38bdf8");
+      let urlObj = null;
+      try {
+        const r = await carregarImagemArquivo(file);
+        urlObj = r.url;
+        const imgs = prepararImagens(r.img);
+        const mini = document.createElement("canvas");
+        const esc = Math.min(1, 320 / imgs.original.width);
+        mini.width = Math.round(imgs.original.width * esc); mini.height = Math.round(imgs.original.height * esc);
+        mini.getContext("2d").drawImage(imgs.original, 0, 0, mini.width, mini.height);
+        if (prev) prev.innerHTML = `<img class="foto-mini" src="${mini.toDataURL("image/jpeg", 0.6)}" alt="Foto da balança">`;
+
+        const worker = await obterWorkerOcr();
+        const tentativas = [imgs.original, imgs.normal, imgs.invertida];
+        let melhor = null;
+        for (let i = 0; i < tentativas.length; i++) {
+          const res = await worker.recognize(tentativas[i]);
+          const c = melhorCandidato(res.data);
+          if (c && (!melhor || c.pontos > melhor.pontos)) melhor = c;
+          if (c && c.conf >= 85) break;
+        }
+        if (melhor) {
+          pesoOcrValor = Math.round(melhor.valor * 100) / 100;
+          pesoOcrTexto = melhor.texto;
+          if (inp) inp.value = String(pesoOcrValor).replace(".", ",");
+          window.pesoDigitado();
+          atualizarEstadoPeso("Peso lido da foto. CONFIRA no visor; se estiver errado, corrija acima.", "#facc15");
+        } else {
+          pesoOcrValor = null;
+          atualizarEstadoPeso("Não consegui ler o peso. Tire outra foto mais de perto ou digite o peso.", "#f87171");
+        }
+      } catch (e) {
+        pesoOcrValor = null;
+        atualizarEstadoPeso("Leitura automática indisponível (" + (e && e.message ? e.message : "erro") + "). Digite o peso.", "#f87171");
+      } finally {
+        if (urlObj) URL.revokeObjectURL(urlObj);
+        if (input) input.value = "";
+        if (inp) inp.focus();
+      }
+    };
+
     window.confirmarPrensa = async function() {
       if (fardosValidados.length === 0) return;
+      if (!(fardosValidados[0].peso_kg >= PESO_MIN_KG)) { atualizarEstadoPeso("Informe o peso antes de gravar.", "#f87171"); return; }
       const btn = document.getElementById("btnConfirmar");
       if (btn) btn.disabled = true;
 
@@ -1520,6 +1722,8 @@
           operacao: "PRENSA",
           material: item.material,
           peso_kg: item.peso_kg,
+          peso_origem: pesoOrigemPrensa || "DIGITADO",
+          peso_ocr: pesoOcrValor,
           dispositivo: "Bluebird-EF401",
           criado_em: serverTimestamp()
         });
