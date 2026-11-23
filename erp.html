@@ -118,7 +118,16 @@ input,select{font:inherit;color:var(--txt)}
 .btn.danger:hover{background:rgba(229,115,107,.32)}
 .btn.xs{padding:4px 9px;font-size:12px}
 .nav-sep{margin:14px 6px 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-tr.dim td{opacity:.55}
+tr.dim td{opacity:.55}.panel.dim{opacity:.7}
+.qmenu{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:10px;margin-bottom:16px}
+.qbtn{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-weight:800;font-size:16px;cursor:pointer;transition:.15s}
+.qbtn small{font-size:12px;font-weight:600;color:var(--muted)}
+.qbtn:hover{border-color:var(--blue);background:rgba(94,170,236,.08)}
+.qbtn.on{border-color:var(--blue);background:rgba(94,170,236,.2)}
+.qlb{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.qtot{display:flex;gap:22px;flex-wrap:wrap;margin:0 0 12px;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:14px;color:var(--txt2)}.qtot b{color:var(--txt);font-size:18px}
+.bar{height:8px;border-radius:6px;background:var(--blue)}
+.ficha{margin-bottom:12px}
 @media (max-width:760px){.nav-sep{display:none}}
 td.ac{white-space:nowrap;text-align:right}
 .conf-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -1463,22 +1472,28 @@ function montarViewsExp(){
       : "";
     sec.innerHTML = `
       <div class="page-head"><div><h1>${t.h}</h1><p>${t.p}</p></div></div>
-      <div id="${t.id}Erro"></div><div id="${t.id}Pend"></div>
+      <div id="${t.id}Erro"></div>${k === "notas" ? menuConsultas() : ""}<div id="${t.id}Pend"></div>${k === "notas" ? `<div id="expNotasConsulta" class="hide"></div><div id="expNotasPadrao">` : ""}
       <div class="kpis k4" id="${t.id}Kpis"></div>
       <div class="toolbar">
         <input class="input grow" id="${t.id}Q" placeholder="Buscar por NF, cliente, placa, MTR ou observação…">
         <select class="input" id="${t.id}Cli"><option value="">Todos os clientes</option></select>
         <input class="input" type="date" id="${t.id}De" title="De"><input class="input" type="date" id="${t.id}Ate" title="Até">
         ${k === "notas" ? "" : `<select class="input" id="${t.id}Mostrar"><option value="dados">Só com dados</option><option value="todas">Todas as notas</option><option value="pend">Só pendentes</option></select>`}
+        ${k === "fat" ? `<select class="input" id="expFatOrd"><option value="rec">Mais recentes primeiro</option><option value="dem">Mais demoradas primeiro</option><option value="rap">Mais rápidas primeiro</option></select>` : ""}
         <button class="btn sm" data-expbtn="limpar">Limpar filtros</button>${extra}
       </div>
       <div class="sub" id="${t.id}Info" style="margin-bottom:10px"></div>
       <div id="${t.id}Resumo"></div>
-      <div id="${t.id}Lista"></div>`;
-    [t.id + "Q", t.id + "De", t.id + "Ate", t.id + "Cli", t.id + "Mostrar"].forEach(i => { const el = $(i); if (el) el.addEventListener(i.endsWith("Q") ? "input" : "change", () => renderExp(k)); });
+      <div id="${t.id}Lista"></div>${k === "notas" ? "</div>" : ""}`;
+    [t.id + "Q", t.id + "De", t.id + "Ate", t.id + "Cli", t.id + "Mostrar", k === "fat" ? "expFatOrd" : "x_"].forEach(i => { const el = $(i); if (el) el.addEventListener(i.endsWith("Q") ? "input" : "change", () => renderExp(k)); });
+    if (k === "notas"){ sec.addEventListener("input", e => { if (e.target.id && e.target.id.startsWith("q_")) renderConsulta(); }); sec.addEventListener("change", e => { if (e.target.id && e.target.id.startsWith("q_")) renderConsulta(); }); }
     sec.addEventListener("click", e => {
       const a = e.target.closest("button[data-expacc]");
       if (a){ semAberta[k] = semAberta[k] === a.dataset.expacc ? "" : a.dataset.expacc; return renderExp(k); }
+      const qb = e.target.closest("button[data-q]"); if (qb) return setConsulta(qb.dataset.q);
+      const qf = e.target.closest("button[data-qfardos]"); if (qf) return setConsulta("fardos", { nf: qf.dataset.qfardos });
+      const qx = e.target.closest("button[data-qbtn]");
+      if (qx){ if (qx.dataset.qbtn === "limpar") setConsulta(consulta); else if (ultimoCsv) baixarCsv(ultimoCsv, "consulta_" + consulta + ".csv"); return; }
       const gc = e.target.closest("button[data-gocar]"); if (gc){ irPara("carregamentos"); return abrirDia("car", gc.dataset.gocar, true); }
       const b = e.target.closest("button[data-expbtn]"); if (!b) return;
       const op = b.dataset.expbtn;
@@ -1537,6 +1552,7 @@ function resumoFardoMaterial(lista){
 }
 function expResumoCliente(k, lista){
   if (k === "carga") return resumoFardoMaterial(lista);
+  if (k === "fat") return "";
   const at = ativas(lista), f = METRICA[k], g = {};
   at.forEach(n => { (g[n.cliente || "—"] ||= []).push(n); });
   const nomes = Object.keys(g).sort((a, b) => g[b].length - g[a].length); if (!nomes.length) return "";
@@ -1570,13 +1586,24 @@ function expLinhas(k, l){
   return `<div class="table-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${corpo}</tbody></table></div>`;
 }
 
+function fatLista(l){
+  const ord = $("expFatOrd").value, a = l.slice(), lt = n => { const v = leadMin(n); return v == null ? null : v; };
+  if (ord === "dem") a.sort((x, y) => (lt(y) == null ? -1 : lt(y)) - (lt(x) == null ? -1 : lt(x)));
+  else if (ord === "rap") a.sort((x, y) => (lt(x) == null ? 1e9 : lt(x)) - (lt(y) == null ? 1e9 : lt(y)));
+  const max = Math.max(META_LEAD * 2, ...a.map(n => lt(n) || 0));
+  const linhas = a.map(n => { const d = lt(n), ruim = d == null && n.ped && n.emi;
+    return `<tr class="${n.status === "Cancelada" ? "dim" : ""}"><td>${fmtIso(n.data)}</td><td class="mono">${esc(n.nf)}${stBadge(n)}</td><td>${esc(n.cliente)}</td><td>${esc(n.ped) || "—"}</td><td>${esc(n.emi) || "—"}</td>
+      <td class="num"><b style="font-size:15px">${ruim ? '<span class="badge b-warn">horário inconsistente</span>' : fmtHM(d)}</b></td><td style="min-width:130px">${d == null ? "" : `<div class="bar" style="width:${Math.max(3, d / max * 100)}%;background:${d <= META_LEAD ? "var(--ok)" : "var(--err)"}"></div>`}</td>
+      <td>${d == null ? "—" : d <= META_LEAD ? '<span class="badge b-ok">dentro da meta</span>' : '<span class="badge b-err">acima da meta</span>'}</td>${exAc("fat", n)}</tr>`; }).join("") || vazio(9, "Sem registros.");
+  return `<div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>Cliente</th><th>Pedido da NF</th><th>NF emitida</th><th class="num">Tempo para sair a NF</th><th></th><th>Meta ${META_LEAD} min</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+}
 function renderExp(k){
   const t = EXP_TABS[k]; if (!$(t.id + "Lista")) return;
   $(t.id + "Erro").innerHTML = expErro ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso à coleção "${COL_EXP}".</b><div class="txt" style="margin-top:6px">${esc(expErro)}<br>No Firestore → Regras, acrescente dentro de <span class="mono">match /databases/{database}/documents</span>:<br><span class="mono">match /${COL_EXP}/{doc} { allow read, write: if request.auth != null; }</span></div></div>` : "";
   // clientes do filtro
   const sel = $(t.id + "Cli"), atual = sel.value, cls = [...new Set(expNotas.map(n => n.cliente).filter(Boolean))].sort();
   if (sel.dataset.n !== cls.join("|")){ sel.innerHTML = `<option value="">Todos os clientes</option>` + cls.map(c => `<option>${esc(c)}</option>`).join(""); sel.value = cls.includes(atual) ? atual : ""; sel.dataset.n = cls.join("|"); }
-  if (k === "notas") renderPend();
+  if (k === "notas"){ renderPend(); if (consulta !== "todas") renderConsulta(); }
   const lista = expFiltrado(k);
   $(t.id + "Kpis").innerHTML = expKpis(k, lista);
   $(t.id + "Resumo").innerHTML = expResumoCliente(k, lista);
@@ -1588,6 +1615,7 @@ function renderExp(k){
   const buscando = $(t.id + "Q").value.trim() !== "";
   $(t.id + "Info").textContent = `${fmtNum(lista.length)} nota(s) em ${fmtNum(chaves.length)} semana(s) · mais recente em cima${buscando ? " · busca ativa: todas as semanas abertas" : " · clique na semana para abrir"}`;
   const f = METRICA[k];
+  if (k === "fat"){ $(t.id + "Info").textContent = `${fmtNum(lista.length)} NF(s) · tempo que cada uma levou para sair, do pedido à emissão`; $(t.id + "Lista").innerHTML = fatLista(lista); return; }
   $(t.id + "Lista").innerHTML = chaves.map(s => {
     const l = grupos.get(s), at = ativas(l), ab = buscando || s === semAberta[k];
     const nome = s === "0000-00-00" ? "Sem data" : `Semana ${fmtCurto(s)} a ${fmtCurto(addDiasIso(s, 6))}`;
@@ -1798,6 +1826,122 @@ async function importarPrecos(){
   if (!r) return;
   await gravarLote(novos, (b, s) => b.set(doc(db, COL_PRECOS, chaveMat(s[0])), { material: s[0], preco: s[1], origem: "planilha", criado_em: serverTimestamp() }));
   aviso("Importados " + novos.length + " preço(s) ✔");
+}
+
+/* ---------- Consultas (menu da aba Notas / Coletas) ---------- */
+const Q_DEF = {
+  todas:  { t: "Todas as notas", s: "lista por semana", campos: [] },
+  nf:     { t: "Procurar NF", s: "ficha completa da nota", campos: ["nf"] },
+  cli:    { t: "Por cliente", s: "notas e totais do cliente", campos: ["cli", "de", "ate"] },
+  data:   { t: "Por data", s: "notas de um período", campos: ["de", "ate", "cli"] },
+  mat:    { t: "Por material", s: "quanto saiu de cada material", campos: ["mat", "de", "ate", "cli"] },
+  placa:  { t: "Placa / MTR", s: "buscar caminhão ou MTR", campos: ["q"] },
+  fardos: { t: "Listar fardos", s: "fardos lidos no RFID", campos: ["nf", "mat", "cli", "de", "ate"] },
+  mats:   { t: "Totais por material", s: "kg, fardos e valor", campos: ["de", "ate", "cli"] },
+  clis:   { t: "Totais por cliente", s: "ranking de clientes", campos: ["de", "ate", "mat"] },
+  per:    { t: "Semana / mês", s: "evolução por período", campos: ["modo", "de", "ate", "cli"] },
+  canc:   { t: "Canceladas", s: "NFs canceladas ou substituídas", campos: ["de", "ate"] }
+};
+let consulta = "todas", ultimoCsv = null;
+const qv = id => { const el = $("q_" + id); return el ? el.value.trim() : ""; };
+function menuConsultas(){
+  return `<div class="qmenu" id="expNotasMenu">${Object.keys(Q_DEF).map(k => `<button class="qbtn ${k === consulta ? "on" : ""}" data-q="${k}">${Q_DEF[k].t}<small>${Q_DEF[k].s}</small></button>`).join("")}</div>`;
+}
+function campoQ(c){
+  const nomes = [...new Set(expNotas.map(n => n.cliente).filter(Boolean))].sort();
+  const mats = [...new Set([...ORDEM_MATERIAIS, ...expPrecos.map(p => p.material), ...expNotas.flatMap(n => (n.mats || []).map(m => m.m))])].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  if (c === "nf") return `<input class="input" id="q_nf" inputmode="numeric" placeholder="Número da NF (ex.: 289)" style="max-width:240px">`;
+  if (c === "cli") return `<select class="input" id="q_cli"><option value="">Todos os clientes</option>${nomes.map(x => `<option>${esc(x)}</option>`).join("")}</select>`;
+  if (c === "de") return `<label class="qlb">De<input class="input" type="date" id="q_de"></label>`;
+  if (c === "ate") return `<label class="qlb">Até<input class="input" type="date" id="q_ate"></label>`;
+  if (c === "mat") return `<input class="input" id="q_mat" list="dlQMat" placeholder="Material (ex.: PET Cristal)" style="max-width:260px"><datalist id="dlQMat">${mats.map(m => `<option value="${esc(m)}">`).join("")}</datalist>`;
+  if (c === "q") return `<input class="input grow" id="q_q" placeholder="Placa, MTR ou NF…">`;
+  if (c === "modo") return `<select class="input" id="q_modo"><option value="sem">Por semana (sex a qui)</option><option value="mes">Por mês</option></select>`;
+  return "";
+}
+function setConsulta(c, pre){
+  consulta = c;
+  $("expNotasMenu").querySelectorAll(".qbtn").forEach(b => b.classList.toggle("on", b.dataset.q === c));
+  const box = $("expNotasConsulta"), pad = $("expNotasPadrao");
+  $("expNotasPend").classList.toggle("hide", c !== "todas");
+  if (c === "todas"){ box.classList.add("hide"); pad.classList.remove("hide"); renderExp("notas"); return; }
+  pad.classList.add("hide"); box.classList.remove("hide");
+  box.innerHTML = `<div class="toolbar" id="qForm">${Q_DEF[c].campos.map(campoQ).join("")}<button class="btn sm" data-qbtn="limpar">Limpar</button><button class="btn sm" data-qbtn="csv">Baixar CSV</button></div><div class="sub" id="qInfo" style="margin-bottom:10px"></div><div id="qRes"></div>`;
+  if (pre) Object.keys(pre).forEach(k => { const el = $("q_" + k); if (el) el.value = pre[k]; });
+  renderConsulta();
+  const f = box.querySelector("input,select"); if (f && !pre) f.focus();
+}
+const baseQ = () => { const cli = qv("cli"), de = qv("de"), ate = qv("ate"); return expNotas.filter(n => (!cli || n.cliente === cli) && (!de || n.data >= de) && (!ate || n.data <= ate)); };
+const temMat = (n, chave) => (n.mats || []).filter(m => chaveMat(m.m).includes(chave));
+const porData = l => l.slice().sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : (a.nf < b.nf ? 1 : -1));
+const tabelaNotas = (l, mostrarMat) => `<div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>Cliente</th><th>Placa</th><th>MTR</th><th class="num">Peso (kg)</th><th class="num">Valor</th><th>${mostrarMat ? "Material da busca" : "Materiais / Observação"}</th><th></th></tr></thead><tbody>${l.map(n => `<tr class="${n.status === "Cancelada" ? "dim" : ""}"><td>${fmtIso(n.data)}</td><td class="mono">${esc(n.nf)}${stBadge(n)}</td><td>${esc(n.cliente)}</td><td class="mono">${esc(n.placa)}</td><td class="mono">${esc(n.mtr)}</td><td class="num">${fmtNum(n.peso)}</td><td class="num">${brl(n.valor)}</td><td>${mostrarMat ? mostrarMat(n) : (matTxt(n) ? badgeMat(matTxt(n)) + " " : "") + `<span class="muted">${esc(n.obs)}</span>`}</td>${exAc("notas", n)}</tr>`).join("") || vazio(9, "Nenhuma nota encontrada.")}</tbody></table></div>`;
+const totaisNotas = l => { const a = ativas(l); return `<div class="qtot"><span><b>${fmtNum(a.length)}</b> nota(s)</span><span><b>${fmtNum(a.reduce((s, n) => s + n.peso, 0))}</b> kg</span><span><b>${brl(a.reduce((s, n) => s + (n.valor || 0), 0))}</b></span></div>`; };
+const csvNotas = l => [["Data", "NF", "Cliente", "Placa", "MTR", "Peso (kg)", "Valor (R$)", "Materiais", "Observação", "Situação"]].concat(l.map(n => [fmtIso(n.data), n.nf, n.cliente, n.placa, n.mtr, n.peso, n.valor == null ? "" : String(n.valor).replace(".", ","), (n.mats || []).map(m => `${m.m} ${m.q} ${m.u}`).join(" | "), n.obs, n.status]));
+function fichaNota(n){
+  const d = dwellMin(n), lt = leadMin(n), cm = cargaMin(n), sf = porFardoSeg(n);
+  const it = (r, v) => `<div><span>${r}</span><b>${v}</b></div>`;
+  return `<div class="panel ficha ${n.status === "Cancelada" ? "dim" : ""}"><div class="carga-h" style="cursor:default"><div><div class="carga-t">NF ${esc(n.nf)} ${stBadge(n)}</div><div class="carga-s">${esc(n.cliente)} · ${fmtIso(n.data)}${n.placa ? " · " + esc(fmtPlaca(n.placa)) : ""}</div></div>
+    <div class="carga-m"><div><b>${fmtNum(n.peso)}</b><span>kg</span></div><div><b>${brl(n.valor)}</b><span>valor</span></div></div></div>
+    <div class="tempos">${it("MTR", esc(n.mtr) || "—")}${it("Materiais", esc((n.mats || []).map(m => `${m.m} ${nf0.format(m.q)} ${m.u}`).join(" · ")) || "—")}${it("Entrada / saída do pátio", `${esc(n.ent) || "—"} → ${esc(n.sai) || "—"}`)}${it("Dwell time", fmtHM(d))}${it("Pedido / emissão da NF", `${esc(n.ped) || "—"} → ${esc(n.emi) || "—"}`)}${it("Tempo para sair a NF", fmtHM(lt))}${it("Início / fim da carga", `${esc(n.hi) || "—"} → ${esc(n.hf) || "—"}`)}${it("Tempo de carga", fmtHM(cm))}${it("Tempo por fardo", fmtSeg(sf))}${n.pesoRfid != null ? it("Peso lido no RFID", `${fmtNum(n.pesoRfid)} kg · ${fmtNum(n.fardosRfid)} fardos`) : ""}${n.obs ? it("Observação", esc(n.obs)) : ""}</div>
+    <div class="carga-info" style="border:0;padding-top:10px">${n.carga_id ? `<button class="btn sm" data-qfardos="${esc(n.nf)}">Listar fardos desta NF</button>` : ""}<button class="btn sm" data-act="exp-edit" data-id="${esc(n.id)}" data-kind="notas">Editar</button><button class="btn sm danger" data-act="exp-del" data-id="${esc(n.id)}">Excluir</button></div></div>`;
+}
+function fardosRfid(){
+  const nfq = qv("nf").replace(/\D/g, "").replace(/^0+/, ""), mat = chaveMat(qv("mat")), cli = qv("cli"), de = qv("de"), ate = qv("ate"), out = [];
+  montarCargas().forEach(d => d.cargas.forEach(c => {
+    const inf = infoCargas[c.id] || {}, nf = nf6(inf.nf), nome = CLI_ALIAS[inf.cliente] || inf.cliente || "";
+    if (nfq && !nf.replace(/^0+/, "").includes(nfq)) return; if (cli && nome !== cli) return; if (de && c.dia < de) return; if (ate && c.dia > ate) return;
+    c.itens.forEach(i => { if (mat && !chaveMat(i.material).includes(mat)) return; out.push({ ts: i.ts, dia: c.dia, epc: i.epc, material: i.material, peso: i.peso, nf, cliente: nome, placa: inf.placa || "" }); });
+  }));
+  return out.sort((a, b) => b.ts - a.ts);
+}
+function renderConsulta(){
+  const c = consulta; if (c === "todas" || !$("qRes")) return;
+  const res = $("qRes"), info = $("qInfo"); let html = "", csv = null, linhas;
+  if (c === "nf"){
+    const d = qv("nf").replace(/\D/g, "").replace(/^0+/, "");
+    if (!d){ info.textContent = "Digite o número da NF."; res.innerHTML = ""; ultimoCsv = null; return; }
+    linhas = porData(expNotas.filter(n => n.nf.replace(/^0+/, "").includes(d)));
+    info.textContent = `${fmtNum(linhas.length)} nota(s) encontrada(s)`; html = linhas.slice(0, 20).map(fichaNota).join("") || `<div class="muted">Nenhuma nota com esse número.</div>`; csv = csvNotas(linhas);
+  } else if (c === "cli" || c === "data"){
+    linhas = porData(baseQ()); info.textContent = c === "cli" && !qv("cli") ? "Escolha um cliente (ou deixe em branco para todos) e, se quiser, o período." : "";
+    html = totaisNotas(linhas) + tabelaNotas(linhas); csv = csvNotas(linhas);
+  } else if (c === "mat"){
+    const ch = chaveMat(qv("mat")); if (!ch){ info.textContent = "Digite ou escolha o material e, se quiser, o período e o cliente."; res.innerHTML = ""; ultimoCsv = null; return; }
+    linhas = porData(baseQ().filter(n => temMat(n, ch).length));
+    const a = ativas(linhas); let kg = 0, fd = 0; a.forEach(n => temMat(n, ch).forEach(m => { if (m.u === "kg") kg += m.q; else fd += m.q; }));
+    const mostra = n => temMat(n, ch).map(m => badgeMat(`${m.m} ${nf0.format(m.q)} ${m.u}`)).join(" ");
+    html = `<div class="qtot"><span><b>${fmtNum(a.length)}</b> nota(s)</span><span><b>${fmtNum(kg)}</b> kg</span><span><b>${fmtNum(fd)}</b> fardos</span></div>` + tabelaNotas(linhas, mostra);
+    csv = [["Data", "NF", "Cliente", "Material", "Quantidade", "Unidade"]].concat(linhas.flatMap(n => temMat(n, ch).map(m => [fmtIso(n.data), n.nf, n.cliente, m.m, m.q, m.u])));
+    info.textContent = "Materiais lançados em kg e em fardos são somados separadamente.";
+  } else if (c === "placa"){
+    const t = qv("q").toUpperCase().replace(/[^A-Z0-9]/g, ""); if (!t){ info.textContent = "Digite a placa, o MTR ou a NF."; res.innerHTML = ""; ultimoCsv = null; return; }
+    linhas = porData(expNotas.filter(n => `${n.placa}${n.mtr}${n.nf}`.toUpperCase().replace(/[^A-Z0-9]/g, "").includes(t))); info.textContent = "";
+    html = totaisNotas(linhas) + tabelaNotas(linhas); csv = csvNotas(linhas);
+  } else if (c === "fardos"){
+    const l = fardosRfid(); const kg = l.reduce((s, x) => s + x.peso, 0);
+    info.textContent = l.length ? "" : "Nenhum fardo encontrado. Só aparecem fardos lidos no Carregamento (coletor) com NF informada, ou sem NF se não filtrar por NF.";
+    html = `<div class="qtot"><span><b>${fmtNum(l.length)}</b> fardos</span><span><b>${fmtNum(kg)}</b> kg</span></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Hora</th><th>Etiqueta (EPC)</th><th>Material</th><th class="num">Peso (kg)</th><th>NF</th><th>Cliente</th></tr></thead><tbody>${l.slice(0, 500).map(x => `<tr><td>${fmtDiaKey(x.dia)}</td><td>${fmtHora(x.ts)}</td><td class="mono" style="color:var(--blue)">${esc(x.epc)}</td><td>${badgeMat(x.material)}</td><td class="num">${nf2.format(x.peso)}</td><td class="mono">${esc(x.nf) || "—"}</td><td>${esc(x.cliente) || "—"}</td></tr>`).join("") || vazio(7, "Sem fardos.")}</tbody></table></div>${l.length > 500 ? `<div class="muted">Mostrando 500 de ${fmtNum(l.length)}. Use o CSV para ver todos.</div>` : ""}`;
+    csv = [["Data", "Hora", "EPC", "Material", "Peso (kg)", "NF", "Cliente"]].concat(l.map(x => [fmtDiaKey(x.dia), fmtHora(x.ts), x.epc, x.material, String(x.peso.toFixed(2)).replace(".", ","), x.nf, x.cliente]));
+  } else if (c === "mats"){
+    const g = {}; ativas(baseQ()).forEach(n => (n.mats || []).forEach(m => { const k = chaveMat(m.m); const o = (g[k] ||= { nome: m.m, notas: new Set(), kg: 0, fd: 0, valor: 0 }); o.notas.add(n.id); if (m.u === "kg"){ o.kg += m.q; const p = expPrecos.find(x => chaveMat(x.material) === k); if (p) o.valor += m.q * p.preco; } else o.fd += m.q; }));
+    const l = Object.values(g).sort((a, b) => b.kg - a.kg); info.textContent = "Somente notas com materiais detalhados. Valor = kg × tabela de Preços.";
+    html = `<div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Notas</th><th class="num">Peso (kg)</th><th class="num">Fardos</th><th class="num">Valor estimado</th></tr></thead><tbody>${l.map(o => `<tr><td>${badgeMat(o.nome)}</td><td class="num">${o.notas.size}</td><td class="num"><b>${fmtNum(o.kg)}</b></td><td class="num">${o.fd ? fmtNum(o.fd) : "—"}</td><td class="num">${o.valor ? brl(o.valor) : "—"}</td></tr>`).join("") || vazio(5, "Sem materiais detalhados no período.")}</tbody></table></div>`;
+    csv = [["Material", "Notas", "Peso (kg)", "Fardos", "Valor estimado"]].concat(l.map(o => [o.nome, o.notas.size, o.kg, o.fd, String(Math.round(o.valor * 100) / 100).replace(".", ",")]));
+  } else if (c === "clis"){
+    const ch = chaveMat(qv("mat")), cl = {}; ativas(baseQ().filter(n => !ch || temMat(n, ch).length)).forEach(n => { (cl[n.cliente || "—"] ||= []).push(n); });
+    const l = Object.keys(cl).map(k => { const a = cl[k], v = a.map(dwellMin).filter(x => x != null), ld = a.map(leadMin).filter(x => x != null); return { nome: k, n: a.length, kg: a.reduce((s, x) => s + x.peso, 0), valor: a.reduce((s, x) => s + (x.valor || 0), 0), ult: a.map(x => x.data).sort().pop(), dwell: media(v), lead: media(ld) }; }).sort((a, b) => b.kg - a.kg);
+    html = `<div class="table-wrap"><table><thead><tr><th>Cliente</th><th class="num">Notas</th><th class="num">Peso (kg)</th><th class="num">Valor</th><th>Última coleta</th><th class="num">Dwell médio</th><th class="num">Lead médio</th></tr></thead><tbody>${l.map(o => `<tr><td><b>${esc(o.nome)}</b></td><td class="num">${o.n}</td><td class="num">${fmtNum(o.kg)}</td><td class="num">${brl(o.valor)}</td><td>${fmtIso(o.ult)}</td><td class="num">${fmtHM(o.dwell)}</td><td class="num">${fmtHM(o.lead)}</td></tr>`).join("") || vazio(7, "Sem notas.")}</tbody></table></div>`; info.textContent = "";
+    csv = [["Cliente", "Notas", "Peso (kg)", "Valor", "Última coleta", "Dwell médio (min)", "Lead médio (min)"]].concat(l.map(o => [o.nome, o.n, o.kg, String(o.valor).replace(".", ","), fmtIso(o.ult), o.dwell == null ? "" : Math.round(o.dwell), o.lead == null ? "" : Math.round(o.lead)]));
+  } else if (c === "per"){
+    const mes = qv("modo") === "mes", g = {}; ativas(baseQ()).forEach(n => { if (!n.data) return; const k = mes ? n.data.slice(0, 7) : semanaIni(n.data); (g[k] ||= []).push(n); });
+    const ks = Object.keys(g).sort().reverse(), max = Math.max(1, ...ks.map(k => g[k].reduce((s, n) => s + n.peso, 0)));
+    html = `<div class="table-wrap"><table><thead><tr><th>${mes ? "Mês" : "Semana (sex a qui)"}</th><th class="num">Notas</th><th class="num">Peso (kg)</th><th style="min-width:140px"></th><th class="num">Valor</th><th class="num">Clientes</th></tr></thead><tbody>${ks.map(k => { const a = g[k], kg = a.reduce((s, n) => s + n.peso, 0); return `<tr><td><b>${mes ? k.slice(5) + "/" + k.slice(0, 4) : fmtCurto(k) + " a " + fmtCurto(addDiasIso(k, 6))}</b></td><td class="num">${a.length}</td><td class="num">${fmtNum(kg)}</td><td><div class="bar" style="width:${Math.max(2, kg / max * 100)}%"></div></td><td class="num">${brl(a.reduce((s, n) => s + (n.valor || 0), 0))}</td><td class="num">${new Set(a.map(n => n.cliente)).size}</td></tr>`; }).join("") || vazio(6, "Sem notas.")}</tbody></table></div>`; info.textContent = "";
+    csv = [[mes ? "Mês" : "Semana", "Notas", "Peso (kg)", "Valor"]].concat(ks.map(k => [k, g[k].length, g[k].reduce((s, n) => s + n.peso, 0), String(g[k].reduce((s, n) => s + (n.valor || 0), 0)).replace(".", ",")]));
+  } else if (c === "canc"){
+    linhas = porData(baseQ().filter(n => n.status === "Cancelada")); info.textContent = "Notas canceladas ficam fora de todos os totais.";
+    html = tabelaNotas(linhas); csv = csvNotas(linhas);
+  }
+  res.innerHTML = html; ultimoCsv = csv;
 }
 
 /* ---------- navegação e eventos ---------- */
