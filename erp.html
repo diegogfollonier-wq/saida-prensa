@@ -2116,18 +2116,18 @@ $("selConf").addEventListener("change", () => { renderConferencia(); desenharGra
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(desenharGraficos, 150); });
 
 /* ---------- login ---------- */
-const USUARIOS_OK = ["diego", "pedro", "reginaldo"];
-const nomeUsuario = em => { const l = String(em || "").split("@")[0]; return /@ecotriagem\.app$/.test(em || "") ? l.charAt(0).toUpperCase() + l.slice(1) : (em || ""); };
+const USUARIOS_OK = ["diego"], EMAILS_OK = ["pedro@ciclare.com.br", "reginaldo@ciclare.com.br"];
+const nomeUsuario = em => { const l = String(em || "").split("@")[0]; return /@(ecotriagem\.app|ciclare\.com\.br)$/.test(em || "") ? l.charAt(0).toUpperCase() + l.slice(1) : (em || ""); };
 $("formLogin").addEventListener("submit", async ev => {
   ev.preventDefault();
   const erro = $("erroLogin"), btn = $("btnEntrar"); erro.textContent = ""; btn.disabled = true;
   const u = $("emailInput").value.trim(), senha = $("senhaInput").value;
   const nome = u.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const email = u.includes("@") ? u : nome + "@ecotriagem.app";
+  const email = u.includes("@") ? u.toLowerCase() : nome + "@ecotriagem.app";
   try { await signInWithEmailAndPassword(auth, email, senha); }
   catch (e) {
     let ok = false;
-    if (!u.includes("@") && USUARIOS_OK.includes(nome)){
+    if ((!u.includes("@") && USUARIOS_OK.includes(nome)) || EMAILS_OK.includes(email)){
       try { await createUserWithEmailAndPassword(auth, email, senha); ok = true; } catch (e2) {}
     }
     if (!ok) erro.textContent = "Usuário ou senha inválidos.";
