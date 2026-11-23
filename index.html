@@ -40,6 +40,13 @@
     .peso-input:focus { outline: none; border-color: #38bdf8; }
     .btn-foto { background: #0ea5e9; color: #fff; }
     .peso-status { font-size: 0.85rem; font-weight: 600; color: #94a3b8; min-height: 1.2em; text-align: center; }
+    .peso-display { width: 100%; box-sizing: border-box; font-size: 3.2rem; font-weight: 900; text-align: center; color: #facc15; background: #0f172a; border: 2px solid #7c3aed; border-radius: 12px; padding: 4px 6px; line-height: 1.15; }
+    .peso-display small { font-size: 1.3rem; color: #c4b5fd; }
+    .teclado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+    .tecla { padding: 15px 0; font-size: 1.7rem; font-weight: 900; border: none; border-radius: 12px; background: #334155; color: #f8fafc; cursor: pointer; }
+    .tecla:active { background: #64748b; }
+    .tecla.apagar { background: #b45309; }
+    .tecla.limpar { background: #7f1d1d; font-size: 1rem; }
     .foto-mini { max-width: 100%; max-height: 110px; border-radius: 10px; border: 1px solid #334155; }
 
     /* CAMPO DE SENHA COMPATÍVEL COM TECLADO INJETADO PELO APP */
@@ -385,11 +392,6 @@
     let qtdFardosCarga = 0;
     let pesoTotalCarga = 0;
     let fardosValidados = [];
-    let pesoOrigemPrensa = "";
-    let pesoOcrTexto = "";
-    let pesoOcrValor = null;
-    let ocrWorker = null;
-    let ocrCarregando = null;
     let fardosInvalidos = [];
     let processando = false;
     let timerRetornoPrensa = null;
@@ -1461,26 +1463,8 @@
           }
 
           fardosValidados = [{ epc, material: materialPrensa, peso_kg: 0 }];
-          pesoOrigemPrensa = "";
-          pesoOcrTexto = "";
-          pesoOcrValor = null;
-
-          area.innerHTML = `
-            <div class="badge-material">${materialPrensa}</div>
-            <div class="epc-tag">${epc}</div>
-            <div class="peso-status" style="color:#e2e8f0;">Fotografe o visor da balança ou digite o peso</div>
-            <input id="fotoBalanca" type="file" accept="image/*" capture="environment" style="display:none" onchange="processarFotoBalanca(this)">
-            <div class="acoes-grid" style="margin-top:2px;">
-              <button class="btn-acao btn-foto" onclick="abrirCameraBalanca()">FOTOGRAFAR BALANÇA</button>
-            </div>
-            <div id="fotoPreview" style="text-align:center;"></div>
-            <input id="pesoInput" class="peso-input" type="text" inputmode="decimal" placeholder="0,0 kg" autocomplete="off" oninput="pesoDigitado()">
-            <div id="pesoStatus" class="peso-status"></div>
-            <div class="acoes-grid">
-              <button id="btnConfirmar" class="btn-acao btn-confirmar" onclick="confirmarPrensa()" disabled style="opacity:0.45;">ACEITAR E GRAVAR</button>
-              <button class="btn-acao btn-refazer" onclick="cancelarPrensa()">CANCELAR</button>
-            </div>
-          `;
+          pesoDigitos = "";
+          renderTecladoPeso();
 
         } else if (modoAtual === "CARREGAMENTO") {
           const loteMax3 = epcs.slice(0, 3);
@@ -1521,185 +1505,84 @@
     window.renderizarTelaEspera = renderizarTelaEspera;
 
 
-    // ===== PESO DA PRENSA POR FOTO DA BALANÇA (OCR no aparelho) =====
-    const OCR_URL = "https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js";
-    const PESO_MIN_KG = 5;
-    const PESO_MAX_KG = 3000;
-
-    function lerPesoTexto(txt) {
-      let t = String(txt || "").replace(/\s+/g, "").replace(",", ".");
-      t = t.replace(/[^0-9.]/g, "");
-      const partes = t.split(".");
-      if (partes.length > 2) t = partes.slice(0, -1).join("") + "." + partes[partes.length - 1];
-      const v = parseFloat(t);
-      return isNaN(v) ? null : v;
-    }
+    // ===== PESO DA PRENSA: TECLADO NUMÉRICO NA TELA (até 3 dígitos, kg inteiro) =====
+    const PESO_MIN_KG = 1;
+    const PESO_MAX_KG = 999;
+    let pesoDigitos = "";
 
     function atualizarEstadoPeso(texto, cor) {
       const el = document.getElementById("pesoStatus");
       if (el) { el.textContent = texto || ""; el.style.color = cor || "#94a3b8"; }
     }
 
-    window.pesoDigitado = function() {
-      const inp = document.getElementById("pesoInput");
-      const btn = document.getElementById("btnConfirmar");
-      if (!inp) return;
-      const v = lerPesoTexto(inp.value);
-      const ok = v !== null && v >= PESO_MIN_KG && v <= PESO_MAX_KG;
-      if (fardosValidados.length > 0) fardosValidados[0].peso_kg = ok ? Math.round(v * 100) / 100 : 0;
-      if (pesoOcrValor !== null && ok && Math.abs(v - pesoOcrValor) < 0.005) pesoOrigemPrensa = "FOTO_OCR";
-      else if (pesoOcrValor !== null) pesoOrigemPrensa = "FOTO_CORRIGIDO";
-      else pesoOrigemPrensa = "DIGITADO";
-      if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? "1" : "0.45"; }
-      if (!ok && inp.value.trim() !== "") atualizarEstadoPeso("Peso fora do esperado (" + PESO_MIN_KG + " a " + PESO_MAX_KG + " kg).", "#f87171");
-      else if (ok) atualizarEstadoPeso("Confira o peso no visor antes de gravar.", "#facc15");
+    function cabecalhoFardoPrensa() {
+      const it = fardosValidados[0] || {};
+      return `
+        <div style="display:flex; align-items:center; gap:8px; width:100%; justify-content:space-between;">
+          <span class="badge-material" style="font-size:0.95rem; padding:5px 12px;">${escHtml(it.material || "")}</span>
+          <span class="epc-tag" style="width:auto; flex:1; font-size:0.72rem; padding:6px 8px;">${escHtml(it.epc || "")}</span>
+        </div>`;
+    }
+
+    function renderTecladoPeso() {
+      const area = document.getElementById("areaConteudo");
+      const teclas = ["1","2","3","4","5","6","7","8","9"].map(d => `<button class="tecla" onclick="teclaPeso('${d}')">${d}</button>`).join("");
+      const pronto = pesoDigitos.length > 0 && Number(pesoDigitos) >= PESO_MIN_KG;
+      area.innerHTML = `
+        ${cabecalhoFardoPrensa()}
+        <div style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">DIGITE O PESO DA BALANÇA (kg)</div>
+        <div class="peso-display">${pesoDigitos === "" ? '<span style="color:#475569;">---</span>' : pesoDigitos}<small> kg</small></div>
+        <div id="pesoStatus" class="peso-status"></div>
+        <div class="teclado">
+          ${teclas}
+          <button class="tecla limpar" onclick="limparPeso()">LIMPAR</button>
+          <button class="tecla" onclick="teclaPeso('0')">0</button>
+          <button class="tecla apagar" onclick="apagarPeso()">⌫</button>
+        </div>
+        <div class="acoes-grid" style="flex-direction:row; gap:8px;">
+          <button id="btnConfirmarPeso" class="btn-acao btn-confirmar" style="flex:2;" onclick="confirmarPesoDigitado()" ${pronto ? "" : "disabled"}>CONFIRMAR</button>
+          <button class="btn-acao btn-refazer" style="flex:1;" onclick="cancelarPrensa()">CANCELAR</button>
+        </div>
+      `;
+    }
+
+    window.teclaPeso = function(d) {
+      if (pesoDigitos.length >= 3) return;
+      if (pesoDigitos === "" && d === "0") return;   // sem zero à esquerda
+      pesoDigitos += d;
+      renderTecladoPeso();
     };
 
-    window.abrirCameraBalanca = function() {
-      const f = document.getElementById("fotoBalanca");
-      if (f) { f.value = ""; f.click(); }
+    window.apagarPeso = function() {
+      pesoDigitos = pesoDigitos.slice(0, -1);
+      renderTecladoPeso();
     };
 
-    function carregarOcr() {
-      if (window.Tesseract) return Promise.resolve();
-      if (ocrCarregando) return ocrCarregando;
-      ocrCarregando = new Promise(function(resolve, reject) {
-        const sc = document.createElement("script");
-        sc.src = OCR_URL;
-        sc.onload = function() { resolve(); };
-        sc.onerror = function() { ocrCarregando = null; reject(new Error("Não foi possível baixar o leitor de imagem (sem internet?).")); };
-        document.head.appendChild(sc);
-      });
-      return ocrCarregando;
-    }
+    window.limparPeso = function() {
+      pesoDigitos = "";
+      renderTecladoPeso();
+    };
 
-    async function obterWorkerOcr() {
-      if (ocrWorker) return ocrWorker;
-      await carregarOcr();
-      const w = await window.Tesseract.createWorker("eng");
-      await w.setParameters({ tessedit_char_whitelist: "0123456789.,", tessedit_pageseg_mode: "11" });
-      ocrWorker = w;
-      return w;
-    }
+    window.confirmarPesoDigitado = function() {
+      const v = Number(pesoDigitos);
+      if (!(v >= PESO_MIN_KG && v <= PESO_MAX_KG) || fardosValidados.length === 0) return;
+      fardosValidados[0].peso_kg = v;
+      const area = document.getElementById("areaConteudo");
+      area.innerHTML = `
+        ${cabecalhoFardoPrensa()}
+        <div style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">CONFIRA O PESO</div>
+        <div class="peso-valor" style="font-size:4rem; line-height:1.05;">${v}<small style="font-size:1.6rem;"> kg</small></div>
+        <div class="acoes-grid">
+          <button id="btnConfirmar" class="btn-acao btn-confirmar" style="padding:20px; font-size:1.25rem;" onclick="confirmarPrensa()">GRAVAR FARDO</button>
+          <button class="btn-acao btn-finalizar" style="padding:16px;" onclick="alterarPeso()">ALTERAR PESO</button>
+          <button class="btn-acao btn-refazer" onclick="cancelarPrensa()">CANCELAR</button>
+        </div>
+      `;
+    };
 
-    function carregarImagemArquivo(file) {
-      return new Promise(function(resolve, reject) {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = function() { resolve({ img: img, url: url }); };
-        img.onerror = function() { URL.revokeObjectURL(url); reject(new Error("Não foi possível abrir a foto.")); };
-        img.src = url;
-      });
-    }
-
-    // Gera versões da imagem para leitura: normal e invertida (visor claro/escuro), em tons de cinza com contraste e limiar
-    function prepararImagens(img) {
-      const maxL = 1400;
-      let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-      const esc = Math.min(1, maxL / Math.max(w, h));
-      w = Math.round(w * esc); h = Math.round(h * esc);
-      const cv = document.createElement("canvas");
-      cv.width = w; cv.height = h;
-      const cx = cv.getContext("2d");
-      cx.drawImage(img, 0, 0, w, h);
-      const dados = cx.getImageData(0, 0, w, h);
-      const px = dados.data, n = w * h;
-      const cinza = new Uint8Array(n);
-      const hist = new Array(256).fill(0);
-      for (let i = 0; i < n; i++) {
-        const g = Math.round(px[i * 4] * 0.299 + px[i * 4 + 1] * 0.587 + px[i * 4 + 2] * 0.114);
-        cinza[i] = g; hist[g]++;
-      }
-      // Otsu
-      let soma = 0; for (let t = 0; t < 256; t++) soma += t * hist[t];
-      let somaB = 0, wB = 0, maxVar = 0, limiar = 128;
-      for (let t = 0; t < 256; t++) {
-        wB += hist[t]; if (wB === 0) continue;
-        const wF = n - wB; if (wF === 0) break;
-        somaB += t * hist[t];
-        const mB = somaB / wB, mF = (soma - somaB) / wF;
-        const v = wB * wF * (mB - mF) * (mB - mF);
-        if (v > maxVar) { maxVar = v; limiar = t; }
-      }
-      function montar(inverter) {
-        const c2 = document.createElement("canvas");
-        c2.width = w; c2.height = h;
-        const x2 = c2.getContext("2d");
-        const d2 = x2.createImageData(w, h);
-        for (let i = 0; i < n; i++) {
-          let claro = cinza[i] > limiar;
-          if (inverter) claro = !claro;
-          const val = claro ? 255 : 0;
-          d2.data[i * 4] = val; d2.data[i * 4 + 1] = val; d2.data[i * 4 + 2] = val; d2.data[i * 4 + 3] = 255;
-        }
-        x2.putImageData(d2, 0, 0);
-        return c2;
-      }
-      return { original: cv, normal: montar(false), invertida: montar(true) };
-    }
-
-    // Escolhe, entre as palavras lidas, o número de maior altura (o dígito grande do visor) dentro da faixa plausível
-    function melhorCandidato(data) {
-      const palavras = (data && data.words) ? data.words : [];
-      let melhor = null;
-      for (let i = 0; i < palavras.length; i++) {
-        const p = palavras[i];
-        const txt = String(p.text || "").replace(/[^0-9.,]/g, "");
-        if (!/[0-9]/.test(txt)) continue;
-        const v = lerPesoTexto(txt);
-        if (v === null || v < PESO_MIN_KG || v > PESO_MAX_KG) continue;
-        const altura = p.bbox ? (p.bbox.y1 - p.bbox.y0) : 0;
-        const conf = Number(p.confidence || 0);
-        const pontos = altura * (0.4 + conf / 100) + txt.replace(/[^0-9]/g, "").length * 3;
-        if (!melhor || pontos > melhor.pontos) melhor = { valor: v, texto: txt, pontos: pontos, conf: conf };
-      }
-      return melhor;
-    }
-
-    window.processarFotoBalanca = async function(input) {
-      const file = input && input.files && input.files[0];
-      if (!file) return;
-      const prev = document.getElementById("fotoPreview");
-      const inp = document.getElementById("pesoInput");
-      atualizarEstadoPeso("Lendo o peso da foto... (na primeira vez pode demorar)", "#38bdf8");
-      let urlObj = null;
-      try {
-        const r = await carregarImagemArquivo(file);
-        urlObj = r.url;
-        const imgs = prepararImagens(r.img);
-        const mini = document.createElement("canvas");
-        const esc = Math.min(1, 320 / imgs.original.width);
-        mini.width = Math.round(imgs.original.width * esc); mini.height = Math.round(imgs.original.height * esc);
-        mini.getContext("2d").drawImage(imgs.original, 0, 0, mini.width, mini.height);
-        if (prev) prev.innerHTML = `<img class="foto-mini" src="${mini.toDataURL("image/jpeg", 0.6)}" alt="Foto da balança">`;
-
-        const worker = await obterWorkerOcr();
-        const tentativas = [imgs.original, imgs.normal, imgs.invertida];
-        let melhor = null;
-        for (let i = 0; i < tentativas.length; i++) {
-          const res = await worker.recognize(tentativas[i]);
-          const c = melhorCandidato(res.data);
-          if (c && (!melhor || c.pontos > melhor.pontos)) melhor = c;
-          if (c && c.conf >= 85) break;
-        }
-        if (melhor) {
-          pesoOcrValor = Math.round(melhor.valor * 100) / 100;
-          pesoOcrTexto = melhor.texto;
-          if (inp) inp.value = String(pesoOcrValor).replace(".", ",");
-          window.pesoDigitado();
-          atualizarEstadoPeso("Peso lido da foto. CONFIRA no visor; se estiver errado, corrija acima.", "#facc15");
-        } else {
-          pesoOcrValor = null;
-          atualizarEstadoPeso("Não consegui ler o peso. Tire outra foto mais de perto ou digite o peso.", "#f87171");
-        }
-      } catch (e) {
-        pesoOcrValor = null;
-        atualizarEstadoPeso("Leitura automática indisponível (" + (e && e.message ? e.message : "erro") + "). Digite o peso.", "#f87171");
-      } finally {
-        if (urlObj) URL.revokeObjectURL(urlObj);
-        if (input) input.value = "";
-        if (inp) inp.focus();
-      }
+    window.alterarPeso = function() {
+      if (fardosValidados.length > 0) fardosValidados[0].peso_kg = 0;
+      renderTecladoPeso();
     };
 
     window.confirmarPrensa = async function() {
@@ -1722,8 +1605,7 @@
           operacao: "PRENSA",
           material: item.material,
           peso_kg: item.peso_kg,
-          peso_origem: pesoOrigemPrensa || "DIGITADO",
-          peso_ocr: pesoOcrValor,
+          peso_origem: "TECLADO",
           dispositivo: "Bluebird-EF401",
           criado_em: serverTimestamp()
         });
