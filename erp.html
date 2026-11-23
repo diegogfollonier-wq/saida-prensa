@@ -126,6 +126,7 @@ tr.dim td{opacity:.55}.panel.dim{opacity:.7}
 .qbtn.on{border-color:var(--blue);background:rgba(94,170,236,.2)}
 .qlb{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}
 .qtot{display:flex;gap:22px;flex-wrap:wrap;margin:0 0 12px;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:14px;color:var(--txt2)}.qtot b{color:var(--txt);font-size:18px}
+.obsx{font-size:12.5px;color:var(--txt2);margin-top:3px}.obsx i{color:var(--muted);font-size:11.5px;margin-left:4px}
 .lnk{background:transparent;border:0;border-bottom:1px dashed var(--blue);color:var(--blue);padding:0;cursor:pointer;font-size:inherit}.lnk:hover{color:#fff}
 .bar{height:8px;border-radius:6px;background:var(--blue)}
 .ficha{margin-bottom:12px}
@@ -324,6 +325,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
       <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M7 4v13M7 17l-3-3M7 17l3-3"/><path d="M17 20V7M17 7l-3 3M17 7l3 3"/></svg><span><span class="lg-d">Histórico</span><span class="lg-m">Hist.</span></span></button>
 <div class="nav-sep">Expedição</div><button data-v="expNotas"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg><span><span class="lg-d">Notas / Coletas</span><span class="lg-m">Notas</span></span><b class="count hide" id="navPend">0</b></button>
       <button data-v="expFat"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/></svg><span><span class="lg-d">Faturamento (lead)</span><span class="lg-m">Fatur.</span></span></button><button data-v="expPatio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg><span><span class="lg-d">Pátio (dwell)</span><span class="lg-m">Pátio</span></span></button><button data-v="expCarga"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17V9l7-4 7 4v8"/><path d="M10 17v-4h4v4"/></svg><span><span class="lg-d">Tempo de carga</span><span class="lg-m">T. carga</span></span></button>
+      <button data-v="expMateriais"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg><span><span class="lg-d">Materiais</span><span class="lg-m">Material</span></span></button>
       <button data-v="expPrecos"><svg viewBox="0 0 24 24"><path d="M12 3v18M16 7.5c-.7-1.2-2.1-2-4-2-2.3 0-4 1.1-4 3 0 4.5 8 2.2 8 6.5 0 1.9-1.8 3-4 3-2 0-3.5-.9-4.2-2.3"/></svg><span><span class="lg-d">Preços</span><span class="lg-m">Preços</span></span></button>
     </nav>
     <div class="side-foot">
@@ -466,6 +468,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
     <section class="view" id="v-expPatio"></section>
     <section class="view" id="v-expFat"></section>
     <section class="view" id="v-expCarga"></section>
+    <section class="view" id="v-expMateriais"></section>
     <section class="view" id="v-expPrecos"></section>
     <!-- ===== CONFERÊNCIA ===== -->
     <section class="view" id="v-conferencia">
@@ -1414,7 +1417,12 @@ async function executarAcao(b){
     else if (a === "conf-rm") await removerItemConf(b.dataset.epc);
     else if (a === "exp-edit") await editarExp(expNotas.find(n => n.id === id), b.dataset.kind);
     else if (a === "preco-edit") await editarPreco(expPrecos.find(p => p.id === id));
-    else if (a === "preco-del") await excluirPreco(expPrecos.find(p => p.id === id));
+    else if (a === "mat-edit") await editarMaterial(expPrecos.find(p => p.id === id));
+    else if (a === "mat-del") await excluirMaterial(expPrecos.find(p => p.id === id));
+    else if (a === "mat-cad") await editarMaterial(null, b.dataset.nome);
+    else if (a === "obs-add") await obsNota(expNotas.find(n => n.id === id));
+    else if (a === "obs-edit") await obsNota(expNotas.find(n => n.id === id), Number(b.dataset.idx));
+    else if (a === "obs-del") await excluirObs(expNotas.find(n => n.id === id), Number(b.dataset.idx));
     else if (a === "exp-del") await excluirExp([expNotas.find(n => n.id === id)], "a nota");
   });
 }
@@ -1459,7 +1467,7 @@ function paraLocal(id, d){
     valor: d.valor == null ? null : Number(d.valor), mats: Array.isArray(d.materiais) ? d.materiais : [], obs: d.obs || "",
     ent: d.entrada_patio || "", sai: d.saida_patio || "", ped: d.pedido_nf || "", emi: d.nf_emitida || "", hi: d.hr_inicio || "", hf: d.hr_final || "",
     status: d.status || "Ativa", carga_id: d.carga_id || "", pesoRfid: d.peso_rfid_kg == null ? null : Number(d.peso_rfid_kg), fardosRfid: Number(d.fardos_rfid || 0),
-    autoSync: d.auto_sync === true, valorAuto: d.valor_auto !== false };
+    autoSync: d.auto_sync === true, valorAuto: d.valor_auto !== false, obsx: Array.isArray(d.observacoes) ? d.observacoes : [] };
 }
 function paraDoc(n){
   return { data: n.data, cliente: n.cliente, placa: n.placa, mtr: n.mtr, nf: n.nf, peso_kg: n.peso, valor: n.valor == null ? null : n.valor, materiais: n.mats || [], obs: n.obs || "",
@@ -1568,7 +1576,9 @@ function expResumoCliente(k, lista){
   return `<div class="panel" style="margin-bottom:14px"><h3 style="margin:0 0 8px;font-size:14px">Resumo por cliente</h3><div class="table-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${lin}</tbody></table></div></div>`;
 }
 
-const exAc = (k, n) => `<td class="ac">${k === "notas" ? `<button class="btn xs" data-tcnf="${esc(n.nf)}" title="Ver o tempo de carga desta nota">Tempo de carga</button> ` : ""}<button class="btn xs" data-act="exp-edit" data-id="${esc(n.id)}" data-kind="${k}">Editar</button> <button class="btn xs danger" data-act="exp-del" data-id="${esc(n.id)}">Excluir</button></td>`;
+const fmtObsData = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString("pt-BR", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); };
+const obsExtra = n => (n.obsx || []).map(o => `<div class="obsx">+ ${esc(o.texto)} <i>${fmtObsData(o.em)}${o.por ? " · " + esc(String(o.por).split("@")[0]) : ""}</i></div>`).join("");
+const exAc = (k, n) => `<td class="ac">${k === "notas" ? `<button class="btn xs" data-tcnf="${esc(n.nf)}" title="Ver o tempo de carga desta nota">Tempo de carga</button> <button class="btn xs" data-act="obs-add" data-id="${esc(n.id)}" title="Escrever uma observação nesta nota">Observação</button> ` : ""}<button class="btn xs" data-act="exp-edit" data-id="${esc(n.id)}" data-kind="${k}">Editar</button> <button class="btn xs danger" data-act="exp-del" data-id="${esc(n.id)}">Excluir</button></td>`;
 const nfLink = nf => `<button class="lnk mono" data-nf="${esc(nf)}" title="Abrir os dados desta nota">${esc(nf)}</button>`;
 const stBadge = n => n.status === "Cancelada" ? ` <span class="badge b-err">Cancelada</span>` : "";
 function expLinhas(k, l){
@@ -1581,7 +1591,7 @@ function expLinhas(k, l){
   const cols = { notas: 9, patio: 8, fat: 8, carga: 11 }[k];
   const corpo = l.map(n => {
     const base = `<td>${fmtCurto(n.data)}</td><td>${nfLink(n.nf)}${stBadge(n)}</td><td>${esc(n.cliente)}</td>`;
-    if (k === "notas") return `<tr class="${n.status === "Cancelada" ? "dim" : ""}">${base}<td class="mono">${esc(n.placa)}</td><td class="mono">${esc(n.mtr)}</td><td class="num">${fmtNum(n.peso)}</td><td class="num">${brl(n.valor)}</td><td>${matTxt(n) ? badgeMat(matTxt(n)) + " " : ""}<span class="muted">${esc(n.obs)}</span>${n.pesoRfid != null ? ` <span class="badge b-blue" title="Somado pelos fardos bipados no carregamento">RFID ${fmtNum(n.pesoRfid)} kg · ${fmtNum(n.fardosRfid)} fardos</span>` : ""}${n.autoSync ? ' <span class="badge b-ok" title="Preenchida automaticamente pelo carregamento">automática</span>' : ""}</td>${exAc(k, n)}</tr>`;
+    if (k === "notas") return `<tr class="${n.status === "Cancelada" ? "dim" : ""}">${base}<td class="mono">${esc(n.placa)}</td><td class="mono">${esc(n.mtr)}</td><td class="num">${fmtNum(n.peso)}</td><td class="num">${brl(n.valor)}</td><td>${matTxt(n) ? badgeMat(matTxt(n)) + " " : ""}<span class="muted">${esc(n.obs)}</span>${obsExtra(n)}${n.pesoRfid != null ? ` <span class="badge b-blue" title="Somado pelos fardos bipados no carregamento">RFID ${fmtNum(n.pesoRfid)} kg · ${fmtNum(n.fardosRfid)} fardos</span>` : ""}${n.autoSync ? ' <span class="badge b-ok" title="Preenchida automaticamente pelo carregamento">automática</span>' : ""}</td>${exAc(k, n)}</tr>`;
     if (k === "patio") { const d = dwellMin(n); return `<tr>${base}<td class="mono">${esc(n.placa)}</td><td>${esc(n.ent) || "—"}</td><td>${esc(n.sai) || "—"}</td><td class="num">${fmtHM(d)}${d != null && hmin(n.sai) < hmin(n.ent) ? ' <span class="badge b-warn">virou o dia</span>' : ""}</td>${exAc(k, n)}</tr>`; }
     if (k === "fat") { const d = leadMin(n), bad = d == null && n.ped && n.emi; return `<tr>${base}<td>${esc(n.ped) || "—"}</td><td>${esc(n.emi) || "—"}</td><td class="num">${bad ? '<span class="badge b-warn">horário inconsistente</span>' : fmtHM(d)}</td><td>${d == null ? "—" : d <= META_LEAD ? '<span class="badge b-ok">dentro</span>' : '<span class="badge b-err">acima</span>'}</td>${exAc(k, n)}</tr>`; }
     return `<tr>${base}<td class="mono">${esc(n.placa)}</td><td>${esc(n.hi) || "—"}</td><td>${esc(n.hf) || "—"}</td><td class="num">${fmtHM(cargaMin(n))}</td><td class="num">${fardosNota(n) ? fmtNum(fardosNota(n)) : "—"}</td><td class="num"><b>${fmtSeg(porFardoSeg(n))}</b></td><td class="num">${fmtNum(n.peso)}</td>${exAc(k, n)}</tr>`;
@@ -1629,7 +1639,7 @@ function renderExp(k){
     return `<div class="acc ${ab ? "open" : ""}"><button class="acc-h" data-expacc="${s}"><span class="seta">${ab ? "▾" : "▸"}</span><span class="d">${nome}</span><span class="w">sex a qui</span><span class="r">${resumo}</span></button>${ab ? `<div class="acc-b">${expLinhas(k, l)}</div>` : ""}</div>`;
   }).join("") || `<div class="muted">${expNotas.length ? "Nenhum registro com esses filtros." : "Nenhuma nota lançada ainda. Use “+ Nova nota” ou “Importar planilha” na aba Notas / Coletas."}</div>`;
 }
-function renderExpTodas(){ Object.keys(EXP_TABS).forEach(renderExp); }
+function renderExpTodas(){ Object.keys(EXP_TABS).forEach(renderExp); if (typeof renderMateriais === "function") renderMateriais(); }
 
 /* ----- formulário ----- */
 const campo = (rot, html) => `<div><label>${rot}</label>${html}</div>`;
@@ -1656,7 +1666,8 @@ async function editarExp(n, kind){
     + campo("MTR", inp("mtr", n.mtr)) + campo("Peso (kg)", inp("peso", n.peso === "" ? "" : String(n.peso).replace(".", ","), 'inputmode="decimal"'))
     + campo("Valor (R$)", inp("valor", n.valor == null ? "" : String(n.valor).replace(".", ","), 'inputmode="decimal"'))
     + campo("Situação", `<select class="input" data-mf="status"><option ${n.status !== "Cancelada" ? "selected" : ""}>Ativa</option><option ${n.status === "Cancelada" ? "selected" : ""}>Cancelada</option></select>`))
-    + campo("Materiais (separe com ; — ex.: PET Cristal 11306 kg; PET Azul 40 fardos)", inp("mats", matsParaTxt(n.mats))) + campo("Observação", inp("obs", n.obs));
+    + campo("Materiais (separe com ; — ex.: PET Cristal 11306 kg; PET Azul 40 fardos)", inp("mats", matsParaTxt(n.mats))) + campo("Observação", inp("obs", n.obs))
+    + grid(campo("Entrada no pátio", inp("ent", n.ent, 'type="time"')) + campo("Saída do pátio", inp("sai", n.sai, 'type="time"')) + campo("Pedido da NF", inp("ped", n.ped, 'type="time"')) + campo("NF emitida", inp("emi", n.emi, 'type="time"')) + campo("Início da carga", inp("hi", n.hi, 'type="time"')) + campo("Fim da carga", inp("hf", n.hf, 'type="time"')));
   else if (kind === "patio") corpo = grid(campo("Entrada no pátio", inp("ent", n.ent, 'type="time"')) + campo("Saída do pátio", inp("sai", n.sai, 'type="time"')));
   else if (kind === "fat") corpo = grid(campo("Pedido da NF", inp("ped", n.ped, 'type="time"')) + campo("NF emitida", inp("emi", n.emi, 'type="time"')));
   else corpo = grid(campo("Início da carga", inp("hi", n.hi, 'type="time"')) + campo("Fim da carga", inp("hf", n.hf, 'type="time"')));
@@ -1677,13 +1688,14 @@ async function editarExp(n, kind){
   if (kind === "notas"){
     const nf = String(r.nf).replace(/\D/g, "").padStart(6, "0");
     const dados = { data: r.data, cliente: r.cliente.trim(), placa: normPlaca(r.placa), mtr: r.mtr.trim(), nf, peso_kg: Math.round(lerBR(r.peso) * 100) / 100,
-      valor: String(r.valor).trim() ? Math.round(lerBR(r.valor) * 100) / 100 : null, materiais: txtParaMats(r.mats), obs: r.obs.trim(), status: r.status };
+      valor: String(r.valor).trim() ? Math.round(lerBR(r.valor) * 100) / 100 : null, materiais: txtParaMats(r.mats), obs: r.obs.trim(), status: r.status,
+      entrada_patio: r.ent, saida_patio: r.sai, pedido_nf: r.ped, nf_emitida: r.emi, hr_inicio: r.hi, hr_final: r.hf };
     if (novo){
       const id = "NF" + nf;
       if (expNotas.some(x => x.id === id)){ aviso("A NF " + nf + " já está lançada.", true); return; }
-      await setDoc(doc(db, COL_EXP, id), { ...dados, entrada_patio: "", saida_patio: "", pedido_nf: "", nf_emitida: "", hr_inicio: "", hr_final: "", criado_em: serverTimestamp() });
+      await setDoc(doc(db, COL_EXP, id), { ...dados, criado_em: serverTimestamp() });
     } else {
-      const mudou = n.data !== dados.data || n.cliente !== dados.cliente || n.placa !== dados.placa || Math.abs(n.peso - dados.peso_kg) > 0.001 || JSON.stringify(n.mats) !== JSON.stringify(dados.materiais);
+      const mudou = n.data !== dados.data || n.cliente !== dados.cliente || n.placa !== dados.placa || Math.abs(n.peso - dados.peso_kg) > 0.001 || JSON.stringify(n.mats) !== JSON.stringify(dados.materiais) || n.hi !== dados.hr_inicio || n.hf !== dados.hr_final;
       if (n.autoSync && mudou) dados.auto_sync = false;
       if ((n.valor == null ? null : n.valor) !== dados.valor) dados.valor_auto = false;
       await updateDoc(doc(db, COL_EXP, n.id), dados);
@@ -1693,6 +1705,22 @@ async function editarExp(n, kind){
     await updateDoc(doc(db, COL_EXP, n.id), m);
   }
   aviso(novo ? "Nota lançada ✔" : "Alteração gravada ✔");
+}
+async function obsNota(n, idx){
+  if (!n) return; const novo = idx == null;
+  const r = await abrirModal({ titulo: (novo ? "Nova observação" : "Editar observação") + " · NF " + n.nf, ok: novo ? "Confirmar" : "Confirmar alteração",
+    html: `<label>Observação</label>${inp("texto", novo ? "" : ((n.obsx[idx] || {}).texto || ""), 'maxlength="500"')}`, validar: d => d.texto.trim() ? "" : "Escreva a observação." });
+  if (!r) return;
+  const lista = (n.obsx || []).slice();
+  if (novo) lista.push({ texto: r.texto.trim(), em: new Date().toISOString(), por: (auth.currentUser || {}).email || "" });
+  else lista[idx] = { ...lista[idx], texto: r.texto.trim(), editada_em: new Date().toISOString() };
+  await updateDoc(doc(db, COL_EXP, n.id), { observacoes: lista }); aviso("Observação gravada ✔");
+}
+async function excluirObs(n, idx){
+  if (!n || !n.obsx || !n.obsx[idx]) return;
+  const r = await abrirModal({ titulo: "Excluir observação", perigo: true, ok: "Excluir", html: `<div class="txt">“${esc(n.obsx[idx].texto)}”<br><span class="warn">Esta ação não pode ser desfeita.</span></div>` });
+  if (!r) return;
+  await updateDoc(doc(db, COL_EXP, n.id), { observacoes: n.obsx.filter((_, i) => i !== idx) }); aviso("Observação excluída ✔");
 }
 async function excluirExp(lista, rotulo){
   lista = (lista || []).filter(Boolean); if (!lista.length) return;
@@ -1795,31 +1823,80 @@ function renderPend(){
 /* ----- aba Preços ----- */
 function montarViewPrecos(){
   const sec = $("v-expPrecos");
-  sec.innerHTML = `<div class="page-head"><div><h1>Preços por material</h1><p>Valor em R$ por kg. Usado para calcular o valor da nota automaticamente quando o carregamento é sincronizado (só quando todos os materiais têm preço).</p></div></div>
+  sec.innerHTML = `<div class="page-head"><div><h1>Preços por material</h1><p>Valor em R$ por kg. Usado para calcular o valor da nota automaticamente quando o carregamento é sincronizado (só quando todos os materiais têm preço). Aqui só é possível editar o preço. Para incluir ou excluir um material, use a aba Materiais.</p></div></div>
     <div id="expPrecosErro"></div>
-    <div class="toolbar"><button class="btn sm pri" data-prbtn="novo">+ Novo preço</button><button class="btn sm" data-prbtn="importar">Importar preços da planilha</button></div>
+    <div class="toolbar"><button class="btn sm" data-prbtn="importar">Importar preços da planilha</button></div>
     <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">R$ por kg</th><th class="num">R$ por tonelada</th><th></th></tr></thead><tbody id="tbPrecos"></tbody></table></div>`;
-  sec.addEventListener("click", e => { const b = e.target.closest("button[data-prbtn]"); if (!b) return; run(b.dataset.prbtn === "novo" ? () => editarPreco(null) : importarPrecos); });
+  sec.addEventListener("click", e => { const b = e.target.closest("button[data-prbtn]"); if (b) run(importarPrecos); });
 }
 function renderPrecos(){
   const tb = $("tbPrecos"); if (!tb) return;
-  $("expPrecosErro").innerHTML = expErroPrecos ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso à coleção "${COL_PRECOS}".</b><div class="txt mono" style="margin-top:6px">match /${COL_PRECOS}/{docId} { allow read, write: if request.auth != null; }</div></div>` : "";
-  tb.innerHTML = expPrecos.length ? expPrecos.slice().sort((a, b) => a.material.localeCompare(b.material, "pt-BR")).map(p => `<tr><td>${badgeMat(p.material)}</td><td class="num">${nf2.format(p.preco)}</td><td class="num">${nf2.format(p.preco * 1000)}</td><td class="ac"><button class="btn xs" data-act="preco-edit" data-id="${esc(p.id)}">Editar</button> <button class="btn xs danger" data-act="preco-del" data-id="${esc(p.id)}">Excluir</button></td></tr>`).join("") : vazio(4, "Nenhum preço cadastrado. Use “Importar preços da planilha”.");
+  const err = expErroPrecos ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso à coleção "${COL_PRECOS}".</b><div class="txt mono" style="margin-top:6px">match /${COL_PRECOS}/{docId} { allow read, write: if request.auth != null; }</div></div>` : "";
+  $("expPrecosErro").innerHTML = err; if ($("expMatErro")) $("expMatErro").innerHTML = err;
+  tb.innerHTML = expPrecos.length ? expPrecos.slice().sort((a, b) => a.material.localeCompare(b.material, "pt-BR")).map(p => `<tr><td>${badgeMat(p.material)}</td><td class="num">${nf2.format(p.preco)}</td><td class="num">${nf2.format(p.preco * 1000)}</td><td class="ac"><button class="btn xs" data-act="preco-edit" data-id="${esc(p.id)}">Editar preço</button></td></tr>`).join("") : vazio(4, "Nenhum material cadastrado. Use “Importar preços da planilha” ou a aba Materiais.");
+  renderMateriais();
 }
 async function editarPreco(p){
-  const novo = !p;
-  const r = await abrirModal({ titulo: novo ? "Novo preço" : "Editar preço", ok: novo ? "Confirmar" : "Confirmar alteração",
-    html: `<label>Material</label>${inp("material", p ? p.material : "")}<label>Preço (R$ por kg)</label>${inp("preco", p ? String(p.preco).replace(".", ",") : "", 'inputmode="decimal"')}`,
-    validar: d => !d.material.trim() ? "Informe o material." : !(lerNum(d.preco) >= 0) ? "Informe um preço válido." : "" });
+  if (!p) return;
+  const r = await abrirModal({ titulo: "Editar preço · " + p.material, ok: "Confirmar alteração",
+    html: `<label>Preço (R$ por kg)</label>${inp("preco", String(p.preco).replace(".", ","), 'inputmode="decimal"')}`,
+    validar: d => !(lerNum(d.preco) >= 0) ? "Informe um preço válido." : "" });
   if (!r) return;
-  const v = { material: r.material.trim(), preco: lerNum(r.preco) };
-  if (novo) await setDoc(doc(db, COL_PRECOS, chaveMat(v.material) || String(Date.now())), { ...v, criado_em: serverTimestamp() });
-  else await updateDoc(doc(db, COL_PRECOS, p.id), v);
+  await updateDoc(doc(db, COL_PRECOS, p.id), { preco: lerNum(r.preco) });
   aviso("Preço gravado ✔");
 }
-async function excluirPreco(p){
+
+/* ----- aba Materiais (cadastro) ----- */
+function montarViewMateriais(){
+  const sec = $("v-expMateriais");
+  sec.innerHTML = `<div class="page-head"><div><h1>Materiais</h1><p>Cadastro de todos os materiais, com os dados que a NF pede de cada um. Aqui é o único lugar onde se exclui um material. O preço também aparece na aba Preços.</p></div></div>
+    <div id="expMatErro"></div>
+    <div class="toolbar"><button class="btn pri" data-mbtn="novo" style="width:auto;padding:12px 22px;font-size:15px">+ Incluir Material</button>
+      <input class="input grow" id="expMatQ" name="busca_cadastro_mat" autocomplete="off" readonly data-ro placeholder="Buscar material, código ou observação…"></div>
+    <div class="sub" id="expMatInfo" style="margin-bottom:10px"></div>
+    <div class="table-wrap"><table><thead><tr><th>Material</th><th>Código / NCM</th><th>Unidade</th><th class="num">R$ por kg</th><th class="num">Em notas</th><th class="num">Peso lançado (kg)</th><th>Observação</th><th></th></tr></thead><tbody id="tbMateriais"></tbody></table></div>`;
+  sec.addEventListener("click", e => { if (e.target.closest("button[data-mbtn]")) run(() => editarMaterial(null)); });
+  $("expMatQ").addEventListener("input", renderMateriais);
+}
+function renderMateriais(){
+  const tb = $("tbMateriais"); if (!tb) return;
+  const q = $("expMatQ").value.trim().toLowerCase(), uso = {};
+  ativas(expNotas).forEach(n => (n.mats || []).forEach(m => { const k = chaveMat(m.m); const o = (uso[k] ||= { nome: m.m, notas: new Set(), kg: 0 }); o.notas.add(n.id); if (m.u === "kg") o.kg += m.q; }));
+  const cad = new Set(expPrecos.map(p => chaveMat(p.material)));
+  const linhas = expPrecos.map(p => ({ p, u: uso[chaveMat(p.material)] })).filter(x => !q || `${x.p.material} ${x.p.codigo} ${x.p.obs}`.toLowerCase().includes(q))
+    .sort((a, b) => a.p.material.localeCompare(b.p.material, "pt-BR"));
+  const livres = Object.keys(uso).filter(k => !cad.has(k)).map(k => uso[k]).filter(o => !q || o.nome.toLowerCase().includes(q)).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  $("expMatInfo").textContent = `${fmtNum(expPrecos.length)} material(is) cadastrado(s)` + (livres.length ? ` · ${fmtNum(livres.length)} usado(s) em notas e ainda não cadastrado(s)` : "");
+  tb.innerHTML = linhas.map(({ p, u }) => `<tr><td>${badgeMat(p.material)}</td><td class="mono">${esc(p.codigo) || "—"}</td><td>${esc(p.unidade || "kg")}</td><td class="num">${nf2.format(p.preco)}</td><td class="num">${u ? fmtNum(u.notas.size) : "—"}</td><td class="num">${u ? fmtNum(u.kg) : "—"}</td><td class="muted">${esc(p.obs)}</td><td class="ac"><button class="btn xs" data-act="mat-edit" data-id="${esc(p.id)}">Editar</button> <button class="btn xs danger" data-act="mat-del" data-id="${esc(p.id)}">Excluir</button></td></tr>`).join("")
+    + livres.map(o => `<tr><td>${badgeMat(o.nome)} <span class="badge b-warn">não cadastrado</span></td><td>—</td><td>—</td><td class="num">—</td><td class="num">${fmtNum(o.notas.size)}</td><td class="num">${fmtNum(o.kg)}</td><td class="muted">usado nas notas, sem cadastro</td><td class="ac"><button class="btn xs pri" data-act="mat-cad" data-nome="${esc(o.nome)}">Cadastrar</button></td></tr>`).join("")
+    || vazio(8, "Nenhum material. Use “Incluir Material” ou importe os preços da planilha na aba Preços.");
+}
+async function editarMaterial(p, nomeInicial){
+  const novo = !p;
+  const unid = p ? (p.unidade || "kg") : "kg";
+  const r = await abrirModal({ titulo: novo ? "Incluir material" : "Editar material", ok: novo ? "Confirmar cadastro" : "Confirmar alteração",
+    html: `<label>Material (descrição na NF)</label>${inp("material", p ? p.material : (nomeInicial || ""))}
+      <label>Código / NCM</label>${inp("codigo", p ? p.codigo : "")}
+      <label>Unidade</label><select class="input" data-mf="unidade">${["kg", "fardos", "un"].map(u => `<option ${u === unid ? "selected" : ""}>${u}</option>`).join("")}</select>
+      <label>Preço unitário (R$ por kg)</label>${inp("preco", p ? String(p.preco).replace(".", ",") : "", 'inputmode="decimal"')}
+      <label>Observação</label>${inp("obs", p ? p.obs : "")}`,
+    validar: d => {
+      if (!d.material.trim()) return "Informe o nome do material.";
+      if (!(lerBR(d.preco) >= 0)) return "Informe o preço unitário (pode ser 0).";
+      if (expPrecos.some(x => (novo || x.id !== p.id) && chaveMat(x.material) === chaveMat(d.material))) return "Este material já está cadastrado.";
+      return "";
+    } });
+  if (!r) return;
+  const v = { material: r.material.trim(), codigo: r.codigo.trim(), unidade: r.unidade, preco: lerBR(r.preco), obs: r.obs.trim() };
+  if (novo) await setDoc(doc(db, COL_PRECOS, chaveMat(v.material) || String(Date.now())), { ...v, criado_em: serverTimestamp() });
+  else await updateDoc(doc(db, COL_PRECOS, p.id), v);
+  aviso(novo ? "Material cadastrado ✔" : "Material alterado ✔");
+}
+async function excluirMaterial(p){
   if (!p) return;
-  const r = await abrirModal({ titulo: "Excluir preço", perigo: true, ok: "Excluir", html: `<div class="txt">Excluir o preço de <b>${esc(p.material)}</b>?<br><span class="warn">Esta ação não pode ser desfeita.</span></div>` });
+  const usado = ativas(expNotas).filter(n => (n.mats || []).some(m => chaveMat(m.m) === chaveMat(p.material))).length;
+  const r = await abrirModal({ titulo: "Excluir material", perigo: true, ok: "Excluir",
+    html: `<div class="txt">Excluir <b>${esc(p.material)}</b> do cadastro e da tabela de preços?${usado ? `<br>Ele aparece em <b>${fmtNum(usado)}</b> nota(s). As notas não mudam, mas o valor automático deixa de ser calculado para elas.` : ""}<br><span class="warn">Esta ação não pode ser desfeita.</span></div>` });
   if (!r) return;
   await deleteDoc(doc(db, COL_PRECOS, p.id)); aviso("Exclusão concluída ✔");
 }
@@ -1877,7 +1954,7 @@ function setConsulta(c, pre){
 const baseQ = () => { const cli = qv("cli"), de = qv("de"), ate = qv("ate"); return expNotas.filter(n => (!cli || n.cliente === cli) && (!de || n.data >= de) && (!ate || n.data <= ate)); };
 const temMat = (n, chave) => (n.mats || []).filter(m => chaveMat(m.m).includes(chave));
 const porData = l => l.slice().sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : (a.nf < b.nf ? 1 : -1));
-const tabelaNotas = (l, mostrarMat) => `<div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>Cliente</th><th>Placa</th><th>MTR</th><th class="num">Peso (kg)</th><th class="num">Valor</th><th>${mostrarMat ? "Material da busca" : "Materiais / Observação"}</th><th></th></tr></thead><tbody>${l.map(n => `<tr class="${n.status === "Cancelada" ? "dim" : ""}"><td>${fmtIso(n.data)}</td><td>${nfLink(n.nf)}${stBadge(n)}</td><td>${esc(n.cliente)}</td><td class="mono">${esc(n.placa)}</td><td class="mono">${esc(n.mtr)}</td><td class="num">${fmtNum(n.peso)}</td><td class="num">${brl(n.valor)}</td><td>${mostrarMat ? mostrarMat(n) : (matTxt(n) ? badgeMat(matTxt(n)) + " " : "") + `<span class="muted">${esc(n.obs)}</span>`}</td>${exAc("notas", n)}</tr>`).join("") || vazio(9, "Nenhuma nota encontrada.")}</tbody></table></div>`;
+const tabelaNotas = (l, mostrarMat) => `<div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>Cliente</th><th>Placa</th><th>MTR</th><th class="num">Peso (kg)</th><th class="num">Valor</th><th>${mostrarMat ? "Material da busca" : "Materiais / Observação"}</th><th></th></tr></thead><tbody>${l.map(n => `<tr class="${n.status === "Cancelada" ? "dim" : ""}"><td>${fmtIso(n.data)}</td><td>${nfLink(n.nf)}${stBadge(n)}</td><td>${esc(n.cliente)}</td><td class="mono">${esc(n.placa)}</td><td class="mono">${esc(n.mtr)}</td><td class="num">${fmtNum(n.peso)}</td><td class="num">${brl(n.valor)}</td><td>${mostrarMat ? mostrarMat(n) : (matTxt(n) ? badgeMat(matTxt(n)) + " " : "") + `<span class="muted">${esc(n.obs)}</span>` + obsExtra(n)}</td>${exAc("notas", n)}</tr>`).join("") || vazio(9, "Nenhuma nota encontrada.")}</tbody></table></div>`;
 const totaisNotas = l => { const a = ativas(l); return `<div class="qtot"><span><b>${fmtNum(a.length)}</b> nota(s)</span><span><b>${fmtNum(a.reduce((s, n) => s + n.peso, 0))}</b> kg</span><span><b>${brl(a.reduce((s, n) => s + (n.valor || 0), 0))}</b></span></div>`; };
 const csvNotas = l => [["Data", "NF", "Cliente", "Placa", "MTR", "Peso (kg)", "Valor (R$)", "Materiais", "Observação", "Situação"]].concat(l.map(n => [fmtIso(n.data), n.nf, n.cliente, n.placa, n.mtr, n.peso, n.valor == null ? "" : String(n.valor).replace(".", ","), (n.mats || []).map(m => `${m.m} ${m.q} ${m.u}`).join(" | "), n.obs, n.status]));
 function fichaNota(n){
@@ -1886,7 +1963,8 @@ function fichaNota(n){
   return `<div class="panel ficha ${n.status === "Cancelada" ? "dim" : ""}"><div class="carga-h" style="cursor:default"><div><div class="carga-t">NF ${esc(n.nf)} ${stBadge(n)}</div><div class="carga-s">${esc(n.cliente)} · ${fmtIso(n.data)}${n.placa ? " · " + esc(fmtPlaca(n.placa)) : ""}</div></div>
     <div class="carga-m"><div><b>${fmtNum(n.peso)}</b><span>kg</span></div><div><b>${brl(n.valor)}</b><span>valor</span></div></div></div>
     <div class="tempos">${it("MTR", esc(n.mtr) || "—")}${it("Materiais", esc((n.mats || []).map(m => `${m.m} ${nf0.format(m.q)} ${m.u}`).join(" · ")) || "—")}${it("Entrada / saída do pátio", `${esc(n.ent) || "—"} → ${esc(n.sai) || "—"}`)}${it("Dwell time", fmtHM(d))}${it("Pedido / emissão da NF", `${esc(n.ped) || "—"} → ${esc(n.emi) || "—"}`)}${it("Tempo para sair a NF", fmtHM(lt))}${it("Início / fim da carga", `${esc(n.hi) || "—"} → ${esc(n.hf) || "—"}`)}${it("Tempo de carga", fmtHM(cm))}${it("Tempo por fardo", fmtSeg(sf))}${n.pesoRfid != null ? it("Peso lido no RFID", `${fmtNum(n.pesoRfid)} kg · ${fmtNum(n.fardosRfid)} fardos`) : ""}${n.obs ? it("Observação", esc(n.obs)) : ""}</div>
-    <div class="carga-info" style="border:0;padding-top:10px">${n.carga_id ? `<button class="btn sm" data-qfardos="${esc(n.nf)}">Listar fardos desta NF</button>` : ""}<button class="btn sm" data-act="exp-edit" data-id="${esc(n.id)}" data-kind="notas">Editar</button><button class="btn sm danger" data-act="exp-del" data-id="${esc(n.id)}">Excluir</button></div></div>`;
+    <div style="margin-top:10px"><b style="font-size:13px">Observações adicionais</b>${(n.obsx || []).map((o, i) => `<div class="obsx" style="display:flex;gap:8px;align-items:center">+ ${esc(o.texto)} <i>${fmtObsData(o.em)}${o.por ? " · " + esc(String(o.por).split("@")[0]) : ""}</i><span style="margin-left:auto"><button class="btn xs" data-act="obs-edit" data-id="${esc(n.id)}" data-idx="${i}">Editar</button> <button class="btn xs danger" data-act="obs-del" data-id="${esc(n.id)}" data-idx="${i}">Excluir</button></span></div>`).join("") || `<div class="muted" style="font-size:12.5px">Nenhuma.</div>`}</div>
+    <div class="carga-info" style="border:0;padding-top:10px">${n.carga_id ? `<button class="btn sm" data-qfardos="${esc(n.nf)}">Listar fardos desta NF</button>` : ""}<button class="btn sm" data-act="obs-add" data-id="${esc(n.id)}">Adicionar observação</button><button class="btn sm" data-act="exp-edit" data-id="${esc(n.id)}" data-kind="notas">Editar</button><button class="btn sm danger" data-act="exp-del" data-id="${esc(n.id)}">Excluir</button></div></div>`;
 }
 function fardosRfid(){
   const nfq = qv("nf").replace(/\D/g, "").replace(/^0+/, ""), mat = chaveMat(qv("mat")), cli = qv("cli"), de = qv("de"), ate = qv("ate"), out = [];
@@ -1948,7 +2026,7 @@ function renderConsulta(){
 }
 
 /* ---------- navegação e eventos ---------- */
-montarViewsExp(); montarViewPrecos();
+montarViewsExp(); montarViewPrecos(); montarViewMateriais();
 // campos de busca: ficam somente-leitura até o foco, para o navegador não preencher o e-mail do login
 document.addEventListener("focusin", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined) el.removeAttribute("readonly"); });
 document.addEventListener("focusout", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined && !el.value) el.setAttribute("readonly", ""); });
@@ -2094,7 +2172,7 @@ function iniciarListeners(){
 
   unsubs.push(onSnapshot(collection(db, COL_PRECOS), snap => {
     expPrecos = []; expErroPrecos = "";
-    snap.forEach(dc => { const d = dc.data(); expPrecos.push({ id: dc.id, material: d.material || dc.id, preco: Number(d.preco || 0) }); });
+    snap.forEach(dc => { const d = dc.data(); expPrecos.push({ id: dc.id, material: d.material || dc.id, preco: Number(d.preco || 0), codigo: d.codigo || "", unidade: d.unidade || "kg", obs: d.obs || "" }); });
     renderPrecos(); agendarSync();
   }, err => { console.error("Erro " + COL_PRECOS + ":", err); expErroPrecos = err && err.message ? err.message : String(err); renderPrecos(); }));
 
