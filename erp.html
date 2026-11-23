@@ -117,6 +117,9 @@ input,select{font:inherit;color:var(--txt)}
 .btn.danger{background:rgba(229,115,107,.16);border-color:rgba(229,115,107,.5);color:#F5B3AE}
 .btn.danger:hover{background:rgba(229,115,107,.32)}
 .btn.xs{padding:4px 9px;font-size:12px}
+.nav-sep{margin:14px 6px 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+tr.dim td{opacity:.55}
+@media (max-width:760px){.nav-sep{display:none}}
 td.ac{white-space:nowrap;text-align:right}
 .conf-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
 .conf-row .conf-abrir{flex:1;text-align:left;background:transparent;border:1px solid var(--line);border-radius:10px;color:var(--txt2);padding:8px 12px;font-size:13.5px;cursor:pointer}
@@ -309,6 +312,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
       <button data-v="conferencia"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span><span class="lg-d">Conferência</span><span class="lg-m">Confer.</span></span></button>
       <button data-v="log"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg><span><span class="lg-d">Log / Bloqueios</span><span class="lg-m">Log</span></span><b class="count hide" id="navErros">0</b></button>
       <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M7 4v13M7 17l-3-3M7 17l3-3"/><path d="M17 20V7M17 7l-3 3M17 7l3 3"/></svg><span><span class="lg-d">Histórico</span><span class="lg-m">Hist.</span></span></button>
+<div class="nav-sep">Expedição</div><button data-v="expNotas"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg><span><span class="lg-d">Notas / Coletas</span><span class="lg-m">Notas</span></span></button><button data-v="expPatio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg><span><span class="lg-d">Pátio (dwell)</span><span class="lg-m">Pátio</span></span></button><button data-v="expFat"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/></svg><span><span class="lg-d">Faturamento (lead)</span><span class="lg-m">Fatur.</span></span></button><button data-v="expCarga"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17V9l7-4 7 4v8"/><path d="M10 17v-4h4v4"/></svg><span><span class="lg-d">Tempo de carga</span><span class="lg-m">T. carga</span></span></button>
     </nav>
     <div class="side-foot">
       <div class="live"><span class="dot" id="dotLive"></span><span id="txtLive">conectando…</span></div>
@@ -446,6 +450,10 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
       <div id="prDetalhe"></div>
     </section>
 
+    <section class="view" id="v-expNotas"></section>
+    <section class="view" id="v-expPatio"></section>
+    <section class="view" id="v-expFat"></section>
+    <section class="view" id="v-expCarga"></section>
     <!-- ===== CONFERÊNCIA ===== -->
     <section class="view" id="v-conferencia">
       <div class="page-head"><div><h1>Conferência de estoque</h1><p>Compara a leitura física em massa com o estoque do sistema.</p></div></div>
@@ -1387,10 +1395,259 @@ async function executarAcao(b){
     else if (a === "conf-del") await excluirConfs([Number(b.dataset.cj)], "conferência de " + fmtData(confs[Number(b.dataset.cj)] && confs[Number(b.dataset.cj)].criado_em));
     else if (a === "conf-dia-del"){ const idx = confs.map((c, i) => i).filter(i => { const dt = toDate(confs[i].criado_em); return (dt ? diaKey(dt) : "0000-00-00") === dia; }); await excluirConfs(idx, "todas do dia " + fmtDiaKey(dia)); }
     else if (a === "conf-rm") await removerItemConf(b.dataset.epc);
+    else if (a === "exp-edit") await editarExp(expNotas.find(n => n.id === id), b.dataset.kind);
+    else if (a === "exp-del") await excluirExp([expNotas.find(n => n.id === id)], "a nota");
   });
 }
 
+/* ---------- Expedição (Base Diária): Notas, Pátio, Faturamento, Tempo de carga ---------- */
+const META_LEAD = 15;
+const CLIENTES_EXP = ["Total Pet","Wise Plásticos","CR Metais","MV Indústria","Saturno","Latasa"];
+const COL_EXP = "expedicao_notas";
+const EXP_SEED = [{"data":"2026-08-14","cliente":"Saturno","placa":"RXW3D65","mtr":"2608070663","nf":"000154","peso":1680.0,"valor":588.0,"mats":[],"obs":"","ent":"11:04","sai":"11:35","ped":"11:44","emi":"11:59","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-14","cliente":"Wise Plásticos","placa":"IWZ4C53","mtr":"2608071118","nf":"000155","peso":24142.0,"valor":87237.0,"mats":[],"obs":"4 pead br - 3 pead cor - 6  canelados","ent":"08:51","sai":"13:38","ped":"12:12","emi":"13:23","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-14","cliente":"MV Indústria","placa":"TPR7J40","mtr":"2608075283","nf":"000156","peso":14246.0,"valor":null,"mats":[],"obs":"22 fd flexivel","ent":"11:54","sai":"14:36","ped":"14:27","emi":"14:44","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-17","cliente":"CR Metais","placa":"MKC8045","mtr":"2608100019","nf":"000157","peso":6313.0,"valor":null,"mats":[],"obs":"","ent":"08:57","sai":"09:20","ped":"09:24","emi":"09:40","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-17","cliente":"CR Metais","placa":"MKC8045","mtr":"2608100019","nf":"000158","peso":5153.0,"valor":null,"mats":[],"obs":"","ent":"09:28","sai":"09:56","ped":"10:00","emi":"10:14","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-18","cliente":"Total Pet","placa":"SXO4A05","mtr":"2608087093","nf":"000159","peso":15154.0,"valor":null,"mats":[],"obs":"43 cristal","ent":"10:47","sai":"14:30","ped":"14:01","emi":"14:16","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-19","cliente":"Latasa","placa":"AYV7G84","mtr":"2608095504","nf":"000161","peso":13288.0,"valor":null,"mats":[],"obs":"49 latas","ent":"13:57","sai":"17:15","ped":"16:39","emi":"17:00","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-20","cliente":"CR Metais","placa":"MKC8045","mtr":"2608100019","nf":"000162","peso":6759.0,"valor":null,"mats":[],"obs":"","ent":"09:30","sai":"10:10","ped":"10:30","emi":"11:34","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-20","cliente":"CR Metais","placa":"MKC8045","mtr":"2608100019","nf":"000163","peso":7650.0,"valor":null,"mats":[],"obs":"","ent":"13:28","sai":"13:49","ped":"13:54","emi":"14:28","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-24","cliente":"CR Metais","placa":"PRI8A96","mtr":"2608047875","nf":"000164","peso":7130.0,"valor":null,"mats":[],"obs":"","ent":"12:15","sai":"12:37","ped":"12:43","emi":"13:04","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-24","cliente":"MV Indústria","placa":"MCR6F27","mtr":"2608122483","nf":"000165","peso":15335.0,"valor":null,"mats":[],"obs":"24 flexivel","ent":"13:10","sai":"15:05","ped":"14:26","emi":"14:48","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-24","cliente":"Total Pet","placa":"SX04A65","mtr":"2608117215","nf":"000166","peso":19340.0,"valor":null,"mats":[],"obs":"não usar esta - cancelada pela 168","ent":"","sai":"","ped":"","emi":"","hi":"","hf":"","status":"Cancelada"},{"data":"2026-08-26","cliente":"Total Pet","placa":"SXO4A65","mtr":"2608087093","nf":"000168","peso":15320.0,"valor":null,"mats":[],"obs":"40 cristal","ent":"14:45","sai":"17:04","ped":"16:37","emi":"16:53","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-27","cliente":"CR Metais","placa":"RXT7C41","mtr":"2608019879","nf":"000169","peso":9270.0,"valor":null,"mats":[],"obs":"16 fd flexivel","ent":"08:40","sai":"10:08","ped":"10:43","emi":"12:05","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-27","cliente":"CR Metais","placa":"RXT7C41","mtr":"2608019879","nf":"000170","peso":9350.0,"valor":null,"mats":[],"obs":"","ent":"14:00","sai":"14:17","ped":"14:26","emi":"14:38","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-27","cliente":"Wise Plásticos","placa":"SX04A65","mtr":"2608117215","nf":"000171","peso":21320.0,"valor":null,"mats":[],"obs":"42 br e 33 cor","ent":"12:25","sai":"16:48","ped":"15:39","emi":"15:45","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-27","cliente":"CR Metais","placa":"PRI8A96","mtr":"2608006551","nf":"000172","peso":6790.0,"valor":null,"mats":[],"obs":"","ent":"16:30","sai":"16:51","ped":"16:55","emi":"17:00","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-28","cliente":"Saturno","placa":"RXW3D65","mtr":"2608141790","nf":"000173","peso":1350.0,"valor":null,"mats":[],"obs":"","ent":"14:25","sai":"15:08","ped":"15:15","emi":"15:39","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-28","cliente":"Total Pet","placa":"SXO4A65","mtr":"2608059454","nf":"000174","peso":14986.0,"valor":null,"mats":[],"obs":"32 cristal - 16 verde","ent":"14:00","sai":"16:40","ped":"16:33","emi":"16:44","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-31","cliente":"CR Metais","placa":"PRI8A96","mtr":"2608145764","nf":"000175","peso":8070.0,"valor":null,"mats":[],"obs":"","ent":"08:46","sai":"09:04","ped":"09:09","emi":"09:22","hi":"","hf":"","status":"Ativa"},{"data":"2026-08-31","cliente":"MV Indústria","placa":"RYV2G44","mtr":"2608031209","nf":"000180","peso":27780.0,"valor":null,"mats":[],"obs":"48 fd flexivel","ent":"12:40","sai":"18:10","ped":"16:46","emi":"17:21","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-01","cliente":"Wise Plásticos","placa":"RYV2G44","mtr":"2608031209","nf":"000181","peso":28789.0,"valor":108594.38,"mats":[],"obs":"38 pp cor 18 pp nat 14 bandeja","ent":"15:16","sai":"12:58","ped":"11:38","emi":"11:53","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-01","cliente":"MV Indústria","placa":"","mtr":"","nf":"000182","peso":2700.0,"valor":324.0,"mats":[],"obs":"complementar da nota 180","ent":"","sai":"","ped":"","emi":"","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-01","cliente":"CR Metais","placa":"PRI8A96","mtr":"2609004068","nf":"000183","peso":7402.0,"valor":4263.88,"mats":[],"obs":"","ent":"11:59","sai":"12:20","ped":"12:30","emi":"13:54","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-01","cliente":"Total Pet","placa":"SXO4A65","mtr":"2609007303","nf":"000184","peso":14190.0,"valor":63529.3,"mats":[],"obs":"36 cristal 5 oleo 2 cor","ent":"12:22","sai":"16:10","ped":"15:32","emi":"15:47","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-02","cliente":"CR Metais","placa":"MIM7J69","mtr":"2608019135","nf":"000185","peso":7170.0,"valor":4131.35,"mats":[],"obs":"","ent":"14:20","sai":"15:05","ped":"15:19","emi":"15:52","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-02","cliente":"Total Pet","placa":"TPQ0A13","mtr":"2609016096","nf":"000186","peso":2480.0,"valor":10190.85,"mats":[],"obs":"5 verde 4 oleo","ent":"15:20","sai":"16:30","ped":"16:26","emi":"17:03","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-03","cliente":"CR Metais","placa":"PRI8A96","mtr":"2608051048","nf":"000187","peso":7450.0,"valor":4292.69,"mats":[],"obs":"","ent":"09:12","sai":"09:27","ped":"09:34","emi":"09:55","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-04","cliente":"CR Metais","placa":"MIM7J69","mtr":"2608019135","nf":"000188","peso":7310.0,"valor":4219.22,"mats":[],"obs":"","ent":"12:30","sai":"13:00","ped":"13:57","emi":"14:22","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-08","cliente":"Total Pet","placa":"SXO4A65","mtr":"2609036230","nf":"000189","peso":14620.0,"valor":68807.35,"mats":[],"obs":"6 oleo 6 verde 28 cristal","ent":"09:00","sai":"13:27","ped":"13:14","emi":"13:33","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-08","cliente":"CR Metais","placa":"RPI8A96","mtr":"2609038848","nf":"000190","peso":6460.0,"valor":3722.25,"mats":[],"obs":"","ent":"14:00","sai":"16:20","ped":"16:32","emi":"16:52","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-08","cliente":"CR Metais","placa":"RPI8A96","mtr":"2609038876","nf":"000191","peso":7510.0,"valor":4327.26,"mats":[],"obs":"","ent":"14:00","sai":"16:20","ped":"16:32","emi":"16:52","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-09","cliente":"MV Indústria","placa":"BTA1D60","mtr":"2609044027","nf":"000192","peso":12705.0,"valor":1524.6,"mats":[],"obs":"21 fd flexivel","ent":"07:00","sai":"09:48","ped":"09:05","emi":"09:27","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-09","cliente":"Wise Plásticos","placa":"QHC6E02","mtr":"2609045671","nf":"000193","peso":19435.0,"valor":73105.6,"mats":[],"obs":"43 pead br 25 pead cor","ent":"10:55","sai":"15:34","ped":"14:45","emi":"15:14","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-11","cliente":"CR Metais","placa":"MIM7J69","mtr":"2609056507","nf":"000194","peso":7170.0,"valor":4188.87,"mats":[],"obs":"","ent":"09:03","sai":"09:37","ped":"09:48","emi":"14:23","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-11","cliente":"Total Pet","placa":"SXO4A05","mtr":"2609058487","nf":"000195","peso":14986.0,"valor":65833.1,"mats":[],"obs":"óleo 450 - verde 985 - crital 9.430 - azul 2.715","ent":"10:30","sai":"13:15","ped":"15:09","emi":"15:23","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-11","cliente":"CR Metais","placa":"MLM7J69","mtr":"2609057829","nf":"000196","peso":6740.0,"valor":3883.59,"mats":[],"obs":"","ent":"10:54","sai":"11:20","ped":"14:55","emi":"15:23","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-11","cliente":"CR Metais","placa":"MLM7J69","mtr":"2609059894","nf":"000197","peso":7430.0,"valor":4281.17,"mats":[],"obs":"","ent":"14:39","sai":"15:01","ped":"15:06","emi":"15:23","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-15","cliente":"Latasa","placa":"AYV7G84","mtr":"2609074674","nf":"000198","peso":7750.0,"valor":97650.0,"mats":[],"obs":"latas de aluminio 26 fardos","ent":"10:00","sai":"14:59","ped":"13:55","emi":"14:45","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-15","cliente":"CR Metais","placa":"PRI8A96","mtr":"2609076406","nf":"000199","peso":6660.0,"valor":3837.49,"mats":[],"obs":"","ent":"16:00","sai":"16:32","ped":"16:32","emi":"16:58","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-15","cliente":"CR Metais","placa":"PRI8A96","mtr":"2609078029","nf":"000200","peso":7110.0,"valor":4096.78,"mats":[],"obs":"","ent":"17:11","sai":"17:23","ped":"07:39","emi":"07:55","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-16","cliente":"Total Pet","placa":"SX04A65","mtr":"2609090364","nf":"000202","peso":13035.0,"valor":60971.35,"mats":[],"obs":"2.085 pet verde- 2.110 oleo - 8.840 cristal","ent":"14:37","sai":"18:10","ped":"16:18","emi":"16:30","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-18","cliente":"CR Metais","placa":"RTX6037","mtr":"2609095421","nf":"000210","peso":13470.0,"valor":7545.0,"mats":[],"obs":"Julieta","ent":"10:21","sai":"11:30","ped":"11:36","emi":"13:32","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-22","cliente":"CR Metais","placa":"RXT6D37","mtr":"2609111059","nf":"000211","peso":14270.0,"valor":8218.05,"mats":[],"obs":"Julieta","ent":"13:00","sai":"13:37","ped":"14:06","emi":"14:31","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-22","cliente":"Total Pet","placa":"SXO4A05","mtr":"2609113985","nf":"000212","peso":14986.0,"valor":72909.9,"mats":[],"obs":"45 fardos pet cristal","ent":"15:30","sai":"17:20","ped":"17:20","emi":"17:30","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-23","cliente":"Wise Plásticos","placa":"MLS9A55","mtr":"2609117241","nf":"000214","peso":15430.0,"valor":33791.7,"mats":[],"obs":"50 fardos de PP Cor","ent":"07:30","sai":"13:50","ped":"13:17","emi":"13:36","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-24","cliente":"CR Metais","placa":"PRI8A96","mtr":"2609121561","nf":"000216","peso":6640.0,"valor":3719.73,"mats":[],"obs":"","ent":"08:30","sai":"09:30","ped":"09:10","emi":"09:30","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-24","cliente":"CR Metais","placa":"PRI8A96","mtr":"2609122427","nf":"000217","peso":7410.0,"valor":4173.48,"mats":[],"obs":"","ent":"09:03","sai":"09:36","ped":"09:47","emi":"10:08","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-28","cliente":"Wise Plásticos","placa":"MIT1B63","mtr":"2609139727","nf":"000219","peso":20060.0,"valor":99141.86,"mats":[],"obs":"Pead Br-18.587 / Pead cor-1.475","ent":"08:15","sai":"15:37","ped":"14:07","emi":"15:44","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-28","cliente":"Total Pet","placa":"SXO4A05","mtr":"2609141657","nf":"000221","peso":14640.0,"valor":13200.9,"mats":[],"obs":"46 fardos de Pet Cristal","ent":"14:50","sai":"16:41","ped":"16:47","emi":"17:03","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-29","cliente":"CR Metais","placa":"PRI8A96","mtr":"2609143800","nf":"000225","peso":16710.0,"valor":8192.91,"mats":[],"obs":"Nota 222 foi cancelada e substituida por esta","ent":"07:30","sai":"08:31","ped":"08:37","emi":"09:04","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-29","cliente":"Total Pet","placa":"TPQ6C96","mtr":"2609147326","nf":"000226","peso":13099.0,"valor":60757.09,"mats":[],"obs":"Azul: 2.648,Verde: 2.796,Óleo: 1.896,Cristal: 5.765","ent":"11:25","sai":"15:29","ped":"14:42","emi":"15:11","hi":"","hf":"","status":"Ativa"},{"data":"2026-09-30","cliente":"Wise Plásticos","placa":"JCP8I20","mtr":"2610000232","nf":"000228","peso":25560.0,"valor":65865.09,"mats":[],"obs":"PP cor-21.860 - PP Br-2.703","ent":"13:55","sai":"18:55","ped":"17:35","emi":"18:28","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-01","cliente":"Total Pet","placa":"","mtr":"","nf":"000229","peso":14900.0,"valor":73183.63,"mats":[],"obs":"CANCELADA substituida pela 242","ent":"12:15","sai":"14:55","ped":"15:01","emi":"15:55","hi":"","hf":"","status":"Cancelada"},{"data":"2026-10-01","cliente":"Total Pet","placa":"","mtr":"","nf":"000230","peso":14820.0,"valor":73655.4,"mats":[],"obs":"CANCELADA substituida pela 243","ent":"13:05","sai":"15:58","ped":"16:03","emi":"16:23","hi":"","hf":"","status":"Cancelada"},{"data":"2026-10-02","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610008642","nf":"000233","peso":12070.0,"valor":5917.92,"mats":[{"m":"Ferroso","q":8449.0,"u":"kg"},{"m":"Fluffy","q":3621.0,"u":"kg"}],"obs":"","ent":"08:43","sai":"09:50","ped":"10:03","emi":"12:19","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-05","cliente":"Total Pet","placa":"SXO4A05","mtr":"2610018115","nf":"000239","peso":13868.0,"valor":67326.26,"mats":[{"m":"PET Cristal","q":11306.0,"u":"kg"},{"m":"PET Azul","q":897.0,"u":"kg"},{"m":"PET Oleo","q":702.0,"u":"kg"},{"m":"PET Verde","q":1063.0,"u":"kg"}],"obs":"Cristal: 11.306 - Azul:897 - Oleo:702-Verde:1063","ent":"10:05","sai":"12:21","ped":"11:40","emi":"12:01","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-05","cliente":"Total Pet","placa":"SXO4A05","mtr":"2610004223","nf":"000242","peso":14490.0,"valor":71156.8,"mats":[{"m":"PET Cristal","q":13520.0,"u":"kg"},{"m":"PET Verde","q":260.0,"u":"kg"},{"m":"PET Azul","q":240.0,"u":"kg"},{"m":"PET Oleo","q":470.0,"u":"kg"}],"obs":"Cristal-13.520, vd-260, az-240, oleo-470 · substituição notas 229 e 230","ent":"","sai":"","ped":"16:30","emi":"17:46","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-05","cliente":"Total Pet","placa":"TPQ6C96","mtr":"2610004989","nf":"000243","peso":13830.0,"valor":68735.1,"mats":[{"m":"PET Cristal","q":48.0,"u":"fardos"}],"obs":"Cristal-13.830 - 48 fardos · substituição notas 229 e 230","ent":"","sai":"","ped":"16:30","emi":"17:46","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-06","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610023368","nf":"000245","peso":14540.0,"valor":7128.96,"mats":[{"m":"Ferroso","q":10178.0,"u":"kg"},{"m":"Fluffy","q":4362.0,"u":"kg"}],"obs":"","ent":"07:55","sai":"08:42","ped":"13:40","emi":"14:04","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-06","cliente":"Total Pet","placa":"TPQ6C96","mtr":"2610026659","nf":"000246","peso":5600.0,"valor":27832.0,"mats":[{"m":"PET Cristal","q":5600.0,"u":"kg"}],"obs":"PET Cristal Garrafa","ent":"13:30","sai":"15:17","ped":"14:40","emi":"14:56","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-08","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610043903","nf":"000249","peso":5132.0,"valor":35924.0,"mats":[{"m":"Aerosol","q":55.0,"u":"fardos"}],"obs":"55 BigBag aerosol","ent":"13:30","sai":"16:37","ped":"16:00","emi":"16:15","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-09","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610046999","nf":"000252","peso":13890.0,"valor":6810.27,"mats":[{"m":"Ferroso","q":9723.0,"u":"kg"},{"m":"Fluffy","q":4167.0,"u":"kg"}],"obs":"","ent":"08:20","sai":"09:10","ped":"09:15","emi":"09:27","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-09","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610056369","nf":"000255","peso":14547.0,"valor":161773.0,"mats":[{"m":"Alumínio","q":5937.0,"u":"kg"},{"m":"Latas","q":7200.0,"u":"kg"}],"obs":"(36 bags) -5.937 bag aluminio  / 7.200 latas / 1.438 Aerosol","ent":"12:03","sai":"16:30","ped":"16:03","emi":"16:20","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-09","cliente":"Total Pet","placa":"","mtr":"","nf":"000256","peso":14388.0,"valor":null,"mats":[],"obs":"Peso liquido 14.388 - Peso correto 15.146 subst- 257","ent":"","sai":"","ped":"","emi":"","hi":"","hf":"","status":"Cancelada"},{"data":"2026-10-09","cliente":"Total Pet","placa":"SXO4A05","mtr":"2610056398","nf":"000257","peso":15146.0,"valor":75275.0,"mats":[{"m":"PET Cristal","q":34.0,"u":"fardos"}],"obs":"34 fardos de Pet Cristal","ent":"14:26","sai":"17:23","ped":"16:25","emi":"17:09","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-14","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610065975","nf":"000259","peso":14360.0,"valor":7040.71,"mats":[{"m":"Ferroso","q":10052.0,"u":"kg"},{"m":"Fluffy","q":4308.0,"u":"kg"}],"obs":"","ent":"10:33","sai":"11:49","ped":"12:00","emi":"12:29","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-14","cliente":"Wise Plásticos","placa":"TQL6B24SC","mtr":"2610068484","nf":"000260","peso":16048.0,"valor":78590.24,"mats":[{"m":"PEAD Branco","q":44.0,"u":"fardos"},{"m":"PEAD Cor","q":5.0,"u":"fardos"}],"obs":"44 pead br /14.272 kg- 5 pead cor / 1.776 kg","ent":"11:50","sai":"17:05","ped":"16:31","emi":"16:49","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-15","cliente":"Total Pet","placa":"TPQ6C96","mtr":"2610072757","nf":"000262","peso":14660.0,"valor":72860.2,"mats":[{"m":"PET Cristal","q":44.0,"u":"fardos"}],"obs":"44 fardos Pet Cristal","ent":"10:20","sai":"13:10","ped":"13:21","emi":"13:35","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-16","cliente":"CR Metais","placa":"QJJ0955","mtr":"2610078444","nf":"000263","peso":14370.0,"valor":7045.61,"mats":[{"m":"Ferroso","q":10059.0,"u":"kg"},{"m":"Fluffy","q":4311.0,"u":"kg"}],"obs":"2 cargas: 6.870 e 7.500","ent":"09:09","sai":"10:19","ped":"13:41","emi":"13:50","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-16","cliente":"Saturno","placa":"RXW3D65","mtr":"2610080969","nf":"000267","peso":1660.0,"valor":493.85,"mats":[{"m":"Papelão","q":1660.0,"u":"kg"}],"obs":"","ent":"13:55","sai":"14:37","ped":"14:43","emi":"14:56","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-19","cliente":"Total Pet","placa":"SXO4A65","mtr":"2610088148","nf":"000270","peso":13441.0,"valor":65831.71,"mats":[{"m":"PET Cristal","q":35.0,"u":"fardos"},{"m":"PET Verde","q":13.0,"u":"fardos"}],"obs":"35 cristal - 13 verde","ent":"12:14","sai":"14:00","ped":"13:30","emi":"13:41","hi":"12:25","hf":"13:35","status":"Ativa"},{"data":"2026-10-20","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610094677","nf":"000272","peso":12858.0,"valor":6303.86,"mats":[{"m":"Ferroso","q":9000.0,"u":"kg"},{"m":"Fluffy","q":3858.0,"u":"kg"}],"obs":"9 ton de ferroso e 3.858 Fluffy","ent":"09:51","sai":"11:47","ped":"11:55","emi":"12:25","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-21","cliente":"Wise Plásticos","placa":"MKD0H30","mtr":"2610103581","nf":"000273","peso":22000.0,"valor":54780.0,"mats":[{"m":"PP Cor","q":20640.0,"u":"kg"}],"obs":"79 fardos  pp cor  **real 20.640**","ent":"14:16","sai":"20:56","ped":"16:15","emi":"16:20","hi":"16:50","hf":"18:58","status":"Ativa"},{"data":"2026-10-21","cliente":"Total Pet","placa":"TPQ6C96","mtr":"2610104741","nf":"000274","peso":14770.0,"valor":73406.9,"mats":[{"m":"PET Cristal","q":50.0,"u":"fardos"}],"obs":"50 fardos Cristal","ent":"14:08","sai":"17:16","ped":"17:18","emi":"17:29","hi":"14:19","hf":"16:40","status":"Ativa"},{"data":"2026-10-22","cliente":"CR Metais","placa":"RXT6D37","mtr":"2610107666","nf":"000275","peso":13050.0,"valor":6398.42,"mats":[{"m":"Ferroso","q":9136.0,"u":"kg"},{"m":"Fluffy","q":3914.0,"u":"kg"}],"obs":"MTR sem Fluffy (peso MTR :9.136)","ent":"10:08","sai":"11:14","ped":"11:30","emi":"11:51","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-23","cliente":"Total Pet","placa":"SXO4A65","mtr":"2610114602","nf":"000278","peso":13072.0,"valor":64967.84,"mats":[{"m":"PET Cristal","q":48.0,"u":"fardos"}],"obs":"48 fardos Cristal","ent":"10:42","sai":"12:37","ped":"12:02","emi":"12:23","hi":"11:05","hf":"11:50","status":"Ativa"},{"data":"2026-10-26","cliente":"Saturno","placa":"RXW3D65","mtr":"2610121849","nf":"000279","peso":18100.0,"valor":538.48,"mats":[{"m":"Papelão","q":18100.0,"u":"kg"}],"obs":"Papelao","ent":"09:49","sai":"10:28","ped":"10:31","emi":"10:45","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-26","cliente":"MV Indústria","placa":"MHA3I25","mtr":"2610137559","nf":"000280","peso":13397.0,"valor":1607.64,"mats":[{"m":"Flexíveis","q":24.0,"u":"fardos"}],"obs":"24 fardos flexiveis","ent":"11:15","sai":"12:45","ped":"12:22","emi":"12:48","hi":"11:30","hf":"12:15","status":"Ativa"},{"data":"2026-10-26","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610125224","nf":"000281","peso":14840.0,"valor":7276.05,"mats":[{"m":"Ferroso","q":10338.0,"u":"kg"},{"m":"Fluffy","q":4452.0,"u":"kg"}],"obs":"10.338 ferroso / 4.452 Fluffy","ent":"12:01","sai":"13:22","ped":"13:37","emi":"13:43","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-26","cliente":"Wise Plásticos","placa":"JAZ9E99RS","mtr":"2610125823","nf":"000282","peso":21140.0,"valor":80966.2,"mats":[{"m":"PEAD Cor","q":69.0,"u":"fardos"}],"obs":"69 fardos PEAD COR","ent":"14:15","sai":"16:44","ped":"16:47","emi":"17:03","hi":"14:28","hf":"16:16","status":"Ativa"},{"data":"2026-10-27","cliente":"Wise Plásticos","placa":"QIV3C17","mtr":"2610131701","nf":"000283","peso":19304.0,"valor":104836.13,"mats":[{"m":"PEAD Branco","q":15229.0,"u":"kg"},{"m":"PEAD Cor","q":4075.0,"u":"kg"}],"obs":"56 fardos Pead BR / 14 fardos Pead COR","ent":"09:44","sai":"16:43","ped":"15:34","emi":"15:57","hi":"10:12","hf":"15:00","status":"Ativa"},{"data":"2026-10-28","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610135457","nf":"000285","peso":14810.0,"valor":7261.35,"mats":[{"m":"Ferroso","q":10367.0,"u":"kg"},{"m":"Fluffy","q":4453.0,"u":"kg"}],"obs":"","ent":"08:25","sai":"09:22","ped":"09:40","emi":"10:02","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-28","cliente":"CR Metais","placa":"PRI8A96","mtr":"2610138685","nf":"000286","peso":12670.0,"valor":146124.0,"mats":[{"m":"Alumínio","q":6754.0,"u":"kg"},{"m":"Latas","q":5916.0,"u":"kg"}],"obs":"36 bag aluminio / 14 fardos latas","ent":"13:09","sai":"14:52","ped":"15:15","emi":"15:29","hi":"","hf":"","status":"Ativa"},{"data":"2026-10-28","cliente":"Total Pet","placa":"TPQ6C96","mtr":"2610139371","nf":"000287","peso":13780.0,"valor":68486.6,"mats":[{"m":"PET Cristal","q":13780.0,"u":"kg"}],"obs":"51 fardos cristal","ent":"13:55","sai":"16:14","ped":"16:22","emi":"16:27","hi":"14:15","hf":"15:30","status":"Ativa"},{"data":"2026-10-29","cliente":"Wise Plásticos","placa":"HJF1100","mtr":"2610146304","nf":"000289","peso":15000.0,"valor":63450.0,"mats":[{"m":"PP Natural","q":15000.0,"u":"kg"}],"obs":"PP Bandeja","ent":"14:35","sai":"","ped":"16:44","emi":"","hi":"15:10","hf":"17:00","status":"Ativa"}];
+let expNotas = [], expErro = "", semAberta = {};
+const EXP_TABS = {
+  notas: { id: "expNotas", h: "Notas / Coletas", p: "Cada coleta (nota fiscal) com cliente, placa, MTR, peso, valor e materiais, agrupada por semana (sexta a quinta)." },
+  patio: { id: "expPatio", h: "Pátio · Dwell time", p: "Tempo que cada caminhão ficou no pátio, da entrada à saída." },
+  fat:   { id: "expFat",   h: "Faturamento · Lead time", p: "Tempo entre o pedido da nota e a nota emitida. Meta: até " + META_LEAD + " min." },
+  carga: { id: "expCarga", h: "Tempo de carga", p: "Hora de início e fim do carregamento de cada caminhão." }
+};
+const hmin = t => { if (!t) return null; const p = String(t).split(":"); const h = Number(p[0]), m = Number(p[1]); return isNaN(h) || isNaN(m) ? null : h * 60 + m; };
+const fmtHM = v => v == null ? "—" : (v >= 60 ? Math.floor(v / 60) + "h " + String(Math.round(v % 60)).padStart(2, "0") + "min" : Math.round(v) + " min");
+const difMin = (a, b, virar) => { a = hmin(a); b = hmin(b); if (a == null || b == null) return null; let d = b - a; if (d < 0) { if (!virar) return null; d += 1440; } return d; };
+const dwellMin = n => difMin(n.ent, n.sai, true);
+const leadMin = n => difMin(n.ped, n.emi, false);
+const cargaMin = n => difMin(n.hi, n.hf, true);
+const METRICA = { patio: dwellMin, fat: leadMin, carga: cargaMin };
+const semanaIni = iso => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() - 5 + 7) % 7)); return d.toISOString().slice(0, 10); };
+const addDiasIso = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const fmtIso = iso => iso ? iso.split("-").reverse().join("/") : "—";
+const fmtCurto = iso => iso ? iso.slice(8) + "/" + iso.slice(5, 7) : "—";
+const brl = v => v == null ? "—" : "R$ " + nf2.format(v);
+const media = l => l.length ? l.reduce((a, b) => a + b, 0) / l.length : null;
+const ativas = l => l.filter(n => n.status !== "Cancelada");
+const matTxt = n => (n.mats || []).map(m => `${esc(m.m)} ${nf0.format(m.q)} ${m.u}`).join(" · ");
+
+function paraLocal(id, d){
+  return { id, data: d.data || "", cliente: d.cliente || "", placa: d.placa || "", mtr: d.mtr || "", nf: d.nf || "", peso: Number(d.peso_kg || 0),
+    valor: d.valor == null ? null : Number(d.valor), mats: Array.isArray(d.materiais) ? d.materiais : [], obs: d.obs || "",
+    ent: d.entrada_patio || "", sai: d.saida_patio || "", ped: d.pedido_nf || "", emi: d.nf_emitida || "", hi: d.hr_inicio || "", hf: d.hr_final || "",
+    status: d.status || "Ativa" };
+}
+function paraDoc(n){
+  return { data: n.data, cliente: n.cliente, placa: n.placa, mtr: n.mtr, nf: n.nf, peso_kg: n.peso, valor: n.valor == null ? null : n.valor, materiais: n.mats || [], obs: n.obs || "",
+    entrada_patio: n.ent || "", saida_patio: n.sai || "", pedido_nf: n.ped || "", nf_emitida: n.emi || "", hr_inicio: n.hi || "", hr_final: n.hf || "", status: n.status || "Ativa" };
+}
+
+function montarViewsExp(){
+  Object.keys(EXP_TABS).forEach(k => {
+    const t = EXP_TABS[k], sec = $("v-" + t.id);
+    const extra = k === "notas"
+      ? `<button class="btn sm pri" data-expbtn="novo">+ Nova nota</button><button class="btn sm" data-expbtn="importar">Importar planilha</button><button class="btn sm danger" data-expbtn="excluir">Excluir notas exibidas</button>`
+      : "";
+    sec.innerHTML = `
+      <div class="page-head"><div><h1>${t.h}</h1><p>${t.p}</p></div></div>
+      <div id="${t.id}Erro"></div>
+      <div class="kpis k4" id="${t.id}Kpis"></div>
+      <div class="toolbar">
+        <input class="input grow" id="${t.id}Q" placeholder="Buscar por NF, cliente, placa, MTR ou observação…">
+        <select class="input" id="${t.id}Cli"><option value="">Todos os clientes</option></select>
+        <input class="input" type="date" id="${t.id}De" title="De"><input class="input" type="date" id="${t.id}Ate" title="Até">
+        ${k === "notas" ? "" : `<select class="input" id="${t.id}Mostrar"><option value="dados">Só com dados</option><option value="todas">Todas as notas</option><option value="pend">Só pendentes</option></select>`}
+        <button class="btn sm" data-expbtn="limpar">Limpar filtros</button>${extra}
+      </div>
+      <div class="sub" id="${t.id}Info" style="margin-bottom:10px"></div>
+      <div id="${t.id}Resumo"></div>
+      <div id="${t.id}Lista"></div>`;
+    [t.id + "Q", t.id + "De", t.id + "Ate", t.id + "Cli", t.id + "Mostrar"].forEach(i => { const el = $(i); if (el) el.addEventListener(i.endsWith("Q") ? "input" : "change", () => renderExp(k)); });
+    sec.addEventListener("click", e => {
+      const a = e.target.closest("button[data-expacc]");
+      if (a){ semAberta[k] = semAberta[k] === a.dataset.expacc ? "" : a.dataset.expacc; return renderExp(k); }
+      const b = e.target.closest("button[data-expbtn]"); if (!b) return;
+      const op = b.dataset.expbtn;
+      if (op === "limpar"){ [t.id + "Q", t.id + "De", t.id + "Ate", t.id + "Cli"].forEach(i => $(i).value = ""); renderExp(k); }
+      else if (op === "novo") run(() => editarExp(null, "notas"));
+      else if (op === "importar") run(importarSeed);
+      else if (op === "excluir") run(() => excluirExp(expFiltrado("notas"), "as notas exibidas"));
+    });
+  });
+}
+
+function expFiltrado(k){
+  const t = EXP_TABS[k], q = $(t.id + "Q").value.trim().toLowerCase(), de = $(t.id + "De").value, ate = $(t.id + "Ate").value, cli = $(t.id + "Cli").value;
+  const mostrar = $(t.id + "Mostrar") ? $(t.id + "Mostrar").value : "todas", f = METRICA[k];
+  return expNotas.filter(n => {
+    if (cli && n.cliente !== cli) return false;
+    if (de && n.data < de) return false; if (ate && n.data > ate) return false;
+    if (q && !(`${n.nf} ${n.cliente} ${n.placa} ${n.mtr} ${n.obs} ${matTxt(n)}`.toLowerCase().includes(q))) return false;
+    if (f && mostrar === "dados" && f(n) == null) return false;
+    if (f && mostrar === "pend" && (f(n) != null || n.status === "Cancelada")) return false;
+    return true;
+  }).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : (a.nf < b.nf ? 1 : -1));
+}
+
+const kpi = (cls, l, v, s) => `<div class="kpi ${cls || ""}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s || "&nbsp;"}</div></div>`;
+function expKpis(k, lista){
+  const at = ativas(lista);
+  if (k === "notas"){
+    const kg = at.reduce((a, n) => a + n.peso, 0), vl = at.reduce((a, n) => a + (n.valor || 0), 0);
+    return kpi("ok", "Notas", fmtNum(at.length), lista.length - at.length ? (lista.length - at.length) + " cancelada(s) fora da soma" : "&nbsp;")
+      + kpi("", "Peso total", fmtNum(kg) + "<small>kg</small>", compacto(kg))
+      + kpi("vio", "Valor total", brl(vl), "&nbsp;")
+      + kpi("", "Clientes", fmtNum(new Set(at.map(n => n.cliente)).size), "&nbsp;");
+  }
+  const f = METRICA[k], vals = at.map(f).filter(v => v != null), m = media(vals);
+  if (k === "patio") return kpi("ok", "Medições", fmtNum(vals.length), "caminhões com entrada e saída") + kpi("", "Dwell médio", fmtHM(m), "&nbsp;") + kpi("vio", "Maior", fmtHM(vals.length ? Math.max(...vals) : null), "&nbsp;") + kpi("", "Menor", fmtHM(vals.length ? Math.min(...vals) : null), "&nbsp;");
+  if (k === "fat"){
+    const dentro = vals.filter(v => v <= META_LEAD).length;
+    return kpi("ok", "Medições", fmtNum(vals.length), "notas com pedido e emissão") + kpi(m != null && m <= META_LEAD ? "ok" : "", "Lead médio", fmtHM(m), "meta " + META_LEAD + " min")
+      + kpi("vio", "Dentro da meta", vals.length ? Math.round(dentro / vals.length * 100) + "%" : "—", fmtNum(dentro) + " de " + fmtNum(vals.length)) + kpi("", "Maior", fmtHM(vals.length ? Math.max(...vals) : null), "&nbsp;");
+  }
+  const com = at.filter(n => f(n) != null), mins = com.reduce((a, n) => a + f(n), 0), ton = com.reduce((a, n) => a + n.peso, 0) / 1000;
+  return kpi("ok", "Cargas medidas", fmtNum(vals.length), "&nbsp;") + kpi("", "Tempo médio", fmtHM(m), "&nbsp;") + kpi("vio", "Minutos por tonelada", ton ? nf2.format(mins / ton) : "—", "tempo total ÷ toneladas") + kpi("", "Maior", fmtHM(vals.length ? Math.max(...vals) : null), "&nbsp;");
+}
+
+function expResumoCliente(k, lista){
+  const at = ativas(lista), f = METRICA[k], g = {};
+  at.forEach(n => { (g[n.cliente || "—"] ||= []).push(n); });
+  const nomes = Object.keys(g).sort((a, b) => g[b].length - g[a].length); if (!nomes.length) return "";
+  const cab = k === "notas" ? "<th>Cliente</th><th class='num'>Notas</th><th class='num'>Peso (kg)</th><th class='num'>Valor</th>" : "<th>Cliente</th><th class='num'>Medições</th><th class='num'>Média</th><th class='num'>Maior</th>";
+  const lin = nomes.map(c => {
+    const l = g[c];
+    if (k === "notas") return `<tr><td>${esc(c)}</td><td class="num">${fmtNum(l.length)}</td><td class="num">${fmtNum(l.reduce((a, n) => a + n.peso, 0))}</td><td class="num">${brl(l.reduce((a, n) => a + (n.valor || 0), 0))}</td></tr>`;
+    const v = l.map(f).filter(x => x != null); if (!v.length) return "";
+    return `<tr><td>${esc(c)}</td><td class="num">${fmtNum(v.length)}</td><td class="num">${fmtHM(media(v))}</td><td class="num">${fmtHM(Math.max(...v))}</td></tr>`;
+  }).join("");
+  return `<div class="panel" style="margin-bottom:14px"><h3 style="margin:0 0 8px;font-size:14px">Resumo por cliente</h3><div class="table-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${lin}</tbody></table></div></div>`;
+}
+
+const exAc = (k, n) => `<td class="ac"><button class="btn xs" data-act="exp-edit" data-id="${esc(n.id)}" data-kind="${k}">Editar</button> <button class="btn xs danger" data-act="exp-del" data-id="${esc(n.id)}">Excluir</button></td>`;
+const stBadge = n => n.status === "Cancelada" ? ` <span class="badge b-err">Cancelada</span>` : "";
+function expLinhas(k, l){
+  const cab = {
+    notas: "<th>Data</th><th>NF</th><th>Cliente</th><th>Placa</th><th>MTR</th><th class='num'>Peso (kg)</th><th class='num'>Valor</th><th>Materiais / Observação</th><th></th>",
+    patio: "<th>Data</th><th>NF</th><th>Cliente</th><th>Placa</th><th>Entrada</th><th>Saída</th><th class='num'>Dwell</th><th></th>",
+    fat:   "<th>Data</th><th>NF</th><th>Cliente</th><th>Pedido da NF</th><th>NF emitida</th><th class='num'>Lead time</th><th>Meta</th><th></th>",
+    carga: "<th>Data</th><th>NF</th><th>Cliente</th><th>Placa</th><th>Início</th><th>Fim</th><th class='num'>Tempo</th><th class='num'>Peso (kg)</th><th></th>"
+  }[k];
+  const cols = { notas: 9, patio: 8, fat: 8, carga: 9 }[k];
+  const corpo = l.map(n => {
+    const base = `<td>${fmtCurto(n.data)}</td><td class="mono">${esc(n.nf)}${stBadge(n)}</td><td>${esc(n.cliente)}</td>`;
+    if (k === "notas") return `<tr class="${n.status === "Cancelada" ? "dim" : ""}">${base}<td class="mono">${esc(n.placa)}</td><td class="mono">${esc(n.mtr)}</td><td class="num">${fmtNum(n.peso)}</td><td class="num">${brl(n.valor)}</td><td>${matTxt(n) ? badgeMat(matTxt(n)) + " " : ""}<span class="muted">${esc(n.obs)}</span></td>${exAc(k, n)}</tr>`;
+    if (k === "patio") { const d = dwellMin(n); return `<tr>${base}<td class="mono">${esc(n.placa)}</td><td>${esc(n.ent) || "—"}</td><td>${esc(n.sai) || "—"}</td><td class="num">${fmtHM(d)}${d != null && hmin(n.sai) < hmin(n.ent) ? ' <span class="badge b-warn">virou o dia</span>' : ""}</td>${exAc(k, n)}</tr>`; }
+    if (k === "fat") { const d = leadMin(n), bad = d == null && n.ped && n.emi; return `<tr>${base}<td>${esc(n.ped) || "—"}</td><td>${esc(n.emi) || "—"}</td><td class="num">${bad ? '<span class="badge b-warn">horário inconsistente</span>' : fmtHM(d)}</td><td>${d == null ? "—" : d <= META_LEAD ? '<span class="badge b-ok">dentro</span>' : '<span class="badge b-err">acima</span>'}</td>${exAc(k, n)}</tr>`; }
+    return `<tr>${base}<td class="mono">${esc(n.placa)}</td><td>${esc(n.hi) || "—"}</td><td>${esc(n.hf) || "—"}</td><td class="num">${fmtHM(cargaMin(n))}</td><td class="num">${fmtNum(n.peso)}</td>${exAc(k, n)}</tr>`;
+  }).join("") || vazio(cols, "Sem registros.");
+  return `<div class="table-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${corpo}</tbody></table></div>`;
+}
+
+function renderExp(k){
+  const t = EXP_TABS[k]; if (!$(t.id + "Lista")) return;
+  $(t.id + "Erro").innerHTML = expErro ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso à coleção "${COL_EXP}".</b><div class="txt" style="margin-top:6px">${esc(expErro)}<br>No Firestore → Regras, acrescente dentro de <span class="mono">match /databases/{database}/documents</span>:<br><span class="mono">match /${COL_EXP}/{doc} { allow read, write: if request.auth != null; }</span></div></div>` : "";
+  // clientes do filtro
+  const sel = $(t.id + "Cli"), atual = sel.value, cls = [...new Set(expNotas.map(n => n.cliente).filter(Boolean))].sort();
+  if (sel.dataset.n !== cls.join("|")){ sel.innerHTML = `<option value="">Todos os clientes</option>` + cls.map(c => `<option>${esc(c)}</option>`).join(""); sel.value = cls.includes(atual) ? atual : ""; sel.dataset.n = cls.join("|"); }
+  const lista = expFiltrado(k);
+  $(t.id + "Kpis").innerHTML = expKpis(k, lista);
+  $(t.id + "Resumo").innerHTML = expResumoCliente(k, lista);
+  const grupos = new Map();
+  lista.forEach(n => { const s = n.data ? semanaIni(n.data) : "0000-00-00"; if (!grupos.has(s)) grupos.set(s, []); grupos.get(s).push(n); });
+  const chaves = [...grupos.keys()].sort((a, b) => a < b ? 1 : -1);
+  if (semAberta[k] === undefined && chaves.length) semAberta[k] = chaves[0];
+  if (semAberta[k] && !grupos.has(semAberta[k])) semAberta[k] = "";
+  const buscando = $(t.id + "Q").value.trim() !== "";
+  $(t.id + "Info").textContent = `${fmtNum(lista.length)} nota(s) em ${fmtNum(chaves.length)} semana(s) · mais recente em cima${buscando ? " · busca ativa: todas as semanas abertas" : " · clique na semana para abrir"}`;
+  const f = METRICA[k];
+  $(t.id + "Lista").innerHTML = chaves.map(s => {
+    const l = grupos.get(s), at = ativas(l), ab = buscando || s === semAberta[k];
+    const nome = s === "0000-00-00" ? "Sem data" : `Semana ${fmtCurto(s)} a ${fmtCurto(addDiasIso(s, 6))}`;
+    let resumo;
+    if (k === "notas") resumo = `${fmtNum(at.length)} nota(s) · ${fmtNum(at.reduce((a, n) => a + n.peso, 0))} kg · ${brl(at.reduce((a, n) => a + (n.valor || 0), 0))}`;
+    else { const v = at.map(f).filter(x => x != null); resumo = v.length ? `${fmtNum(v.length)} medição(ões) · média ${fmtHM(media(v))}` : "sem medições"; }
+    return `<div class="acc ${ab ? "open" : ""}"><button class="acc-h" data-expacc="${s}"><span class="seta">${ab ? "▾" : "▸"}</span><span class="d">${nome}</span><span class="w">sex a qui</span><span class="r">${resumo}</span></button>${ab ? `<div class="acc-b">${expLinhas(k, l)}</div>` : ""}</div>`;
+  }).join("") || `<div class="muted">${expNotas.length ? "Nenhum registro com esses filtros." : "Nenhuma nota lançada ainda. Use “+ Nova nota” ou “Importar planilha” na aba Notas / Coletas."}</div>`;
+}
+function renderExpTodas(){ Object.keys(EXP_TABS).forEach(renderExp); }
+
+/* ----- formulário ----- */
+const campo = (rot, html) => `<div><label>${rot}</label>${html}</div>`;
+const inp = (f, v, extra) => `<input class="input" data-mf="${f}" value="${esc(v == null ? "" : v)}" ${extra || ""}>`;
+const grid = c => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">${c}</div>`;
+const lerBR = v => { const t = String(v == null ? "" : v).trim(); return /^\d{1,3}(\.\d{3})+$/.test(t) ? Number(t.replace(/\./g, "")) : lerNum(t); };
+const matsParaTxt = l => (l || []).map(m => `${m.m} ${String(m.q).replace(".", ",")} ${m.u}`).join("; ");
+function txtParaMats(t){
+  return String(t || "").split(";").map(s => s.trim()).filter(Boolean).map(s => {
+    const r = s.match(/^(.+?)[\s:=]+([\d.,]+)\s*(kg|fardos?|bags?|bigbags?|un)?$/i); if (!r) return null;
+    const q = lerBR(r[2]), u = (r[3] || (q < 100 ? "fardos" : "kg")).toLowerCase().replace(/^fardo$/, "fardos");
+    return isNaN(q) ? null : { m: r[1].trim(), q, u };
+  });
+}
+async function editarExp(n, kind){
+  const novo = !n;
+  n = n || { id: "", data: diaKey(new Date()), cliente: "", placa: "", mtr: "", nf: "", peso: "", valor: null, mats: [], obs: "", ent: "", sai: "", ped: "", emi: "", hi: "", hf: "", status: "Ativa" };
+  const cli = [...new Set([...CLIENTES_EXP, ...expNotas.map(x => x.cliente)].filter(Boolean))].sort();
+  const cab = novo ? "" : `<div class="txt"><b>NF ${esc(n.nf)}</b> · ${esc(n.cliente)} · ${fmtIso(n.data)}</div>`;
+  let corpo = "";
+  if (kind === "notas") corpo = grid(
+      campo("Data", inp("data", n.data, 'type="date"')) + campo("NF", inp("nf", n.nf, 'inputmode="numeric"'))
+    + campo("Cliente", inp("cliente", n.cliente, 'list="dlCliExp"') + `<datalist id="dlCliExp">${cli.map(c => `<option value="${esc(c)}">`).join("")}</datalist>`) + campo("Placa", inp("placa", n.placa, 'style="text-transform:uppercase"'))
+    + campo("MTR", inp("mtr", n.mtr)) + campo("Peso (kg)", inp("peso", n.peso === "" ? "" : String(n.peso).replace(".", ","), 'inputmode="decimal"'))
+    + campo("Valor (R$)", inp("valor", n.valor == null ? "" : String(n.valor).replace(".", ","), 'inputmode="decimal"'))
+    + campo("Situação", `<select class="input" data-mf="status"><option ${n.status !== "Cancelada" ? "selected" : ""}>Ativa</option><option ${n.status === "Cancelada" ? "selected" : ""}>Cancelada</option></select>`))
+    + campo("Materiais (separe com ; — ex.: PET Cristal 11306 kg; PET Azul 40 fardos)", inp("mats", matsParaTxt(n.mats))) + campo("Observação", inp("obs", n.obs));
+  else if (kind === "patio") corpo = grid(campo("Entrada no pátio", inp("ent", n.ent, 'type="time"')) + campo("Saída do pátio", inp("sai", n.sai, 'type="time"')));
+  else if (kind === "fat") corpo = grid(campo("Pedido da NF", inp("ped", n.ped, 'type="time"')) + campo("NF emitida", inp("emi", n.emi, 'type="time"')));
+  else corpo = grid(campo("Início da carga", inp("hi", n.hi, 'type="time"')) + campo("Fim da carga", inp("hf", n.hf, 'type="time"')));
+  const r = await abrirModal({
+    titulo: novo ? "Nova nota / coleta" : "Editar · " + EXP_TABS[kind].h, ok: novo ? "Confirmar lançamento" : "Confirmar alteração", html: cab + corpo,
+    validar: d => {
+      if (kind !== "notas") return "";
+      if (!d.data) return "Informe a data.";
+      if (!String(d.nf).trim()) return "Informe o número da NF.";
+      if (!String(d.cliente).trim()) return "Informe o cliente.";
+      if (!(lerBR(d.peso) > 0)) return "Informe um peso válido.";
+      if (String(d.valor).trim() && isNaN(lerBR(d.valor))) return "Valor inválido.";
+      if (txtParaMats(d.mats).some(x => x === null)) return "Materiais: use o formato Material quantidade unidade, separados por ;";
+      return "";
+    }
+  });
+  if (!r) return;
+  if (kind === "notas"){
+    const nf = String(r.nf).replace(/\D/g, "").padStart(6, "0");
+    const dados = { data: r.data, cliente: r.cliente.trim(), placa: normPlaca(r.placa), mtr: r.mtr.trim(), nf, peso_kg: Math.round(lerBR(r.peso) * 100) / 100,
+      valor: String(r.valor).trim() ? Math.round(lerBR(r.valor) * 100) / 100 : null, materiais: txtParaMats(r.mats), obs: r.obs.trim(), status: r.status };
+    if (novo){
+      const id = "NF" + nf;
+      if (expNotas.some(x => x.id === id)){ aviso("A NF " + nf + " já está lançada.", true); return; }
+      await setDoc(doc(db, COL_EXP, id), { ...dados, entrada_patio: "", saida_patio: "", pedido_nf: "", nf_emitida: "", hr_inicio: "", hr_final: "", criado_em: serverTimestamp() });
+    } else await updateDoc(doc(db, COL_EXP, n.id), dados);
+  } else {
+    const m = { patio: { entrada_patio: r.ent, saida_patio: r.sai }, fat: { pedido_nf: r.ped, nf_emitida: r.emi }, carga: { hr_inicio: r.hi, hr_final: r.hf } }[kind];
+    await updateDoc(doc(db, COL_EXP, n.id), m);
+  }
+  aviso(novo ? "Nota lançada ✔" : "Alteração gravada ✔");
+}
+async function excluirExp(lista, rotulo){
+  lista = (lista || []).filter(Boolean); if (!lista.length) return;
+  const r = await abrirModal({ titulo: "Excluir " + rotulo, perigo: true, ok: "Excluir",
+    html: `<div class="txt">Serão excluídas <b>${fmtNum(lista.length)} nota(s)</b> com todos os dados de pátio, faturamento e carga.<br><span class="warn">Esta ação não pode ser desfeita.</span></div>` });
+  if (!r) return;
+  await gravarLote(lista, (b, n) => b.delete(doc(db, COL_EXP, n.id)));
+  aviso("Exclusão concluída ✔");
+}
+async function importarSeed(){
+  const novos = EXP_SEED.filter(s => !expNotas.some(n => n.id === "NF" + s.nf));
+  const r = await abrirModal({ titulo: "Importar planilha Base Diária", ok: "Importar",
+    html: `<div class="txt">A planilha tem <b>${fmtNum(EXP_SEED.length)} lançamentos</b> (NF 000154 a 000289, de 14/08 a 29/10/2026).<br><b>${fmtNum(novos.length)}</b> ainda não estão no sistema; ${fmtNum(EXP_SEED.length - novos.length)} já existem e serão mantidos como estão.</div>
+      <label class="ck"><input type="checkbox" data-mf="sobrescrever"> Sobrescrever também os que já existem</label>` });
+  if (!r) return;
+  const lista = r.sobrescrever ? EXP_SEED : novos;
+  await gravarLote(lista, (b, s) => b.set(doc(db, COL_EXP, "NF" + s.nf), { ...paraDoc(s), criado_em: serverTimestamp(), origem: "planilha Base Diária" }));
+  aviso("Importadas " + fmtNum(lista.length) + " nota(s) ✔");
+}
+
 /* ---------- navegação e eventos ---------- */
+montarViewsExp();
 function irPara(v){
   viewAtual = v;
   document.querySelectorAll(".view").forEach(s => s.classList.toggle("on", s.id === "v-" + v));
@@ -1514,6 +1771,12 @@ function iniciarListeners(){
     renderCarregamentos();
   }, err => { console.error("Erro carregamentos_info:", err); infoErro = err && err.message ? err.message : String(err); renderCarregamentos(); }));
 
+  unsubs.push(onSnapshot(collection(db, COL_EXP), snap => {
+    expNotas = []; expErro = "";
+    snap.forEach(dc => expNotas.push(paraLocal(dc.id, dc.data())));
+    renderExpTodas();
+  }, err => { console.error("Erro " + COL_EXP + ":", err); expErro = err && err.message ? err.message : String(err); renderExpTodas(); }));
+
   unsubs.push(onSnapshot(query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500)), snap => {
     logs = [];
     snap.forEach(doc => { const d = doc.data(); logs.push({ id: doc.id, ts: toDate(d.criado_em), tipo: d.operacao_tentada || "EVENTO", material: d.material || "", peso: Number(d.peso_kg || 0), epc: d.epc || "", motivo: d.motivo_bloqueio || "" }); });
@@ -1545,7 +1808,7 @@ onAuthStateChanged(auth, user => {
     iniciarListeners(); irPara(viewAtual);
   } else {
     unsubs.forEach(u => u()); unsubs = [];
-    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {};
+    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = [];
     $("telaErp").style.display = "none"; $("telaLogin").style.display = "flex";
     $("senhaInput").value = "";
   }
