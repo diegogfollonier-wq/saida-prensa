@@ -106,6 +106,36 @@ input,select{font:inherit;color:var(--txt)}
 .matcard .q{font-size:15px;color:var(--txt2);font-weight:600}.matcard .q b{font-size:26px;color:var(--txt);margin-right:4px}
 .matcard .k{font-size:18px;font-weight:800;color:var(--blue)}
 .chist{margin-bottom:14px}.chist h4{margin:10px 0 6px;font-size:12.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.acc{border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:10px;overflow:hidden}
+.acc.open{border-color:var(--blue)}
+.acc-h{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:0;color:var(--txt);padding:14px 16px;font-size:15px;cursor:pointer}
+.acc-h:hover{background:rgba(94,170,236,.08)}
+.acc-h .seta{color:var(--blue);font-size:16px;width:16px}
+.acc-h .d{font-weight:700;font-size:16px}.acc-h .w{color:var(--muted);font-weight:600;font-size:13px}
+.acc-h .r{margin-left:auto;color:var(--txt2);font-size:13.5px;font-weight:600;text-align:right}
+.acc-b{padding:6px 16px 16px;border-top:1px solid var(--line)}
+.btn.danger{background:rgba(229,115,107,.16);border-color:rgba(229,115,107,.5);color:#F5B3AE}
+.btn.danger:hover{background:rgba(229,115,107,.32)}
+.btn.xs{padding:4px 9px;font-size:12px}
+td.ac{white-space:nowrap;text-align:right}
+.conf-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.conf-row .conf-abrir{flex:1;text-align:left;background:transparent;border:1px solid var(--line);border-radius:10px;color:var(--txt2);padding:8px 12px;font-size:13.5px;cursor:pointer}
+.conf-row .conf-abrir:hover{border-color:var(--blue)}
+.conf-row.on .conf-abrir{border-color:var(--blue);background:rgba(94,170,236,.16);color:#fff}
+.conf-row .conf-abrir b{color:var(--txt)}
+.modal-bg{position:fixed;inset:0;background:rgba(3,12,18,.72);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--card2);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;width:min(460px,100%);max-height:90vh;overflow:auto}
+.modal h3{margin:0 0 10px;font-size:18px}
+.modal label{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.6px}
+.modal .input{width:100%}
+.modal .txt{font-size:14.5px;color:var(--txt2);line-height:1.5}
+.modal .warn{color:#F5B3AE;font-weight:700}
+.modal label.ck{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14px;color:var(--txt);text-transform:none;letter-spacing:0;font-weight:600}
+.modal label.ck input{width:auto}
+.m-senha{margin-top:14px;border-top:1px solid var(--line);padding-top:2px}
+.m-erro{color:var(--err);font-weight:700;min-height:20px;font-size:13.5px;margin-top:6px}
+.m-acoes{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 18px;font-weight:700;z-index:300;box-shadow:var(--shadow)}
 .dia-item{text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--txt);border-radius:12px;padding:11px 13px;display:block;width:100%}
 .dia-item:hover{border-color:var(--blue)}
 .dia-item.on{border-color:var(--blue);background:rgba(94,170,236,.16)}
@@ -355,6 +385,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
       <div class="toolbar">
         <input class="input grow" id="fEst" placeholder="Filtrar por material ou etiqueta (EPC)…">
         <select class="input" id="fEstMat"><option value="">Todos os materiais</option></select>
+        <button class="btn sm danger" id="btnEstExcluir">Excluir fardos exibidos</button>
       </div>
       <div class="table-wrap"><table>
         <thead><tr>
@@ -362,6 +393,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
           <th data-sort="epc">Etiqueta (EPC)<span class="ar"></span></th>
           <th class="num" data-sort="peso">Peso (kg)<span class="ar"></span></th>
           <th data-sort="ts">Saída da Prensa<span class="ar"></span></th>
+          <th></th>
         </tr></thead>
         <tbody id="tbEst"></tbody>
       </table></div>
@@ -375,12 +407,13 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
         <input class="input" type="date" id="fHistDe" title="De">
         <input class="input" type="date" id="fHistAte" title="Até">
         <button class="btn sm" id="btnHistLimpar">Limpar filtros</button>
+        <button class="btn sm danger" id="btnHistExcluir">Excluir registros exibidos</button>
       </div>
       <div class="split">
         <div class="panel"><h3 class="t-in">Saída da Prensa <small id="totIn"></small></h3>
-          <div class="table-wrap" style="border:0;max-height:62vh"><table><thead><tr><th>Material</th><th class="num">Peso (kg)</th><th>Data e hora</th></tr></thead><tbody id="tbIn"></tbody></table></div></div>
+          <div class="table-wrap" style="border:0;max-height:62vh"><table><thead><tr><th>Material</th><th class="num">Peso (kg)</th><th>Data e hora</th><th></th></tr></thead><tbody id="tbIn"></tbody></table></div></div>
         <div class="panel"><h3 class="t-out">Saída de Carregamento <small id="totOut"></small></h3>
-          <div class="table-wrap" style="border:0;max-height:62vh"><table><thead><tr><th>Material</th><th class="num">Peso (kg)</th><th>Data e hora</th></tr></thead><tbody id="tbOut"></tbody></table></div></div>
+          <div class="table-wrap" style="border:0;max-height:62vh"><table><thead><tr><th>Material</th><th class="num">Peso (kg)</th><th>Data e hora</th><th></th></tr></thead><tbody id="tbOut"></tbody></table></div></div>
       </div>
     </section>
 
@@ -391,9 +424,10 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
         <input class="input grow" id="fLog" placeholder="Buscar por etiqueta, material ou descrição…">
         <select class="input" id="fLogTipo"><option value="">Todos os eventos</option><option value="__erros">Só bloqueios / erros</option></select>
         <span class="chip" id="chipLog"></span>
+        <button class="btn sm danger" id="btnLogExcluir">Excluir registros exibidos</button>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Data e hora</th><th>Evento / ação</th><th>Material</th><th class="num">Peso (kg)</th><th>Etiqueta / ID</th><th>Descrição</th></tr></thead>
+        <thead><tr><th>Data e hora</th><th>Evento / ação</th><th>Material</th><th class="num">Peso (kg)</th><th>Etiqueta / ID</th><th>Descrição</th><th></th></tr></thead>
         <tbody id="tbLog"></tbody>
       </table></div>
     </section>
@@ -401,36 +435,29 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
     <!-- ===== CARREGAMENTOS ===== -->
     <section class="view" id="v-carregamentos">
       <div class="page-head"><div><h1>Carregamentos</h1><p>Saídas da expedição por data e por carga, em ordem de horário. Cliente e placa são informados aqui no sistema.</p></div></div>
-      <div class="car-layout">
-        <aside class="panel">
-          <h3>Datas com carregamento</h3>
-          <div class="sub" id="carDiasInfo"></div>
-          <div class="dias-list" id="listaDias"></div>
-        </aside>
-        <div class="car-det" id="carDetalhe"></div>
-      </div>
+      <div class="sub" id="carDiasInfo" style="margin-bottom:10px"></div>
+      <div id="carDetalhe"></div>
     </section>
 
     <!-- ===== SAÍDA DA PRENSA ===== -->
     <section class="view" id="v-prensa">
       <div class="page-head"><div><h1>Saída da Prensa</h1><p>Fardos produzidos na Prensa por data, em ordem de horário, com totais e produção por hora.</p></div></div>
-      <div class="car-layout">
-        <aside class="panel">
-          <h3>Datas com produção</h3>
-          <div class="sub" id="prDiasInfo"></div>
-          <div class="dias-list" id="listaDiasPrensa"></div>
-        </aside>
-        <div class="car-det" id="prDetalhe"></div>
-      </div>
+      <div class="sub" id="prDiasInfo" style="margin-bottom:10px"></div>
+      <div id="prDetalhe"></div>
     </section>
 
     <!-- ===== CONFERÊNCIA ===== -->
     <section class="view" id="v-conferencia">
       <div class="page-head"><div><h1>Conferência de estoque</h1><p>Compara a leitura física em massa com o estoque do sistema.</p></div></div>
-      <div class="chist" id="confHist"></div>
+      <div class="panel" style="padding:12px 14px;margin-bottom:14px">
+        <h3 style="margin:0 0 4px">Conferências por dia</h3>
+        <div class="sub" id="confHistInfo" style="margin-bottom:10px"></div>
+        <div id="confHist" style="max-height:50vh;overflow:auto"></div>
+      </div>
       <div class="toolbar">
-        <select class="input" id="selConf" style="min-width:300px;flex:1 1 300px;max-width:520px"></select>
+        <select class="input hide" id="selConf"></select>
         <span class="chip" id="infoConf">Aguardando leituras…</span>
+        <button class="btn sm danger" id="btnConfExcluir">Excluir esta conferência</button>
       </div>
       <div class="tabs" id="confTabs">
         <button data-ct="resumo" class="on">Resumo por material</button>
@@ -450,9 +477,9 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
           <div class="table-wrap" style="border:0"><table><thead><tr><th>Material</th><th class="num">Lidos</th><th class="num">No sistema</th><th class="num">Diferença</th><th class="num">Peso conferido</th></tr></thead><tbody id="tbConfSub"></tbody></table></div></div>
         <div class="panel ctp hide" data-ct="ok"><h3 style="margin-bottom:12px;color:var(--ok)">Fardos lidos com correspondência no estoque</h3>
           <div class="chips" id="confMatChips"></div>
-          <div class="table-wrap" style="border:0;max-height:58vh"><table><thead><tr><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th>Status</th></tr></thead><tbody id="tbConfOk"></tbody></table></div></div>
+          <div class="table-wrap" style="border:0;max-height:58vh"><table><thead><tr><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th>Status</th><th></th></tr></thead><tbody id="tbConfOk"></tbody></table></div></div>
         <div class="panel alert ctp hide" data-ct="sem"><h3 style="margin-bottom:12px;color:var(--err)">Fardos lidos FORA do estoque (conferir fisicamente)</h3>
-          <div class="table-wrap" style="border:0;max-height:58vh"><table><thead><tr><th>Etiqueta (EPC)</th><th>Situação</th><th>Observação</th></tr></thead><tbody id="tbConfSem"></tbody></table></div></div>
+          <div class="table-wrap" style="border:0;max-height:58vh"><table><thead><tr><th>Etiqueta (EPC)</th><th>Situação</th><th>Observação</th><th></th></tr></thead><tbody id="tbConfSem"></tbody></table></div></div>
         <div class="panel alert-warn ctp hide" data-ct="rep" id="pnRep"><h3 style="margin-bottom:12px;color:var(--warn)">Etiquetas repetidas na ronda</h3>
           <div class="table-wrap" style="border:0;max-height:58vh"><table><thead><tr><th>Etiqueta (EPC)</th><th>Material</th><th class="num">Releituras</th><th>Situação</th></tr></thead><tbody id="tbConfRep"></tbody></table></div></div>
       </div>
@@ -462,10 +489,19 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 </div>
 <div id="tip"></div>
 
+<div class="modal-bg hide" id="modalBg"><div class="modal" role="dialog" aria-modal="true">
+  <h3 id="mTitulo"></h3>
+  <div id="mCorpo"></div>
+  <div class="m-senha"><label>Confirma alteração? Digite a senha para confirmar</label>
+    <input class="input" id="mSenha" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Senha"></div>
+  <div class="m-erro" id="mErro"></div>
+  <div class="m-acoes"><button class="btn" id="mCancel">Cancelar</button><button class="btn pri" id="mOk">Confirmar</button></div>
+</div></div>
+<div id="toast" class="hide"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, query, orderBy, limit, onSnapshot, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, query, orderBy, limit, onSnapshot, doc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC0un-r4Qi-zpkvmkJitmYfVg4FFSuBhUA",
@@ -493,9 +529,12 @@ let estoque = [];          // {epc, material, peso, ts}
 let estoqueMapa = {};      // EPC -> {material, peso_kg}
 let movs = [];             // {op, material, peso, ts}
 let logs = [];             // {ts, tipo, material, peso, epc, motivo}
+let estFiltrado = [], histFiltrado = [], logFiltrado = [];
 let confs = [];            // conferências
 let sortEst = { k:"ts", dir:-1 };
 let diasGrafico = 14;
+let confIdsAnteriores = new Set();
+let diaConf = "";
 let ultimaConfId;          // id da conferência mais recente já exibida
 let avisoTimer;
 let viewAtual = "visao";
@@ -788,6 +827,7 @@ function renderEstoque(){
     return (typeof va === "string" ? va.localeCompare(vb, "pt-BR") : va - vb) * d;
   });
   document.querySelectorAll("#v-estoque th[data-sort]").forEach(th => th.querySelector(".ar").textContent = th.dataset.sort === k ? (d > 0 ? "▲" : "▼") : "");
+  estFiltrado = lista;
   const peso = lista.reduce((a, e) => a + e.peso, 0);
   const filtrando = Boolean(termo || mat);
   $("teQtd").textContent = fmtNum(lista.length); $("tePeso").textContent = nf2.format(peso);
@@ -801,8 +841,8 @@ function renderEstoque(){
     return `<div class="te-m ${i.qtd ? "" : "zero"}"><div class="n">${esc(m)}</div><div class="q">${fmtNum(i.qtd)}<small>fardo(s)</small></div><div class="p">${fmtKg(i.peso)}</div></div>`; }).join("")
     : `<div class="muted" style="grid-column:1/-1;text-align:center">Nenhum fardo no filtro.</div>`;
   const MAX = 1500;
-  $("tbEst").innerHTML = lista.length ? lista.slice(0, MAX).map(e => `<tr><td>${badgeMat(e.material)}</td><td class="mono" style="color:var(--blue)">${esc(e.epc)}</td><td class="num"><b>${nf2.format(e.peso)}</b></td><td>${fmtData(e.ts)}</td></tr>`).join("")
-    + (lista.length > MAX ? vazio(4, `Mostrando ${MAX} de ${lista.length}. Use o filtro para refinar.`) : "") : vazio(4, "Nenhum fardo encontrado.");
+  $("tbEst").innerHTML = lista.length ? lista.slice(0, MAX).map(e => `<tr><td>${badgeMat(e.material)}</td><td class="mono" style="color:var(--blue)">${esc(e.epc)}</td><td class="num"><b>${nf2.format(e.peso)}</b></td><td>${fmtData(e.ts)}</td><td class="ac"><button class="btn xs" data-act="est-edit" data-id="${esc(e.id)}">Editar</button> <button class="btn xs danger" data-act="est-del" data-id="${esc(e.id)}">Excluir</button></td></tr>`).join("")
+    + (lista.length > MAX ? vazio(5, `Mostrando ${MAX} de ${lista.length}. Use o filtro para refinar.`) : "") : vazio(5, "Nenhum fardo encontrado.");
 }
 
 function renderHistorico(){
@@ -810,8 +850,9 @@ function renderHistorico(){
   const f = movs.filter(m => (!mat || m.material === mat) && (!de || (m.ts && diaKey(m.ts) >= de)) && (!ate || (m.ts && diaKey(m.ts) <= ate)));
   const lin = op => {
     const l = f.filter(m => m.op === op), kg = l.reduce((a, m) => a + m.peso, 0);
-    return { l, kg, html: l.length ? l.map(m => `<tr><td>${badgeMat(m.material || "—")}</td><td class="num"><b>${nf2.format(m.peso)}</b></td><td>${fmtData(m.ts)}</td></tr>`).join("") + `<tr class="total"><td>Total</td><td class="num">${nf2.format(kg)}</td><td>${fmtNum(l.length)} fardo(s)</td></tr>` : vazio(3, "Nenhum registro.") };
+    return { l, kg, html: l.length ? l.map(m => `<tr><td>${badgeMat(m.material || "—")}</td><td class="num"><b>${nf2.format(m.peso)}</b></td><td>${fmtData(m.ts)}</td><td class="ac"><button class="btn xs" data-act="mov-edit" data-id="${esc(m.id)}">Editar</button> <button class="btn xs danger" data-act="mov-del" data-id="${esc(m.id)}">Excluir</button></td></tr>`).join("") + `<tr class="total"><td>Total</td><td class="num">${nf2.format(kg)}</td><td>${fmtNum(l.length)} fardo(s)</td><td></td></tr>` : vazio(4, "Nenhum registro.") };
   };
+  histFiltrado = f;
   const e = lin("PRENSA"), s = lin("CARREGAMENTO");
   $("tbIn").innerHTML = e.html; $("tbOut").innerHTML = s.html;
   $("totIn").textContent = `${fmtNum(e.l.length)} fardo(s) · ${fmtKg(e.kg)}`;
@@ -822,26 +863,32 @@ function renderLog(){
   const termo = $("fLog").value.trim().toLowerCase(), tipo = $("fLogTipo").value;
   const f = logs.filter(l => (!tipo || (tipo === "__erros" ? !ehNormal(l.tipo) : l.tipo === tipo))
     && (!termo || [l.epc, l.material, l.motivo, l.tipo].join(" ").toLowerCase().includes(termo)));
+  logFiltrado = f;
   $("chipLog").textContent = `${fmtNum(f.length)} de ${fmtNum(logs.length)} evento(s)`;
-  $("tbLog").innerHTML = f.length ? f.map(l => `<tr><td>${fmtData(l.ts)}</td><td><span class="badge ${classeLog(l.tipo)}">${esc(l.tipo)}</span></td><td>${esc(l.material || "—")}</td><td class="num">${l.peso ? nf2.format(l.peso) : "—"}</td><td class="mono" style="color:var(--blue)">${esc(l.epc || "—")}</td><td class="wrap">${esc(l.motivo || "—")}</td></tr>`).join("") : vazio(6, "Nenhum registro na linha do tempo.");
+  $("tbLog").innerHTML = f.length ? f.map(l => `<tr><td>${fmtData(l.ts)}</td><td><span class="badge ${classeLog(l.tipo)}">${esc(l.tipo)}</span></td><td>${esc(l.material || "—")}</td><td class="num">${l.peso ? nf2.format(l.peso) : "—"}</td><td class="mono" style="color:var(--blue)">${esc(l.epc || "—")}</td><td class="wrap">${esc(l.motivo || "—")}</td><td class="ac"><button class="btn xs danger" data-act="log-del" data-id="${esc(l.id)}">Excluir</button></td></tr>`).join("") : vazio(7, "Nenhum registro na linha do tempo.");
   const sel = $("fLogTipo"), atual = sel.value;
   const tipos = [...new Set(logs.map(l => l.tipo))].sort();
   sel.innerHTML = `<option value="">Todos os eventos</option><option value="__erros">Só bloqueios / erros</option>` + tipos.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
   sel.value = (atual === "__erros" || tipos.includes(atual)) ? atual : "";
 }
 
+const accHtml = (kind, dia, resumo, ab, corpo) => `<div class="acc ${ab ? "open" : ""}"><button class="acc-h" data-acc="${kind}" data-dia="${dia}"><span class="seta">${ab ? "▾" : "▸"}</span><span class="d">${dia === "0000-00-00" ? "Sem data" : fmtDiaKey(dia)}</span><span class="w">${dia === "0000-00-00" ? "" : esc(diaSemana(dia))}</span><span class="r">${resumo}</span></button>${ab ? `<div class="acc-b">${corpo}</div>` : ""}</div>`;
 function renderConfHist(){
   const box = $("confHist"), sel = Number($("selConf").value || 0);
-  if (!confs.length){ box.innerHTML = ""; return; }
+  if (!confs.length){ box.innerHTML = `<div class="muted">Nenhuma conferência guardada.</div>`; $("confHistInfo").textContent = ""; return; }
   const grupos = new Map();
   confs.forEach((c, i) => { const dt = toDate(c.criado_em); const k = dt ? diaKey(dt) : "0000-00-00"; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(i); });
-  box.innerHTML = `<div class="sub" style="margin-bottom:4px">Conferências guardadas: ${confs.length} · clique em um horário para abrir</div>` + [...grupos.keys()].map(k => {
-    const idx = grupos.get(k);
-    return `<h4>${k === "0000-00-00" ? "Sem data" : fmtDiaKey(k) + " · " + esc(diaSemana(k))} · ${idx.length} conferência(s)</h4><div class="chips" style="margin-bottom:4px">` + idx.map(i => {
+  const chaves = [...grupos.keys()].sort((x, y) => x < y ? 1 : -1);
+  if (diaConf && !grupos.has(diaConf)) diaConf = "";
+  $("confHistInfo").textContent = `${fmtNum(confs.length)} conferência(s) em ${fmtNum(chaves.length)} dia(s) · mais recente em cima · clique no dia para abrir`;
+  box.innerHTML = chaves.map(k => {
+    const idx = grupos.get(k), ab = k === diaConf;
+    const corpo = idx.map(i => {
       const c = confs[i], dt = toDate(c.criado_em), hora = dt ? fmtHora(dt) : "—";
       const qtd = Array.isArray(c.itens_lidos) ? normalizarItens(c.itens_lidos).itens.length : (c.total_lidos || 0);
-      return `<button data-ci="${i}" class="${i === sel ? "on" : ""}">${hora}${c.tipo_conferencia ? " · " + esc(c.tipo_conferencia) : ""} <b>${fmtNum(qtd)} fardo(s)</b></button>`;
-    }).join("") + `</div>`;
+      return `<div class="conf-row ${i === sel ? "on" : ""}"><button class="conf-abrir" data-ci="${i}"><b>${hora}</b>${c.tipo_conferencia ? " · " + esc(c.tipo_conferencia) : ""} · ${fmtNum(qtd)} fardo(s)</button><button class="btn xs danger" data-act="conf-del" data-cj="${i}">Excluir</button></div>`;
+    }).join("") + `<div style="margin-top:10px;text-align:right"><button class="btn xs danger" data-act="conf-dia-del" data-dia="${k}">Excluir todas as conferências deste dia</button></div>`;
+    return accHtml("conf", k, `${idx.length} conferência(s)`, ab, corpo);
   }).join("");
 }
 function renderConferencia(){
@@ -851,7 +898,7 @@ function renderConferencia(){
     $("infoConf").textContent = "Nenhuma conferência em massa enviada ainda.";
     ["cLidos","cOk","cSem"].forEach(i => $(i).textContent = "0"); $("cPeso").innerHTML = "0<small>kg</small>";
     $("tbConfSub").innerHTML = vazio(5, "Nenhuma leitura em massa recebida.");
-    $("tbConfOk").innerHTML = vazio(4, "—"); $("tbConfSem").innerHTML = vazio(3, "—");
+    $("tbConfOk").innerHTML = vazio(5, "—"); $("tbConfSem").innerHTML = vazio(4, "—");
     atualizarTabsConf(0, 0, 0); $("confMatChips").innerHTML = ""; return;
   }
   const extra = [];
@@ -880,11 +927,11 @@ function renderConferencia(){
     + listaMateriais(Object.keys(contOk)).filter(m => contOk[m]).map(m => `<button data-m="${esc(m)}" class="${confMat === m ? "on" : ""}">${esc(m)} <b>${contOk[m]}</b></button>`).join("") : "";
   const okVis = confMat ? cf.ok.filter(i => i.mat === confMat) : cf.ok;
   const pesoVis = okVis.reduce((a, i) => a + i.peso, 0);
-  $("tbConfOk").innerHTML = okVis.length ? okVis.map(i => `<tr><td>${badgeMat(i.mat)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td><span class="badge b-ok">${i.auditoria ? "NO ESTOQUE" : "Conferido no estoque"}</span></td></tr>`).join("")
-    + `<tr class="total"><td colspan="2">Subtotal${confMat ? " — " + esc(confMat) : ""}: ${fmtNum(okVis.length)} fardo(s)</td><td class="num">${nf2.format(pesoVis)}</td><td></td></tr>` : vazio(4, "Nenhum fardo correspondente encontrado.");
-  $("tbConfSem").innerHTML = cf.sem.length ? cf.sem.map(i => `<tr><td class="mono" style="color:var(--err)">${esc(i.epc)}</td><td><span class="badge b-err">${i.auditoria ? "FORA DO ESTOQUE" : "Sem correspondência"}</span></td><td class="wrap">Fardo lido fisicamente, mas não consta no estoque atual do sistema${i.mat ? " · " + esc(i.mat) : ""}${i.peso ? " · " + nf2.format(i.peso) + " kg" : ""}. Conferir fisicamente.</td></tr>`).join("")
-    + `<tr class="total" style="color:var(--err)"><td colspan="3">Subtotal sem correspondência: ${fmtNum(cf.sem.length)} fardo(s)</td></tr>`
-    : `<tr class="empty"><td colspan="3" style="color:var(--ok);font-weight:700">Nenhuma divergência: todos os fardos lidos constam no estoque.</td></tr>`;
+  $("tbConfOk").innerHTML = okVis.length ? okVis.map(i => `<tr><td>${badgeMat(i.mat)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td><span class="badge b-ok">${i.auditoria ? "NO ESTOQUE" : "Conferido no estoque"}</span></td><td class="ac"><button class="btn xs danger" data-act="conf-rm" data-epc="${esc(i.epc)}">Remover</button></td></tr>`).join("")
+    + `<tr class="total"><td colspan="2">Subtotal${confMat ? " — " + esc(confMat) : ""}: ${fmtNum(okVis.length)} fardo(s)</td><td class="num">${nf2.format(pesoVis)}</td><td></td><td></td></tr>` : vazio(5, "Nenhum fardo correspondente encontrado.");
+  $("tbConfSem").innerHTML = cf.sem.length ? cf.sem.map(i => `<tr><td class="mono" style="color:var(--err)">${esc(i.epc)}</td><td><span class="badge b-err">${i.auditoria ? "FORA DO ESTOQUE" : "Sem correspondência"}</span></td><td class="wrap">Fardo lido fisicamente, mas não consta no estoque atual do sistema${i.mat ? " · " + esc(i.mat) : ""}${i.peso ? " · " + nf2.format(i.peso) + " kg" : ""}. Conferir fisicamente.</td><td class="ac"><button class="btn xs danger" data-act="conf-rm" data-epc="${esc(i.epc)}">Remover</button></td></tr>`).join("")
+    + `<tr class="total" style="color:var(--err)"><td colspan="4">Subtotal sem correspondência: ${fmtNum(cf.sem.length)} fardo(s)</td></tr>`
+    : `<tr class="empty"><td colspan="4" style="color:var(--ok);font-weight:700">Nenhuma divergência: todos os fardos lidos constam no estoque.</td></tr>`;
 
   // contadores nas abas (setores)
   atualizarTabsConf(cf.ok.length, cf.sem.length, cf.repetidos.length);
@@ -894,7 +941,7 @@ function renderConferencia(){
 function limparConferencia(){
   ["cLidos","cOk","cSem"].forEach(i => $(i).textContent = "0"); $("cPeso").innerHTML = "0<small>kg</small>";
   $("tbConfSub").innerHTML = vazio(5, "Carregando nova conferência…");
-  $("tbConfOk").innerHTML = vazio(4, "—"); $("tbConfSem").innerHTML = vazio(3, "—");
+  $("tbConfOk").innerHTML = vazio(5, "—"); $("tbConfSem").innerHTML = vazio(4, "—");
   $("infoConf").textContent = "";
   atualizarTabsConf(0, 0, 0);
 }
@@ -979,23 +1026,7 @@ function temposCarga(c){
   return { iv, dur, medio: n > 0 ? dur / n : null, maxI, maxK, espera };
 }
 
-function renderCarregamentos(){
-  const ae = document.activeElement, det = $("carDetalhe");
-  if (ae && det.contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT")){ renderPendente = true; return; }   // não atrapalha quem está digitando
-  renderPendente = false;
-  const dias = montarCargas(), lista = $("listaDias");
-  if (!dias.length){
-    $("carDiasInfo").textContent = "";
-    lista.innerHTML = `<div class="muted" style="font-size:13.5px;padding:6px 2px">Nenhum carregamento registrado.</div>`;
-    det.innerHTML = `<div class="panel"><div class="vazio-box">Nenhum carregamento encontrado. Quando houver saídas confirmadas no Carregamento do coletor, elas aparecem aqui por data.</div></div>`;
-    return;
-  }
-  if (!dias.some(d => d.dia === diaCarga)) diaCarga = dias[0].dia;
-  const totCargas = dias.reduce((a, d) => a + d.cargas.length, 0);
-  $("carDiasInfo").textContent = `${dias.length} data(s) · ${totCargas} carregamento(s)`;
-  lista.innerHTML = dias.map(d => `<button class="dia-item ${d.dia === diaCarga ? "on" : ""}" data-dia="${d.dia}"><div><span class="d">${fmtDiaKey(d.dia)}</span><span class="w">${esc(diaSemana(d.dia))}</span></div><div class="m"><span>${d.cargas.length} carga(s) · ${fmtNum(d.qtd)} fardo(s)</span><b>${pesoCurto(d.peso)}</b></div></button>`).join("");
-
-  const dia = dias.find(d => d.dia === diaCarga);
+function detalheCarga(dia, novo, antigo){
   const mats = {}; dia.cargas.forEach(c => Object.keys(c.mats).forEach(m => { (mats[m] ||= { qtd: 0, peso: 0 }); mats[m].qtd += c.mats[m].qtd; mats[m].peso += c.mats[m].peso; }));
   const n = dia.cargas.length;
   let somaDur = 0, somaInt = 0; dia.cargas.forEach(c => { if (c.qtd > 1){ somaDur += c.fim - c.ini; somaInt += c.qtd - 1; } });
@@ -1009,7 +1040,7 @@ function renderCarregamentos(){
     const opts = `<option value="">Selecionar cliente…</option>` + nomes.map(nm => `<option value="${esc(nm)}" ${nm === dc.cliente ? "selected" : ""}>${esc(nm)}</option>`).join("");
     const titulo = `Carregamento ${idx + 1} de ${n}` + (dc.salvo.cliente ? ` · ${esc(dc.salvo.cliente)}` : "") + (dc.salvo.placa ? ` · ${esc(fmtPlaca(dc.salvo.placa))}` : "");
     const ritmo = (t.dur >= 60000 && c.qtd > 1) ? fmtNum(c.qtd / (t.dur / 3600000)) : "—";
-    const linhas = c.itens.map((i, k) => `<tr><td class="num" style="color:var(--muted)">${k + 1}</td><td>${fmtHora(i.ts)}</td><td>${badgeMat(i.material)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td class="num" ${k === t.maxK ? 'style="color:var(--warn);font-weight:700"' : ""}>${t.iv[k] === null ? (t.espera === null ? "início" : fmtMS(t.espera) + ' <small style="color:var(--muted)">até o 1º bip</small>') : fmtMS(t.iv[k])}</td></tr>`).join("");
+    const linhas = c.itens.map((i, k) => `<tr><td class="num" style="color:var(--muted)">${k + 1}</td><td>${fmtHora(i.ts)}</td><td>${badgeMat(i.material)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td class="num" ${k === t.maxK ? 'style="color:var(--warn);font-weight:700"' : ""}>${t.iv[k] === null ? (t.espera === null ? "início" : fmtMS(t.espera) + ' <small style="color:var(--muted)">até o 1º bip</small>') : fmtMS(t.iv[k])}</td><td class="ac"><button class="btn xs" data-act="mov-edit" data-id="${esc(i.id)}">Editar</button> <button class="btn xs danger" data-act="mov-del" data-id="${esc(i.id)}">Excluir</button></td></tr>`).join("");
     return `<div class="panel carga">
       <div class="carga-h" data-toggle="${idA}">
         <div><div class="carga-t">${titulo}<i>${fech ? "▸ toque para abrir" : "▾ toque para recolher"}</i></div>
@@ -1020,6 +1051,8 @@ function renderCarregamentos(){
         <label>Cliente<select class="input" data-f="cliente" data-id="${idA}">${opts}</select></label>
         <label>Placa do caminhão<input class="input placa" data-f="placa" data-id="${idA}" placeholder="ABC1D23" autocomplete="off" value="${esc(dc.placa)}"></label>
         <button class="btn sm ${dc.sujo ? "pri" : ""}" data-salvar="${idA}">Salvar</button>
+        <button class="btn sm" data-act="carga-data" data-id="${idA}">Alterar data</button>
+        <button class="btn sm danger" data-act="carga-del" data-id="${idA}">Excluir carregamento</button>
         <span class="st" style="color:${(statusCarga[c.id] || "").startsWith("Salvo") ? "var(--ok)" : "var(--err)"}">${esc(statusCarga[c.id] || "")}</span>
       </div>
       <div class="tempos">
@@ -1035,16 +1068,16 @@ function renderCarregamentos(){
       <div class="carga-corpo ${fech ? "hide" : ""}">
         <h4>Totais por material</h4>${tabelaMats(c.mats, c.peso)}
         <h4>Fardos carregados, em ordem de horário</h4>
-        <div class="table-wrap" style="max-height:52vh"><table><thead><tr><th class="num">#</th><th>Hora</th><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th class="num" title="Tempo desde o fardo anterior (min:seg)">Desde o anterior</th></tr></thead><tbody>${linhas}
-          <tr class="total"><td colspan="4">Total do carregamento: ${fmtNum(c.qtd)} fardo(s)</td><td class="num">${nf2.format(c.peso)}</td><td></td></tr></tbody></table></div>
+        <div class="table-wrap" style="max-height:52vh"><table><thead><tr><th class="num">#</th><th>Hora</th><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th class="num" title="Tempo desde o fardo anterior (min:seg)">Desde o anterior</th><th></th></tr></thead><tbody>${linhas}
+          <tr class="total"><td colspan="4">Total do carregamento: ${fmtNum(c.qtd)} fardo(s)</td><td class="num">${nf2.format(c.peso)}</td><td></td><td></td></tr></tbody></table></div>
         <div class="sub" style="margin-top:8px">Tempo médio por fardo = duração ÷ (fardos − 1). O tempo até o 1º bip conta desde que o operador abriu a opção Carregamento no coletor. Início e fim são os horários da primeira e da última leitura confirmada.</div>
       </div></div>`;
   }).join("");
 
-  det.innerHTML = `
+  return `
     ${infoErro ? `<div class="aviso" style="background:rgba(229,115,107,.14);border-color:rgba(229,115,107,.4);color:#F5B3AE">Não foi possível ler ou gravar clientes e placas: ${esc(infoErro)}. Verifique as regras do Firestore para a coleção carregamentos_info.</div>` : ""}
     <div class="car-top"><h2>${fmtDiaKey(dia.dia)}<span>${esc(diaSemana(dia.dia))}</span></h2>
-      <div class="acoes"><button class="btn sm" data-all="fechar">Recolher todos</button><button class="btn sm" data-all="abrir">Expandir todos</button><button class="btn sm" id="btnCsvDia">Baixar CSV do dia</button></div></div>
+      <div class="acoes">${novo ? `<button class="btn sm" data-goto="${novo.dia}">▴ Dia mais novo</button>` : ""}${antigo ? `<button class="btn sm" data-goto="${antigo.dia}">Dia mais antigo ▾</button>` : ""}<button class="btn sm" data-act="dia-data" data-src="car" data-dia="${dia.dia}">Alterar data do dia</button><button class="btn sm danger" data-act="dia-del" data-src="car" data-dia="${dia.dia}">Excluir dia</button><button class="btn sm" data-all="fechar">Recolher todos</button><button class="btn sm" data-all="abrir">Expandir todos</button><button class="btn sm" id="btnCsvDia">Baixar CSV do dia</button></div></div>
     <div class="kpis">
       <div class="kpi"><div class="l">Carregamentos</div><div class="v">${fmtNum(n)}</div></div>
       <div class="kpi ok"><div class="l">Fardos carregados</div><div class="v">${fmtNum(dia.qtd)}</div></div>
@@ -1058,6 +1091,25 @@ function renderCarregamentos(){
         <div class="table-wrap" style="max-height:none"><table><thead><tr><th>Cliente</th><th class="num">Cargas</th><th class="num">Fardos</th><th class="num">Peso (kg)</th><th>Placas</th></tr></thead><tbody>${ordemCli.map(k => { const x = clientes[k]; return `<tr><td>${k === "Não informado" ? `<span class="muted">${k}</span>` : `<b>${esc(k)}</b>`}</td><td class="num">${x.cargas}</td><td class="num">${fmtNum(x.qtd)}</td><td class="num">${nf2.format(x.peso)}</td><td class="mono" style="font-size:12.5px">${esc(x.placas.join(", ")) || "—"}</td></tr>`; }).join("")}</tbody></table></div></div>
     </div>
     ${cargasHtml}`;
+}
+
+function renderCarregamentos(){
+  const ae = document.activeElement, det = $("carDetalhe");
+  if (ae && det.contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT")){ renderPendente = true; return; }   // não atrapalha quem está digitando
+  renderPendente = false;
+  const dias = montarCargas();
+  if (!dias.length){
+    $("carDiasInfo").textContent = "";
+    det.innerHTML = `<div class="panel"><div class="vazio-box">Nenhum carregamento encontrado. Quando houver saídas confirmadas no Carregamento do coletor, elas aparecem aqui por data.</div></div>`;
+    return;
+  }
+  if (diaCarga && !dias.some(d => d.dia === diaCarga)) diaCarga = "";
+  const totCargas = dias.reduce((a, d) => a + d.cargas.length, 0);
+  $("carDiasInfo").textContent = `${dias.length} data(s) · ${totCargas} carregamento(s) · mais recente em cima · clique no dia para abrir`;
+  det.innerHTML = dias.map((d, i) => {
+    const ab = d.dia === diaCarga;
+    return accHtml("car", d.dia, `${d.cargas.length} carga(s) · ${fmtNum(d.qtd)} fardo(s) · <b style="color:var(--blue)">${pesoCurto(d.peso)}</b>`, ab, ab ? detalheCarga(d, dias[i - 1], dias[i + 1]) : "");
+  }).join("");
 }
 
 async function salvarCarga(id){
@@ -1106,26 +1158,15 @@ function montarDiasPrensa(){
   });
   return lista.sort((a, b) => a.dia < b.dia ? 1 : -1);
 }
-function renderPrensa(){
-  const dias = montarDiasPrensa(), lista = $("listaDiasPrensa"), det = $("prDetalhe");
-  if (!dias.length){
-    $("prDiasInfo").textContent = "";
-    lista.innerHTML = `<div class="muted" style="font-size:13.5px;padding:6px 2px">Nenhuma saída da Prensa registrada.</div>`;
-    det.innerHTML = `<div class="panel"><div class="vazio-box">Nenhuma saída da Prensa encontrada. Quando houver fardos registrados na Prensa do coletor, eles aparecem aqui por data.</div></div>`;
-    return;
-  }
-  if (!dias.some(d => d.dia === diaPrensa)) diaPrensa = dias[0].dia;
-  $("prDiasInfo").textContent = `${dias.length} data(s) · ${fmtNum(dias.reduce((a, d) => a + d.qtd, 0))} fardo(s)`;
-  lista.innerHTML = dias.map(d => `<button class="dia-item ${d.dia === diaPrensa ? "on" : ""}" data-dia="${d.dia}"><div><span class="d">${fmtDiaKey(d.dia)}</span><span class="w">${esc(diaSemana(d.dia))}</span></div><div class="m"><span>${fmtNum(d.qtd)} fardo(s)</span><b>${pesoCurto(d.peso)}</b></div></button>`).join("");
-
-  const d = dias.find(x => x.dia === diaPrensa), dur = d.fim - d.ini;
+function detalhePrensa(d, novo, antigo){
+  const dur = d.fim - d.ini;
   const hs = Object.keys(d.horas).map(Number), h0 = Math.min(...hs), h1 = Math.max(...hs), maxQ = Math.max(...hs.map(h => d.horas[h].qtd));
   let linhasH = ""; for (let h = h0; h <= h1; h++){ const x = d.horas[h] || { qtd: 0, peso: 0 };
     linhasH += `<tr><td>${String(h).padStart(2, "0")}h – ${String((h + 1) % 24).padStart(2, "0")}h</td><td class="num"><b>${fmtNum(x.qtd)}</b></td><td class="num">${nf2.format(x.peso)}</td><td style="min-width:160px"><div class="pct"><i style="width:${maxQ ? (x.qtd / maxQ * 100).toFixed(1) : 0}%"></i></div></td></tr>`; }
-  const linhas = d.itens.map((i, k) => `<tr><td class="num" style="color:var(--muted)">${k + 1}</td><td>${fmtHora(i.ts)}</td><td>${badgeMat(i.material)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td class="num">${k ? fmtMS(i.ts - d.itens[k - 1].ts) : "início"}</td></tr>`).join("");
-  det.innerHTML = `
+  const linhas = d.itens.map((i, k) => `<tr><td class="num" style="color:var(--muted)">${k + 1}</td><td>${fmtHora(i.ts)}</td><td>${badgeMat(i.material)}</td><td class="mono" style="color:var(--blue)">${esc(i.epc)}</td><td class="num"><b>${nf2.format(i.peso)}</b></td><td class="num">${k ? fmtMS(i.ts - d.itens[k - 1].ts) : "início"}</td><td class="ac"><button class="btn xs" data-act="mov-edit" data-id="${esc(i.id)}">Editar</button> <button class="btn xs danger" data-act="mov-del" data-id="${esc(i.id)}">Excluir</button></td></tr>`).join("");
+  return `
     <div class="car-top"><h2>${fmtDiaKey(d.dia)}<span>${esc(diaSemana(d.dia))}</span></h2>
-      <div class="acoes"><button class="btn sm" id="btnCsvPrensa">Baixar CSV do dia</button></div></div>
+      <div class="acoes">${novo ? `<button class="btn sm" data-goto="${novo.dia}">▴ Dia mais novo</button>` : ""}${antigo ? `<button class="btn sm" data-goto="${antigo.dia}">Dia mais antigo ▾</button>` : ""}<button class="btn sm" data-act="dia-data" data-src="pr" data-dia="${d.dia}">Alterar data do dia</button><button class="btn sm danger" data-act="dia-del" data-src="pr" data-dia="${d.dia}">Excluir dia</button><button class="btn sm" id="btnCsvPrensa">Baixar CSV do dia</button></div></div>
     <h4 style="margin:4px 0 10px;font-size:12.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)">Saiu da prensa neste dia, por material</h4>
     <div class="matcards">${cardsMats(d.mats)}</div>
     <div class="kpis">
@@ -1141,8 +1182,22 @@ function renderPrensa(){
         <div class="table-wrap" style="max-height:none"><table><thead><tr><th>Faixa</th><th class="num">Fardos</th><th class="num">Peso (kg)</th><th></th></tr></thead><tbody>${linhasH}</tbody></table></div></div>
     </div>
     <div class="panel"><h3 style="margin-bottom:12px">Fardos em ordem de horário</h3>
-      <div class="table-wrap" style="max-height:60vh"><table><thead><tr><th class="num">#</th><th>Hora</th><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th class="num" title="Tempo desde o fardo anterior (min:seg)">Desde o anterior</th></tr></thead><tbody>${linhas}
-        <tr class="total"><td colspan="4">Total do dia: ${fmtNum(d.qtd)} fardo(s)</td><td class="num">${nf2.format(d.peso)}</td><td></td></tr></tbody></table></div></div>`;
+      <div class="table-wrap" style="max-height:60vh"><table><thead><tr><th class="num">#</th><th>Hora</th><th>Material</th><th>Etiqueta (EPC)</th><th class="num">Peso (kg)</th><th class="num" title="Tempo desde o fardo anterior (min:seg)">Desde o anterior</th><th></th></tr></thead><tbody>${linhas}
+        <tr class="total"><td colspan="4">Total do dia: ${fmtNum(d.qtd)} fardo(s)</td><td class="num">${nf2.format(d.peso)}</td><td></td><td></td></tr></tbody></table></div></div>`;
+}
+function renderPrensa(){
+  const dias = montarDiasPrensa(), det = $("prDetalhe");
+  if (!dias.length){
+    $("prDiasInfo").textContent = "";
+    det.innerHTML = `<div class="panel"><div class="vazio-box">Nenhuma saída da Prensa encontrada. Quando houver fardos registrados na Prensa do coletor, eles aparecem aqui por data.</div></div>`;
+    return;
+  }
+  if (diaPrensa && !dias.some(d => d.dia === diaPrensa)) diaPrensa = "";
+  $("prDiasInfo").textContent = `${dias.length} data(s) · ${fmtNum(dias.reduce((a, d) => a + d.qtd, 0))} fardo(s) · mais recente em cima · clique no dia para abrir`;
+  det.innerHTML = dias.map((d, i) => {
+    const ab = d.dia === diaPrensa;
+    return accHtml("pr", d.dia, `${fmtNum(d.qtd)} fardo(s) · <b style="color:var(--blue)">${pesoCurto(d.peso)}</b>`, ab, ab ? detalhePrensa(d, dias[i - 1], dias[i + 1]) : "");
+  }).join("");
 }
 function baixarCsvPrensa(){
   const d = montarDiasPrensa().find(x => x.dia === diaPrensa); if (!d) return;
@@ -1152,6 +1207,188 @@ function baixarCsvPrensa(){
 }
 
 function renderTudo(){ renderKpisEGraficos(); renderEstoque(); renderHistorico(); renderLog(); renderConferencia(); renderCarregamentos(); renderPrensa(); }
+
+/* ---------- editar / excluir (com confirmação e senha) ---------- */
+const SENHA_ACAO = "0770";
+let modalRes = null, modalCfg = null, ocupado = false;
+function abrirModal(cfg){
+  return new Promise(resolve => {
+    modalCfg = cfg; modalRes = resolve;
+    $("mTitulo").textContent = cfg.titulo; $("mCorpo").innerHTML = cfg.html || "";
+    $("mSenha").value = ""; $("mErro").textContent = "";
+    $("mOk").textContent = cfg.ok || "Confirmar"; $("mOk").className = "btn " + (cfg.perigo ? "danger" : "pri");
+    $("modalBg").classList.remove("hide");
+    setTimeout(() => { const f = $("mCorpo").querySelector("input:not([type=checkbox]),select"); (f || $("mSenha")).focus(); }, 40);
+  });
+}
+function fecharModal(v){ $("modalBg").classList.add("hide"); const r = modalRes; modalRes = null; modalCfg = null; if (r) r(v); }
+$("mCancel").addEventListener("click", () => fecharModal(null));
+$("modalBg").addEventListener("mousedown", e => { if (e.target.id === "modalBg") fecharModal(null); });
+$("mOk").addEventListener("click", () => {
+  const dados = {}; $("mCorpo").querySelectorAll("[data-mf]").forEach(el => { dados[el.dataset.mf] = el.type === "checkbox" ? el.checked : el.value; });
+  const erro = modalCfg && modalCfg.validar ? modalCfg.validar(dados) : "";
+  if (erro){ $("mErro").textContent = erro; return; }
+  if ($("mSenha").value !== SENHA_ACAO){ $("mErro").textContent = "Senha incorreta."; $("mSenha").value = ""; $("mSenha").focus(); return; }
+  fecharModal(dados);
+});
+$("modalBg").addEventListener("keydown", e => {
+  if (e.key === "Escape") fecharModal(null);
+  else if (e.key === "Enter" && !e.target.closest("#mCancel")){ e.preventDefault(); $("mOk").click(); }
+});
+function aviso(msg, erro){
+  const t = $("toast"); t.textContent = msg; t.style.color = erro ? "#F5B3AE" : "#B7F0D2"; t.classList.remove("hide");
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.add("hide"), 4200);
+}
+async function run(fn){
+  if (ocupado) return; ocupado = true;
+  try { await fn(); } catch (e){ console.error(e); aviso("Erro: " + (e && e.message ? e.message : e), true); }
+  ocupado = false;
+}
+async function gravarLote(itens, fn, porItem = 1){
+  const tam = Math.max(1, Math.floor(400 / porItem));
+  for (let i = 0; i < itens.length; i += tam){ const b = writeBatch(db); itens.slice(i, i + tam).forEach(x => fn(b, x)); await b.commit(); }
+}
+const lerNum = v => { let t = String(v || "").trim(); if (t.includes(",")) t = t.replace(/\./g, "").replace(",", "."); const n = parseFloat(t); return isNaN(n) ? NaN : n; };
+const dtLocal = d => d ? d.toLocaleString("sv-SE", { timeZone: TZ }).replace(" ", "T") : "";
+const hms = d => d.toLocaleTimeString("sv-SE", { timeZone: TZ });
+const parseDt = v => new Date((v.length === 16 ? v + ":00" : v) + "-03:00");
+const selMat = (id, atual) => { const ls = (!atual || atual === "—" || ORDEM_MATERIAIS.includes(atual)) ? ORDEM_MATERIAIS : [...ORDEM_MATERIAIS, atual];
+  return `<select class="input" data-mf="${id}">${ls.map(m => `<option ${m === atual ? "selected" : ""}>${esc(m)}</option>`).join("")}</select>`; };
+const achaMov = id => cargasMovs.find(x => x.id === id) || prensaMovs.find(x => x.id === id) || movs.find(x => x.id === id);
+const tipoMov = m => m.op === "PRENSA" ? "Saída da Prensa" : "Saída de Carregamento";
+const mostraKg = l => fmtKg(l.reduce((a, m) => a + (m.peso || 0), 0));
+
+async function editarMov(m){
+  if (!m) return;
+  const ehPrensa = m.op === "PRENSA", temEst = Boolean(estoqueMapa[m.epc]);
+  const r = await abrirModal({
+    titulo: "Editar fardo · " + tipoMov(m),
+    html: `<div class="txt mono" style="color:var(--blue);word-break:break-all">${esc(m.epc || "")}</div>
+      <label>Material</label>${selMat("material", m.material)}
+      <label>Peso (kg)</label><input class="input" type="text" inputmode="decimal" data-mf="peso" value="${String(m.peso).replace(".", ",")}">
+      <label>Data e hora</label><input class="input" type="datetime-local" step="1" data-mf="dt" value="${dtLocal(m.ts)}">
+      ${ehPrensa && temEst ? `<label class="ck"><input type="checkbox" data-mf="est" checked> Atualizar também o estoque atual</label>` : ""}`,
+    ok: "Confirmar alteração",
+    validar: d => !(lerNum(d.peso) > 0) ? "Informe um peso válido." : (!d.dt || isNaN(parseDt(d.dt))) ? "Data e hora inválidas." : ""
+  });
+  if (!r) return;
+  const p = Math.round(lerNum(r.peso) * 100) / 100, novo = parseDt(r.dt), delta = m.ts ? novo - m.ts : 0;
+  const patch = { material: r.material, peso_kg: p };
+  if (!m.ts || Math.abs(delta) >= 1000){ patch.criado_em = Timestamp.fromDate(novo); if (m.sessIni) patch.sessao_inicio_ms = m.sessIni + delta; if (m.lido) patch.lido_ms = m.lido + delta; }
+  await updateDoc(doc(db, "movimentacoes_fardos", m.id), patch);
+  if (ehPrensa && r.est && estoqueMapa[m.epc]) await updateDoc(doc(db, "estoque_atual", m.epc), { material: r.material, peso_kg: p });
+  aviso("Alteração gravada ✔");
+}
+
+async function excluirMovs(lista, rotulo, extraRefs){
+  lista = (lista || []).filter(Boolean); if (!lista.length) return;
+  const tCar = lista.every(m => m.op === "CARREGAMENTO"), tPr = lista.every(m => m.op === "PRENSA");
+  const r = await abrirModal({
+    titulo: "Excluir " + rotulo, perigo: true, ok: "Excluir",
+    html: `<div class="txt">Serão excluídos <b>${fmtNum(lista.length)} fardo(s)</b> (${mostraKg(lista)}).<br><span class="warn">Esta ação não pode ser desfeita.</span></div>`
+      + (tCar ? `<label class="ck"><input type="checkbox" data-mf="devolver"> Devolver estes fardos ao estoque atual</label>` : "")
+      + (tPr ? `<label class="ck"><input type="checkbox" data-mf="tirar"> Remover também do estoque atual</label>` : "")
+  });
+  if (!r) return;
+  await gravarLote(lista, (b, m) => {
+    b.delete(doc(db, "movimentacoes_fardos", m.id));
+    if (r.devolver && !estoqueMapa[m.epc]) b.set(doc(db, "estoque_atual", m.epc), { epc: m.epc, material: m.material, peso_kg: m.peso, data_entrada: serverTimestamp() });
+    if (r.tirar && estoqueMapa[m.epc]) b.delete(doc(db, "estoque_atual", m.epc));
+  }, 2);
+  if (extraRefs && extraRefs.length) await gravarLote(extraRefs, (b, ref) => b.delete(ref));
+  aviso("Exclusão concluída ✔");
+}
+
+async function alterarDataMovs(lista, rotulo, diaAtual){
+  lista = (lista || []).filter(m => m && m.ts); if (!lista.length) return;
+  const r = await abrirModal({
+    titulo: "Alterar data · " + rotulo,
+    html: `<div class="txt">Serão movidos <b>${fmtNum(lista.length)} fardo(s)</b>. Os horários de cada fardo são mantidos; muda só o dia.</div>
+      <label>Nova data</label><input class="input" type="date" data-mf="data" value="${diaAtual || ""}">`,
+    ok: "Confirmar alteração", validar: d => d.data ? "" : "Escolha a nova data."
+  });
+  if (!r) return;
+  await gravarLote(lista, (b, m) => {
+    const novo = new Date(`${r.data}T${hms(m.ts)}-03:00`), delta = novo - m.ts;
+    const patch = { criado_em: Timestamp.fromDate(novo) };
+    if (m.sessIni) patch.sessao_inicio_ms = m.sessIni + delta; if (m.lido) patch.lido_ms = m.lido + delta;
+    b.update(doc(db, "movimentacoes_fardos", m.id), patch);
+  });
+  aviso("Data alterada ✔");
+}
+
+async function editarEstoque(id){
+  const e = estoque.find(x => x.id === id); if (!e) return;
+  const r = await abrirModal({
+    titulo: "Editar fardo do estoque",
+    html: `<div class="txt mono" style="color:var(--blue);word-break:break-all">${esc(e.epc)}</div>
+      <label>Material</label>${selMat("material", e.material)}
+      <label>Peso (kg)</label><input class="input" type="text" inputmode="decimal" data-mf="peso" value="${String(e.peso).replace(".", ",")}">`,
+    ok: "Confirmar alteração", validar: d => lerNum(d.peso) > 0 ? "" : "Informe um peso válido."
+  });
+  if (!r) return;
+  await updateDoc(doc(db, "estoque_atual", e.id), { material: r.material, peso_kg: Math.round(lerNum(r.peso) * 100) / 100 });
+  aviso("Alteração gravada ✔");
+}
+async function excluirEstoque(lista, rotulo){
+  lista = (lista || []).filter(Boolean); if (!lista.length) return;
+  const r = await abrirModal({ titulo: "Excluir " + rotulo, perigo: true, ok: "Excluir",
+    html: `<div class="txt">Serão removidos do estoque <b>${fmtNum(lista.length)} fardo(s)</b> (${fmtKg(lista.reduce((a, e) => a + e.peso, 0))}).<br><span class="warn">Esta ação não pode ser desfeita.</span></div>` });
+  if (!r) return;
+  await gravarLote(lista, (b, e) => b.delete(doc(db, "estoque_atual", e.id)));
+  aviso("Exclusão concluída ✔");
+}
+async function excluirLogs(lista, rotulo){
+  lista = (lista || []).filter(Boolean); if (!lista.length) return;
+  const r = await abrirModal({ titulo: "Excluir " + rotulo, perigo: true, ok: "Excluir",
+    html: `<div class="txt">Serão excluídos <b>${fmtNum(lista.length)} registro(s)</b> do log.<br><span class="warn">Esta ação não pode ser desfeita.</span></div>` });
+  if (!r) return;
+  await gravarLote(lista, (b, l) => b.delete(doc(db, "logs_bloqueios", l.id)));
+  aviso("Exclusão concluída ✔");
+}
+async function excluirConfs(idxs, rotulo){
+  const lista = idxs.map(i => confs[i]).filter(Boolean); if (!lista.length) return;
+  const r = await abrirModal({ titulo: "Excluir conferência", perigo: true, ok: "Excluir",
+    html: `<div class="txt">Será(ão) excluída(s) <b>${fmtNum(lista.length)} conferência(s)</b> (${esc(rotulo)}).<br><span class="warn">Esta ação não pode ser desfeita.</span></div>` });
+  if (!r) return;
+  await gravarLote(lista, (b, c) => b.delete(doc(db, "conferencias_estoque", c.id)));
+  aviso("Exclusão concluída ✔");
+}
+async function removerItemConf(epc){
+  const conf = confs[Number($("selConf").value || 0)];
+  if (!conf || !Array.isArray(conf.itens_lidos)){ aviso("Esta conferência não permite remover itens individuais.", true); return; }
+  const r = await abrirModal({ titulo: "Remover etiqueta da conferência", perigo: true, ok: "Remover",
+    html: `<div class="txt mono" style="color:var(--blue);word-break:break-all">${esc(epc)}</div><div class="txt" style="margin-top:6px">A etiqueta será retirada desta conferência (todas as leituras dela).<br><span class="warn">Esta ação não pode ser desfeita.</span></div>` });
+  if (!r) return;
+  const chave = x => String(typeof x === "string" ? x : (x && x.epc) || "").trim().toUpperCase();
+  const nova = conf.itens_lidos.filter(x => chave(x) !== epc);
+  await updateDoc(doc(db, "conferencias_estoque", conf.id), { itens_lidos: nova, total_lidos: nova.length });
+  aviso("Etiqueta removida ✔");
+}
+
+const itensDia = (src, dia) => { if (src === "car"){ const d = montarCargas().find(x => x.dia === dia); return d ? d.cargas.flatMap(c => c.itens) : []; } const d = montarDiasPrensa().find(x => x.dia === dia); return d ? d.itens : []; };
+const acharCarga = id => { for (const d of montarCargas()){ const c = d.cargas.find(x => x.id === id); if (c) return c; } return null; };
+async function executarAcao(b){
+  const a = b.dataset.act, id = b.dataset.id, dia = b.dataset.dia, src = b.dataset.src;
+  await run(async () => {
+    if (a === "est-edit") await editarEstoque(id);
+    else if (a === "est-del") await excluirEstoque([estoque.find(e => e.id === id)], "fardo do estoque");
+    else if (a === "mov-edit") await editarMov(achaMov(id));
+    else if (a === "mov-del") await excluirMovs([achaMov(id)], "fardo");
+    else if (a === "dia-del"){
+      const itens = itensDia(src, dia);
+      const extra = src === "car" ? [...new Set(itens.map(i => i.carga || ("SEM-ID-" + dia)))].map(k => doc(db, "carregamentos_info", k)) : [];
+      await excluirMovs(itens, "todo o dia " + fmtDiaKey(dia), extra);
+    }
+    else if (a === "dia-data") await alterarDataMovs(itensDia(src, dia), "dia " + fmtDiaKey(dia), dia);
+    else if (a === "carga-del"){ const c = acharCarga(id); if (c) await excluirMovs(c.itens, "este carregamento", [doc(db, "carregamentos_info", c.id)]); }
+    else if (a === "carga-data"){ const c = acharCarga(id); if (c) await alterarDataMovs(c.itens, "este carregamento", c.dia); }
+    else if (a === "log-del") await excluirLogs([logs.find(l => l.id === id)], "registro do log");
+    else if (a === "conf-del") await excluirConfs([Number(b.dataset.cj)], "conferência de " + fmtData(confs[Number(b.dataset.cj)] && confs[Number(b.dataset.cj)].criado_em));
+    else if (a === "conf-dia-del"){ const idx = confs.map((c, i) => i).filter(i => { const dt = toDate(confs[i].criado_em); return (dt ? diaKey(dt) : "0000-00-00") === dia; }); await excluirConfs(idx, "todas do dia " + fmtDiaKey(dia)); }
+    else if (a === "conf-rm") await removerItemConf(b.dataset.epc);
+  });
+}
 
 /* ---------- navegação e eventos ---------- */
 function irPara(v){
@@ -1177,10 +1414,23 @@ $("btnHistLimpar").addEventListener("click", () => { $("fHistMat").value = ""; $
 $("fLog").addEventListener("input", renderLog); $("fLogTipo").addEventListener("change", renderLog);
 $("confTabs").addEventListener("click", e => { const b = e.target.closest("button[data-ct]"); if (b){ confTab = b.dataset.ct; aplicarConfTab(); } });
 $("confMatChips").addEventListener("click", e => { const b = e.target.closest("button[data-m]"); if (b){ confMat = b.dataset.m; renderConferencia(); } });
-$("listaDias").addEventListener("click", e => { const b = e.target.closest("button[data-dia]"); if (b){ diaCarga = b.dataset.dia; renderCarregamentos(); window.scrollTo({ top: 0 }); } });
-$("listaDiasPrensa").addEventListener("click", e => { const b = e.target.closest("button[data-dia]"); if (b){ diaPrensa = b.dataset.dia; renderPrensa(); window.scrollTo({ top: 0 }); } });
-$("prDetalhe").addEventListener("click", e => { if (e.target.closest("#btnCsvPrensa")) baixarCsvPrensa(); });
+function abrirDia(kind, dia, rolar){
+  if (kind === "car"){ diaCarga = (diaCarga === dia && !rolar) ? "" : dia; renderCarregamentos(); }
+  else if (kind === "pr"){ diaPrensa = (diaPrensa === dia && !rolar) ? "" : dia; renderPrensa(); }
+  else if (kind === "conf"){ diaConf = (diaConf === dia && !rolar) ? "" : dia; renderConfHist(); }
+  const host = kind === "car" ? $("carDetalhe") : kind === "pr" ? $("prDetalhe") : $("confHist");
+  const h = host.querySelector(`.acc-h[data-dia="${dia}"]`);
+  if (h && (rolar || host.querySelector(".acc.open"))) h.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+$("prDetalhe").addEventListener("click", e => {
+  const h = e.target.closest("button[data-acc]"); if (h) return abrirDia("pr", h.dataset.dia);
+  const g = e.target.closest("button[data-goto]"); if (g) return abrirDia("pr", g.dataset.goto, true);
+  if (e.target.closest("#btnCsvPrensa")) baixarCsvPrensa();
+});
+$("confHist").addEventListener("click", e => { const h = e.target.closest("button[data-acc]"); if (h) abrirDia("conf", h.dataset.dia); });
 $("carDetalhe").addEventListener("click", e => {
+  const h = e.target.closest("button[data-acc]"); if (h) return abrirDia("car", h.dataset.dia);
+  const g = e.target.closest("button[data-goto]"); if (g) return abrirDia("car", g.dataset.goto, true);
   if (e.target.closest("#btnCsvDia")) return baixarCsvDia();
   const sv = e.target.closest("button[data-salvar]"); if (sv) return salvarCarga(sv.dataset.salvar);
   const all = e.target.closest("button[data-all]");
@@ -1203,6 +1453,11 @@ $("carDetalhe").addEventListener("input", e => {
 $("carDetalhe").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("[data-f=placa]")){ const id = e.target.dataset.id; e.target.blur(); salvarCarga(id); } });
 $("carDetalhe").addEventListener("focusout", () => setTimeout(() => { const ae = document.activeElement; if (renderPendente && !(ae && $("carDetalhe").contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT"))) renderCarregamentos(); }, 300));
 $("confHist").addEventListener("click", e => { const b = e.target.closest("button[data-ci]"); if (b){ $("selConf").value = b.dataset.ci; confTab = "resumo"; confMat = ""; renderConferencia(); desenharGraficos(); } });
+document.addEventListener("click", e => { const b = e.target.closest("[data-act]"); if (b) executarAcao(b); });
+$("btnEstExcluir").addEventListener("click", () => run(() => excluirEstoque(estFiltrado, "fardos exibidos no estoque")));
+$("btnHistExcluir").addEventListener("click", () => run(() => excluirMovs(histFiltrado, "registros exibidos no histórico")));
+$("btnLogExcluir").addEventListener("click", () => run(() => excluirLogs(logFiltrado, "registros exibidos no log")));
+$("btnConfExcluir").addEventListener("click", () => run(() => excluirConfs([Number($("selConf").value || 0)], "a conferência aberta")));
 $("selConf").addEventListener("change", () => { renderConferencia(); desenharGraficos(); });
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(desenharGraficos, 150); });
 
@@ -1231,14 +1486,14 @@ function iniciarListeners(){
     snap.forEach(doc => {
       const d = doc.data(), epc = String(d.epc || doc.id).toUpperCase(), mat = d.material || "Outros", peso = Number(d.peso_kg || 0);
       estoqueMapa[epc] = { material: mat, peso_kg: peso };
-      estoque.push({ epc, material: mat, peso, ts: toDate(d.data_entrada) });
+      estoque.push({ id: doc.id, epc, material: mat, peso, ts: toDate(d.data_entrada) });
     });
     marcarAtualizacao(); renderTudo();
   }, falha("estoque_atual")));
 
   unsubs.push(onSnapshot(query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(500)), snap => {
     movs = [];
-    snap.forEach(doc => { const d = doc.data(); movs.push({ op: d.operacao, material: d.material || "—", peso: Number(d.peso_kg || 0), ts: toDate(d.criado_em) }); });
+    snap.forEach(doc => { const d = doc.data(); movs.push({ id: doc.id, op: d.operacao, epc: String(d.epc || doc.id).toUpperCase(), material: d.material || "—", peso: Number(d.peso_kg || 0), ts: toDate(d.criado_em), carga: d.id_carga || "", sessIni: Number(d.sessao_inicio_ms || 0), lido: Number(d.lido_ms || 0) }); });
     marcarAtualizacao(); renderKpisEGraficos(); renderHistorico();
   }, falha("movimentacoes_fardos")));
 
@@ -1246,7 +1501,7 @@ function iniciarListeners(){
   unsubs.push(onSnapshot(query(collection(db, "movimentacoes_fardos"), orderBy("criado_em", "desc"), limit(4000)), snap => {
     cargasMovs = []; prensaMovs = [];
     snap.forEach(dc => {
-      const d = dc.data(), m = { epc: String(d.epc || dc.id).toUpperCase(), material: d.material || "—", peso: Number(d.peso_kg || 0), ts: toDate(d.criado_em), carga: d.id_carga || "", sessIni: Number(d.sessao_inicio_ms || 0), lido: Number(d.lido_ms || 0) };
+      const d = dc.data(), m = { id: dc.id, op: d.operacao, epc: String(d.epc || dc.id).toUpperCase(), material: d.material || "—", peso: Number(d.peso_kg || 0), ts: toDate(d.criado_em), carga: d.id_carga || "", sessIni: Number(d.sessao_inicio_ms || 0), lido: Number(d.lido_ms || 0) };
       if (d.operacao === "CARREGAMENTO") cargasMovs.push(m); else if (d.operacao === "PRENSA") prensaMovs.push(m);
     });
     marcarAtualizacao(); renderCarregamentos(); renderPrensa();
@@ -1261,7 +1516,7 @@ function iniciarListeners(){
 
   unsubs.push(onSnapshot(query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500)), snap => {
     logs = [];
-    snap.forEach(doc => { const d = doc.data(); logs.push({ ts: toDate(d.criado_em), tipo: d.operacao_tentada || "EVENTO", material: d.material || "", peso: Number(d.peso_kg || 0), epc: d.epc || "", motivo: d.motivo_bloqueio || "" }); });
+    snap.forEach(doc => { const d = doc.data(); logs.push({ id: doc.id, ts: toDate(d.criado_em), tipo: d.operacao_tentada || "EVENTO", material: d.material || "", peso: Number(d.peso_kg || 0), epc: d.epc || "", motivo: d.motivo_bloqueio || "" }); });
     marcarAtualizacao(); renderKpisEGraficos(); renderLog();
   }, falha("logs_bloqueios")));
 
@@ -1273,7 +1528,8 @@ function iniciarListeners(){
     });
     $("selConf").innerHTML = opts || `<option value="0">Nenhuma conferência enviada</option>`;
     const topoId = confs.length ? confs[0].id : null;
-    const chegouNova = ultimaConfId !== undefined && topoId !== null && topoId !== ultimaConfId;
+    const chegouNova = ultimaConfId !== undefined && topoId !== null && !confIdsAnteriores.has(topoId);
+    confIdsAnteriores = new Set(confs.map(c => c.id));
     ultimaConfId = topoId;
     $("selConf").value = "0";                 // sempre mostra a conferência mais recente
     if (chegouNova){ confTab = "resumo"; confMat = ""; limparConferencia(); avisarNovaConferencia(); }
