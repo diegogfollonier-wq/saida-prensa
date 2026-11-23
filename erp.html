@@ -289,6 +289,8 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 .lg-m{display:none}
 .topbar-m{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
 .topbar-m .btn{padding:6px 12px;font-size:12.5px}
+body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
+body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 </style>
 </head>
 <body>
@@ -1138,6 +1140,7 @@ function renderCarregamentos(){
 }
 
 async function salvarCarga(id){
+  if (!ehAdmin){ aviso("Seu usuário é somente consulta.", true); return; }
   const dc = dadosCarga(id), placa = normPlaca(dc.placa);
   if (placa && !PLACA_RE.test(placa)){ statusCarga[id] = "Placa inválida. Use o formato ABC1D23 ou ABC1234."; renderCarregamentos(); return; }
   const nf = String(dc.nf || "").replace(/\D/g, "") ? String(dc.nf).replace(/\D/g, "").padStart(6, "0") : "";
@@ -1239,7 +1242,10 @@ function renderTudo(){ renderKpisEGraficos(); renderEstoque(); renderHistorico()
 /* ---------- editar / excluir (com confirmação e senha) ---------- */
 const SENHA_ACAO = "0770";
 let modalRes = null, modalCfg = null, ocupado = false;
+let ehAdmin = false;
+const ADMINS = ["diego@ecotriagem.app", "diego.follonier@ciclare.com.br", "diegogfollonier@gmail.com"];
 function abrirModal(cfg){
+  if (!ehAdmin){ aviso("Seu usuário é somente consulta.", true); return Promise.resolve(null); }
   return new Promise(resolve => {
     modalCfg = cfg; modalRes = resolve;
     $("mTitulo").textContent = cfg.titulo; $("mCorpo").innerHTML = cfg.html || "";
@@ -1767,7 +1773,7 @@ const nf6 = v => { const d = String(v || "").replace(/\D/g, ""); return d ? d.pa
 
 function agendarSync(){ clearTimeout(syncTimer); syncTimer = setTimeout(sincronizarNotas, 1200); }
 async function sincronizarNotas(){
-  if (syncBusy || !syncFlags.car || !syncFlags.info || !syncFlags.exp || expErro || !auth.currentUser) return;
+  if (!ehAdmin || syncBusy || !syncFlags.car || !syncFlags.info || !syncFlags.exp || expErro || !auth.currentUser) return;
   syncBusy = true;
   try {
     const ops = [];
@@ -2215,6 +2221,8 @@ function iniciarListeners(){
 }
 
 onAuthStateChanged(auth, user => {
+  ehAdmin = Boolean(user && ADMINS.includes(String(user.email || "").toLowerCase()));
+  document.body.classList.toggle("leitura", Boolean(user) && !ehAdmin);
   if (user){
     $("telaLogin").style.display = "none"; $("telaErp").style.display = "block";
     $("usuarioLogado").textContent = nomeUsuario(user.email);
