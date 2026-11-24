@@ -1651,7 +1651,7 @@ function renderExp(k){
     return `<div class="acc ${ab ? "open" : ""}"><button class="acc-h" data-expacc="${s}"><span class="seta">${ab ? "▾" : "▸"}</span><span class="d">${nome}</span><span class="w">sex a qui</span><span class="r">${resumo}</span></button>${ab ? `<div class="acc-b">${expLinhas(k, l)}</div>` : ""}</div>`;
   }).join("") || `<div class="muted">${expNotas.length ? "Nenhum registro com esses filtros." : "Nenhuma nota lançada ainda. Use “+ Nova nota” ou “Importar planilha” na aba Notas / Coletas."}</div>`;
 }
-function renderExpTodas(){ Object.keys(EXP_TABS).forEach(renderExp); if (typeof renderMateriais === "function") renderMateriais(); }
+function renderExpTodas(){ Object.keys(EXP_TABS).forEach(renderExp); if (typeof renderMateriais === "function") renderMateriais(); if (typeof renderXC === "function") renderXC(); }
 
 /* ----- formulário ----- */
 const campo = (rot, html) => `<div><label>${rot}</label>${html}</div>`;
@@ -2105,6 +2105,118 @@ async function importarPV(arq){
   await gravarLote(docs, (b, x) => b.set(doc(db, COL_PV, x.id), { data: x.data, turno: x.turno, mats: x.mats, est: x.est, origem: "planilha veolia_controle · " + arq.name, atualizado_em: serverTimestamp() }));
   aviso("Saída da prensa importada ✔ (" + fmtNum(docs.length) + " turnos)");
 }
+/* ---------- Estoque (planilha de contagem) × produção Veolia × saídas por NF ---------- */
+const COL_EC = "estoque_contagens";
+let estContagens = [], estErro = "", xcDe = "", xcAte = "";
+const EC_COLS = { "PET CRISTAL": "PET cristal", "PET COR": "PET misto", "PET OLEO": "PET óleo", "PET AZUL": "PET azul", "PET VERDE": "PET verde", "ALU": "Latas", "LATAS": "Latas", "PP NATURAL": "PP natural", "PP COR": "PP colorido", "PEAD BRANCO": "PEAD natural", "PEAD COR": "PEAD colorido" };
+const EC_MESES = { JANEIRO: 1, FEVEREIRO: 2, MARCO: 3, ABRIL: 4, MAIO: 5, JUNHO: 6, JULHO: 7, AGOSTO: 8, SETEMBRO: 9, OUTUBRO: 10, NOVEMBRO: 11, DEZEMBRO: 12 };
+const EC_EN = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+const NF_GRUPO = { petcristal: "PET cristal", petazul: "PET azul", petverde: "PET verde", petmistocor: "PET misto", petoleo: "PET óleo", ppnatural: "PP natural", ppcor: "PP colorido", peadbranco: "PEAD natural", peadcor: "PEAD colorido", lata: "Latas" };
+const fmt1 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+function ecData(v){
+  if (typeof v === "number"){ if (v < 30000 || v > 80000) return ""; return new Date(Math.round((v - 25569) * 86400) * 1000).toISOString().slice(0, 10); }
+  const t = String(v == null ? "" : v).trim(); let m;
+  if ((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) return m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
+  if ((m = t.match(/^(\d{1,2})-([A-Za-z]{3})[a-z]*-(\d{2,4})$/))){ const mo = EC_EN[m[2].toLowerCase()]; if (!mo) return ""; const y = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]); return y + "-" + String(mo).padStart(2, "0") + "-" + m[1].padStart(2, "0"); }
+  return "";
+}
+function ecNum(v){
+  if (typeof v === "number") return isFinite(v) ? v : null;
+  const t = String(v == null ? "" : v).trim();
+  return /^\d+([.,]\d+)?$/.test(t) ? parseFloat(t.replace(",", ".")) : null;
+}
+function ecLer(wb){
+  const out = {};
+  const abas = wb.SheetNames.map(n => ({ n, mes: EC_MESES[pvNorm(n).replace(/[^A-Z]/g, "")] })).filter(a => a.mes).sort((a, b) => a.mes - b.mes);
+  abas.forEach(a => {
+    const linhas = XLSX.utils.sheet_to_json(wb.Sheets[a.n], { header: 1, raw: true, defval: "" });
+    const hi = linhas.findIndex(r => r.some(c => pvNorm(c) === "PET CRISTAL"));
+    if (hi < 0) return;
+    const cols = linhas[hi].map(h => EC_COLS[pvNorm(h)] || null);
+    let dc = linhas[hi].findIndex(c => pvNorm(c) === "DATA");
+    for (let k = hi - 1; dc < 0 && k >= Math.max(0, hi - 2); k--) dc = linhas[k].findIndex(c => pvNorm(c) === "DATA");
+    if (dc < 0) dc = 0;
+    linhas.slice(hi + 1).forEach(r => {
+      const iso = ecData(r[dc]); if (!iso || out[iso]) return;
+      const mes = Number(iso.slice(5, 7)), ant = a.mes === 1 ? 12 : a.mes - 1;
+      if (mes !== a.mes && mes !== ant) return;
+      const v = {};
+      cols.forEach((m, i) => { if (!m) return; const n = ecNum(r[i]); if (n != null) v[m] = n; });
+      if (Object.keys(v).length) out[iso] = v;
+    });
+  });
+  return Object.keys(out).sort().map(iso => ({ id: iso, data: iso, v: Object.keys(out[iso]).map(m => ({ m, q: out[iso][m] })) }));
+}
+async function importarEC(arq){
+  if (!arq) return;
+  await carregarXLSX();
+  const wb = XLSX.read(new Uint8Array(await arq.arrayBuffer()), { type: "array" });
+  const docs = ecLer(wb);
+  if (!docs.length) throw new Error("Não achei contagens de estoque (abas por mês com colunas PET Cristal, PET Cor...).");
+  const ja = new Set(estContagens.map(d => d.id)), novos = docs.filter(d => !ja.has(d.id)).length;
+  const r = await abrirModal({ titulo: "Importar contagens de estoque", ok: "Importar",
+    html: `<div class="txt">Arquivo <b>${esc(arq.name)}</b><br>${fmtNum(docs.length)} contagem(ns), de <b>${fmtDiaKey(docs[0].data)}</b> a <b>${fmtDiaKey(docs[docs.length - 1].data)}</b>.<br><b>${fmtNum(novos)}</b> nova(s) e <b>${fmtNum(docs.length - novos)}</b> que já existem e serão atualizadas.</div>` });
+  if (!r) return;
+  await gravarLote(docs, (b, x) => b.set(doc(db, COL_EC, x.id), { data: x.data, v: x.v, origem: "planilha " + arq.name, atualizado_em: serverTimestamp() }));
+  aviso("Contagens de estoque importadas ✔ (" + fmtNum(docs.length) + ")");
+}
+function xcDados(){
+  const dv = pvDocs.map(d => d.data).sort(), primV = dv[0] || "", ultV = dv[dv.length - 1] || "";
+  const lim = ultV ? new Date(new Date(ultV + "T12:00:00").getTime() + 864e5).toISOString().slice(0, 10) : "";
+  const cont = estContagens.slice().sort((a, b) => a.data < b.data ? -1 : 1).map(c => { const v = {}; c.v.forEach(x => { v[x.m] = x.q; }); return { data: c.data, v }; });
+  const cand = cont.filter(c => primV && c.data >= primV && c.data <= lim);
+  const med = {}; PV_FARDOS.forEach(m => { let q = 0, kg = 0; pvDocs.forEach(d => d.mats.forEach(x => { if (x.m === m){ q += x.q; kg += x.kg; } })); med[m] = q ? kg / q : 300; });
+  return { cont, cand, med, primV, ultV, lim };
+}
+function xcJanela(D, a, b){
+  const noInt = d => d >= a && d < b;
+  const P = {}, E = {}, SF = {}, SK = {}; PV_FARDOS.forEach(m => { P[m] = 0; E[m] = 0; SF[m] = 0; SK[m] = 0; });
+  pvDocs.forEach(d => { if (!noInt(d.data)) return; d.mats.forEach(x => { if (P[x.m] != null) P[x.m] += x.q; }); d.est.forEach(x => { if (E[x.m] != null) E[x.m] += x.q; }); });
+  let semMat = 0;
+  expNotas.filter(n => n.status !== "Cancelada" && n.data && noInt(n.data)).forEach(n => {
+    if (!(n.mats || []).length){ if (n.peso > 0) semMat++; return; }
+    n.mats.forEach(x => { const g = NF_GRUPO[chaveMat(x.m)]; if (!g) return; const kg = x.u === "kg" ? x.q : x.q * D.med[g], fd = x.u === "fardos" ? x.q : x.q / D.med[g]; SF[g] += fd; SK[g] += kg; });
+  });
+  return { P, E, SF, SK, semMat };
+}
+function renderXC(){
+  const tb = $("xcResumo"); if (!tb) return;
+  $("xcErro").innerHTML = estErro ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso à coleção "${COL_EC}".</b><div class="txt mono" style="margin-top:6px">${esc(estErro)}</div><div class="muted" style="margin-top:6px">Adicione a coleção às regras do Firestore (arquivo regras_firestore.txt).</div></div>` : "";
+  const D = xcDados(), cand = D.cand;
+  const dias = cand.map(c => c.data);
+  if (cand.length < 2){
+    $("xcDeSel").innerHTML = ""; $("xcAteSel").innerHTML = "";
+    $("xcInfo").textContent = estContagens.length ? "São necessárias ao menos 2 contagens dentro do período com dados da Veolia." : "Nenhuma contagem importada. Use “Importar estoque (.xlsx)”.";
+    tb.innerHTML = vazio(9, "Sem dados para cruzar ainda."); $("xcMatriz").innerHTML = vazio(11, "—"); $("xcAviso").innerHTML = ""; return;
+  }
+  if (!dias.includes(xcAte) || xcAte === dias[0]) xcAte = dias[dias.length - 1];
+  if (!dias.includes(xcDe) || xcDe >= xcAte){
+    const ini = xcAte.slice(0, 7) + "-01", antes = dias.filter(d => d < ini && d < xcAte);
+    xcDe = antes.length ? antes[antes.length - 1] : dias[0];
+  }
+  const opt = (arr, sel) => arr.map(d => `<option value="${d}" ${d === sel ? "selected" : ""}>${fmtDiaKey(d)}</option>`).join("");
+  $("xcDeSel").innerHTML = opt(dias.filter(d => d < xcAte), xcDe); $("xcAteSel").innerHTML = opt(dias.filter(d => d > xcDe), xcAte);
+  const cA = cand.find(c => c.data === xcDe), cB = cand.find(c => c.data === xcAte), W = xcJanela(D, xcDe, xcAte);
+  $("xcInfo").textContent = `Contagens de ${fmtDiaKey(xcDe)} a ${fmtDiaKey(xcAte)} · Veolia e NFs de ${fmtDiaKey(xcDe)} até ${fmtDiaKey(new Date(new Date(xcAte + "T12:00:00").getTime() - 864e5).toISOString().slice(0, 10))}` + (D.lim < (estContagens.map(c => c.data).sort().pop() || "") ? ` · contagens depois de ${fmtDiaKey(D.lim)} aguardam a planilha da Veolia` : "");
+  $("xcAviso").innerHTML = W.semMat ? `<div class="panel" style="border-color:var(--warn);margin-bottom:12px"><b style="color:var(--warn)">${fmtNum(W.semMat)} nota(s) deste período sem material informado.</b> <span class="muted">As saídas dessas notas não entram no cálculo, então as diferenças podem estar distorcidas (as notas de agosto e setembro da Base Diária não trazem material).</span></div>` : "";
+  const f1 = n => fmt1.format(Math.round(n * 10) / 10), cor = d => Math.abs(d) <= 2 ? "" : ` style="color:var(--${Math.abs(d) >= 8 ? "err" : "warn"});font-weight:700"`;
+  let tot = { s: 0, p: 0, e: 0, sf: 0, sk: 0, x: 0, c: 0, ok: 0 };
+  const linhas = PV_FARDOS.map(m => {
+    const e0 = cA.v[m], e1 = cB.v[m];
+    if (e0 == null || e1 == null) return `<tr><td>${badgeMat(m)}</td><td colspan="8" class="muted">sem contagem nas duas datas</td></tr>`;
+    const esp = e0 + W.P[m] - W.E[m] - W.SF[m], dif = e1 - esp;
+    tot.s += e0; tot.p += W.P[m]; tot.e += W.E[m]; tot.sf += W.SF[m]; tot.sk += W.SK[m]; tot.x += esp; tot.c += e1; tot.ok++;
+    return `<tr><td>${badgeMat(m)}</td><td class="num">${f1(e0)}</td><td class="num">${f1(W.P[m])}</td><td class="num">${f1(W.E[m])}</td><td class="num">${f1(W.SF[m])}</td><td class="num">${fmtNum(Math.round(W.SK[m]))}</td><td class="num">${f1(esp)}</td><td class="num">${f1(e1)}</td><td class="num"${cor(dif)}>${dif > 0 ? "+" : ""}${f1(dif)}</td></tr>`;
+  });
+  tb.innerHTML = linhas.join("") + (tot.ok ? `<tr class="total"><td>Total</td><td class="num">${f1(tot.s)}</td><td class="num">${f1(tot.p)}</td><td class="num">${f1(tot.e)}</td><td class="num">${f1(tot.sf)}</td><td class="num">${fmtNum(Math.round(tot.sk))}</td><td class="num">${f1(tot.x)}</td><td class="num">${f1(tot.c)}</td><td class="num">${tot.c - tot.x > 0 ? "+" : ""}${f1(tot.c - tot.x)}</td></tr>` : "");
+  const ints = cand.filter(c => c.data >= xcDe && c.data <= xcAte);
+  $("xcMatriz").innerHTML = ints.slice(0, -1).map((c0, i) => {
+    const c1 = ints[i + 1], w = xcJanela(D, c0.data, c1.data);
+    const cel = m => { const a = c0.v[m], b = c1.v[m]; if (a == null || b == null) return `<td class="num muted">—</td>`; const d = b - (a + w.P[m] - w.E[m] - w.SF[m]); return `<td class="num"${cor(d)}>${d > 0 ? "+" : ""}${f1(d)}</td>`; };
+    return `<tr><td>${fmtDiaKey(c0.data)} → ${fmtDiaKey(c1.data)}${w.semMat ? ` <span class="badge b-warn" title="Notas sem material neste intervalo">${w.semMat} NF s/ mat.</span>` : ""}</td>${PV_FARDOS.map(cel).join("")}</tr>`;
+  }).join("") || vazio(11, "—");
+}
+
 function montarViewPrensaV(){
   const sec = $("v-prensaV");
   sec.innerHTML = `<div class="page-head"><div><h1>Saída da prensa (Veolia)</h1><p>Contagem oficial da planilha da Veolia (aba SAIDA_DA_PRENSA). Enquanto o RFID está sendo implantado, estes são os números de produção. Estourados são fardos que voltaram para a prensa e podem ser de outros dias, por isso não são descontados dia a dia, só no total do período.</p></div></div>
@@ -2115,13 +2227,26 @@ function montarViewPrensaV(){
     <h3 style="margin:14px 0 6px">Resumo por material</h3>
     <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Fardos</th><th class="num">kg</th><th class="num">Estourados</th><th class="num">Fardos líquidos</th><th class="num">kg líquido (estimado)</th><th class="num">Estourados ÷ produzidos</th></tr></thead><tbody id="pvResumo"></tbody></table></div>
     <h3 style="margin:18px 0 6px">Por dia</h3>
-    <div class="table-wrap"><table><thead><tr><th>Dia</th><th class="num">Fardos</th><th class="num">kg total</th><th class="num">Estourados</th><th>Detalhe por material (fardos · kg)</th></tr></thead><tbody id="pvDias"></tbody></table></div>`;
-  sec.addEventListener("click", e => { if (e.target.closest("button[data-vbtn]")) $("pvFile").click(); });
+    <div class="table-wrap"><table><thead><tr><th>Dia</th><th class="num">Fardos</th><th class="num">kg total</th><th class="num">Estourados</th><th>Detalhe por material (fardos · kg)</th></tr></thead><tbody id="pvDias"></tbody></table></div>
+    <h3 style="margin:26px 0 6px">Estoque × produção × saídas</h3>
+    <p class="muted" style="margin:0 0 10px">Estoque esperado = contagem inicial + produção da Veolia − estourados − saídas por NF (do intervalo entre as contagens; a contagem do dia é feita antes da carga sair, então a venda entra no intervalo que começa no dia da carga). Diferença = contagem final − esperado. Positivo: sobrou fardo no pátio (produção sem registro ou saída a mais lançada). Negativo: faltou fardo (saída sem NF ou produção registrada a mais). Saídas em fardos calculadas pelo peso médio do fardo quando a NF está em kg.</p>
+    <div id="xcErro"></div>
+    <div class="toolbar"><label class="muted">De a contagem de</label><select class="input" id="xcDeSel" style="max-width:150px"></select><label class="muted">até a contagem de</label><select class="input" id="xcAteSel" style="max-width:150px"></select>
+      <button class="btn sm pri" data-vbtn="est">Importar estoque (.xlsx)</button><input type="file" id="ecFile" accept=".xlsx,.xlsm" class="hide"><span class="muted" id="xcInfo"></span></div>
+    <div id="xcAviso"></div>
+    <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Estoque inicial</th><th class="num">+ Produção Veolia</th><th class="num">− Estourados</th><th class="num">− Saídas NF (fardos)</th><th class="num">Saídas NF (kg)</th><th class="num">= Esperado</th><th class="num">Estoque contado</th><th class="num">Diferença</th></tr></thead><tbody id="xcResumo"></tbody></table></div>
+    <h3 style="margin:18px 0 6px">Diferença por intervalo entre contagens (fardos)</h3>
+    <div class="table-wrap"><table><thead><tr><th>Intervalo</th>${PV_FARDOS.map(m => `<th class="num">${m}</th>`).join("")}</tr></thead><tbody id="xcMatriz"></tbody></table></div>`;
+  sec.addEventListener("click", e => { const b = e.target.closest("button[data-vbtn]"); if (b) $(b.dataset.vbtn === "est" ? "ecFile" : "pvFile").click(); });
+  $("ecFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) run(() => importarEC(f)); });
+  $("xcDeSel").addEventListener("change", e => { xcDe = e.target.value; renderXC(); });
+  $("xcAteSel").addEventListener("change", e => { xcAte = e.target.value; renderXC(); });
   $("pvFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) run(() => importarPV(f)); });
   $("pvMesSel").addEventListener("change", e => { pvMes = e.target.value; renderPV(); });
 }
 function renderPV(){
   const tb = $("pvResumo"); if (!tb) return;
+  renderXC();
   $("pvErro").innerHTML = pvErro ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso à coleção "${COL_PV}".</b><div class="txt mono" style="margin-top:6px">${esc(pvErro)}</div><div class="muted" style="margin-top:6px">Adicione a coleção às regras do Firestore (arquivo regras_firestore.txt).</div></div>` : "";
   const meses = [...new Set(pvDocs.map(d => d.data.slice(0, 7)))].sort().reverse();
   if (pvMes !== "__t" && !meses.includes(pvMes)) pvMes = meses[0] || "";
@@ -2319,6 +2444,12 @@ function iniciarListeners(){
     renderPV();
   }, err => { console.error("Erro " + COL_PV + ":", err); pvErro = err && err.message ? err.message : String(err); renderPV(); }));
 
+  unsubs.push(onSnapshot(collection(db, COL_EC), snap => {
+    estContagens = []; estErro = "";
+    snap.forEach(dc => { const d = dc.data(); estContagens.push({ id: dc.id, data: d.data || dc.id, v: d.v || [] }); });
+    renderXC();
+  }, err => { console.error("Erro " + COL_EC + ":", err); estErro = err && err.message ? err.message : String(err); renderXC(); }));
+
   unsubs.push(onSnapshot(query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500)), snap => {
     logs = [];
     snap.forEach(doc => { const d = doc.data(); logs.push({ id: doc.id, ts: toDate(d.criado_em), tipo: d.operacao_tentada || "EVENTO", material: d.material || "", peso: Number(d.peso_kg || 0), epc: d.epc || "", motivo: d.motivo_bloqueio || "" }); });
@@ -2352,7 +2483,7 @@ onAuthStateChanged(auth, user => {
     iniciarListeners(); irPara(viewAtual);
   } else {
     unsubs.forEach(u => u()); unsubs = [];
-    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = []; expPrecos = []; pvDocs = []; syncFlags.car = syncFlags.info = syncFlags.exp = false;
+    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = []; expPrecos = []; pvDocs = []; estContagens = []; syncFlags.car = syncFlags.info = syncFlags.exp = false;
     $("telaErp").style.display = "none"; $("telaLogin").style.display = "flex";
     $("senhaInput").value = "";
   }
