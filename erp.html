@@ -289,7 +289,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 .lg-m{display:none}
 .topbar-m{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
 .topbar-m .btn{padding:6px 12px;font-size:12.5px}
-body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
+body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
 body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 </style>
 </head>
@@ -329,6 +329,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
       <button data-v="expFat"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/></svg><span><span class="lg-d">Faturamento (lead)</span><span class="lg-m">Fatur.</span></span></button><button data-v="expPatio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg><span><span class="lg-d">Pátio (dwell)</span><span class="lg-m">Pátio</span></span></button><button data-v="expCarga"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17V9l7-4 7 4v8"/><path d="M10 17v-4h4v4"/></svg><span><span class="lg-d">Tempo de carga</span><span class="lg-m">T. carga</span></span></button>
       <button data-v="expMateriais"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg><span><span class="lg-d">Materiais</span><span class="lg-m">Material</span></span></button>
       <button data-v="expPrecos"><svg viewBox="0 0 24 24"><path d="M12 3v18M16 7.5c-.7-1.2-2.1-2-4-2-2.3 0-4 1.1-4 3 0 4.5 8 2.2 8 6.5 0 1.9-1.8 3-4 3-2 0-3.5-.9-4.2-2.3"/></svg><span><span class="lg-d">Preços</span><span class="lg-m">Preços</span></span></button>
+      <div class="nav-sep">Produção</div><button data-v="prensaV"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 4v16"/></svg><span><span class="lg-d">Saída da prensa (Veolia)</span><span class="lg-m">Prensa V.</span></span></button>
     </nav>
     <div class="side-foot">
       <div class="live"><span class="dot" id="dotLive"></span><span id="txtLive">conectando…</span></div>
@@ -472,6 +473,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
     <section class="view" id="v-expCarga"></section>
     <section class="view" id="v-expMateriais"></section>
     <section class="view" id="v-expPrecos"></section>
+    <section class="view" id="v-prensaV"></section>
     <!-- ===== CONFERÊNCIA ===== -->
     <section class="view" id="v-conferencia">
       <div class="page-head"><div><h1>Conferência de estoque</h1><p>Compara a leitura física em massa com o estoque do sistema.</p></div></div>
@@ -2036,7 +2038,121 @@ function renderConsulta(){
 }
 
 /* ---------- navegação e eventos ---------- */
-montarViewsExp(); montarViewPrecos(); montarViewMateriais();
+/* ---------- Prensa Veolia (planilha SAIDA_DA_PRENSA) ---------- */
+const COL_PV = "prensa_veolia";
+let pvDocs = [], pvErro = "", pvMes = "";
+const PV_NOMES = {"FERROSOS":"Ferrosos","AEROSOIS":"Aerossóis","AEROSSOIS":"Aerossóis","ELETRONICOS E PILHAS":"Eletrônicos e pilhas","OUTROS ALUMINIOS":"Outros alumínios","LATAS":"Latas","PEAD COLORIDO":"PEAD colorido","PEAD NATURAL":"PEAD natural","PET OLEO":"PET óleo","PET AZUL":"PET azul","PET CRISTAL":"PET cristal","PET MISTO":"PET misto","PET VERDE":"PET verde","PP COLORIDO":"PP colorido","PP NATURAL":"PP natural"};
+const PV_FARDOS = ["PET cristal","PET azul","PET verde","PET misto","PET óleo","PEAD natural","PEAD colorido","PP natural","PP colorido","Latas"];
+const PV_OUTROS = ["Ferrosos","Aerossóis","Eletrônicos e pilhas","Outros alumínios"];
+const PV_UNID = { "Ferrosos": "granel", "Aerossóis": "bags", "Eletrônicos e pilhas": "bags", "Outros alumínios": "bags" };
+const pvNorm = s => String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/\s+/g, " ").trim();
+function pvNum(v){
+  if (typeof v === "number") return v;
+  let t = String(v == null ? "" : v).trim(); if (!t) return 0;
+  if (/^\d{1,3}([.,]\d{3})+$/.test(t)) t = t.replace(/[.,]/g, ""); else t = t.replace(",", ".");
+  const n = parseFloat(t); return isNaN(n) ? 0 : n;
+}
+function pvData(v){
+  if (typeof v === "number"){ const dt = new Date(Math.round((v - 25569) * 86400) * 1000); return { iso: dt.toISOString().slice(0, 10), h: dt.getUTCHours() }; }
+  const m = String(v == null ? "" : v).match(/(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{1,2}):)?/);
+  return m ? { iso: m[3] + "-" + m[2] + "-" + m[1], h: m[4] ? Number(m[4]) : 0 } : null;
+}
+function pvLerLinhas(linhas){
+  const hi = linhas.findIndex(r => r.some(c => pvNorm(c).startsWith("A GRANEL")));
+  if (hi < 0) throw new Error("Não achei o cabeçalho da saída da prensa (coluna “A GRANEL FERROSOS”).");
+  const cols = linhas[hi].map(h => {
+    const s = pvNorm(h), nome = x => PV_NOMES[x] || x;
+    if (s.startsWith("FARDOS ESTOURADOS - ")) return { t: "e", m: nome(s.slice(20).trim()) };
+    if (s.startsWith("PESO MONTANTE ")) return { t: "k", m: nome(s.slice(14).trim()) };
+    if (s.startsWith("A GRANEL ")) return { t: "q", m: nome(s.slice(9).trim()) };
+    if (s.startsWith("BAGS ")) return { t: "q", m: nome(s.slice(5).trim()) };
+    if (s.startsWith("FARDOS ")) return { t: "q", m: nome(s.slice(7).trim()) };
+    return null;
+  });
+  const docs = {};
+  linhas.slice(hi + 1).forEach(r => {
+    const d = pvData(r[0]); if (!d) return;
+    const id = d.iso + "_T" + d.h, mats = {}, est = {};
+    cols.forEach((c, i) => {
+      if (!c) return; const n = pvNum(r[i]); if (!n) return;
+      if (c.t === "e") est[c.m] = (est[c.m] || 0) + n;
+      else { const o = (mats[c.m] ||= { q: 0, kg: 0 }); if (c.t === "q") o.q += n; else o.kg += n; }
+    });
+    const ml = Object.keys(mats).map(m => ({ m, q: mats[m].q, kg: mats[m].kg })), el = Object.keys(est).map(m => ({ m, q: est[m] }));
+    if (!ml.length && !el.length) return;
+    const a = docs[id] || (docs[id] = { id, data: d.iso, turno: d.h, mats: [], est: [] });
+    ml.forEach(x => { const o = a.mats.find(y => y.m === x.m); if (o){ o.q += x.q; o.kg += x.kg; } else a.mats.push(x); });
+    el.forEach(x => { const o = a.est.find(y => y.m === x.m); if (o) o.q += x.q; else a.est.push(x); });
+  });
+  return Object.values(docs).sort((a, b) => a.id < b.id ? -1 : 1);
+}
+const carregarXLSX = () => window.XLSX ? Promise.resolve() : new Promise((ok, no) => {
+  const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  s.onload = ok; s.onerror = () => no(new Error("Não consegui carregar o leitor de planilhas. Confira a internet e tente de novo.")); document.head.appendChild(s);
+});
+async function importarPV(arq){
+  if (!arq) return;
+  await carregarXLSX();
+  const wb = XLSX.read(new Uint8Array(await arq.arrayBuffer()), { type: "array" });
+  const nome = wb.SheetNames.find(n => pvNorm(n).replace(/[_\s]+/g, " ") === "SAIDA DA PRENSA");
+  if (!nome) throw new Error("Esta planilha não tem a aba SAIDA_DA_PRENSA.");
+  const docs = pvLerLinhas(XLSX.utils.sheet_to_json(wb.Sheets[nome], { header: 1, raw: true, defval: "" }));
+  if (!docs.length) throw new Error("Não encontrei linhas de saída da prensa nessa aba.");
+  const ja = new Set(pvDocs.map(d => d.id)), novos = docs.filter(d => !ja.has(d.id)).length;
+  const r = await abrirModal({ titulo: "Importar saída da prensa", ok: "Importar",
+    html: `<div class="txt">Arquivo <b>${esc(arq.name)}</b><br>${fmtNum(docs.length)} turno(s), de <b>${fmtDiaKey(docs[0].data)}</b> a <b>${fmtDiaKey(docs[docs.length - 1].data)}</b>.<br><b>${fmtNum(novos)}</b> novo(s) e <b>${fmtNum(docs.length - novos)}</b> que já existem e serão atualizados com os valores da planilha.</div>` });
+  if (!r) return;
+  await gravarLote(docs, (b, x) => b.set(doc(db, COL_PV, x.id), { data: x.data, turno: x.turno, mats: x.mats, est: x.est, origem: "planilha veolia_controle · " + arq.name, atualizado_em: serverTimestamp() }));
+  aviso("Saída da prensa importada ✔ (" + fmtNum(docs.length) + " turnos)");
+}
+function montarViewPrensaV(){
+  const sec = $("v-prensaV");
+  sec.innerHTML = `<div class="page-head"><div><h1>Saída da prensa (Veolia)</h1><p>Contagem oficial da planilha da Veolia (aba SAIDA_DA_PRENSA). Enquanto o RFID está sendo implantado, estes são os números de produção. Estourados são fardos que voltaram para a prensa e podem ser de outros dias, por isso não são descontados dia a dia, só no total do período.</p></div></div>
+    <div id="pvErro"></div>
+    <div class="toolbar"><select class="input" id="pvMesSel" style="max-width:220px"></select>
+      <button class="btn sm pri" data-vbtn="importar">Importar planilha (.xlsx)</button><input type="file" id="pvFile" accept=".xlsx,.xlsm" class="hide">
+      <span class="muted" id="pvInfo"></span></div>
+    <h3 style="margin:14px 0 6px">Resumo por material</h3>
+    <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Fardos</th><th class="num">kg</th><th class="num">Estourados</th><th class="num">Fardos líquidos</th><th class="num">kg líquido (estimado)</th><th class="num">Estourados ÷ produzidos</th></tr></thead><tbody id="pvResumo"></tbody></table></div>
+    <h3 style="margin:18px 0 6px">Por dia</h3>
+    <div class="table-wrap"><table><thead><tr><th>Dia</th><th class="num">Fardos</th><th class="num">kg total</th><th class="num">Estourados</th><th>Detalhe por material (fardos · kg)</th></tr></thead><tbody id="pvDias"></tbody></table></div>`;
+  sec.addEventListener("click", e => { if (e.target.closest("button[data-vbtn]")) $("pvFile").click(); });
+  $("pvFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) run(() => importarPV(f)); });
+  $("pvMesSel").addEventListener("change", e => { pvMes = e.target.value; renderPV(); });
+}
+function renderPV(){
+  const tb = $("pvResumo"); if (!tb) return;
+  $("pvErro").innerHTML = pvErro ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso à coleção "${COL_PV}".</b><div class="txt mono" style="margin-top:6px">${esc(pvErro)}</div><div class="muted" style="margin-top:6px">Adicione a coleção às regras do Firestore (arquivo regras_firestore.txt).</div></div>` : "";
+  const meses = [...new Set(pvDocs.map(d => d.data.slice(0, 7)))].sort().reverse();
+  if (pvMes !== "__t" && !meses.includes(pvMes)) pvMes = meses[0] || "";
+  const sel = $("pvMesSel"), opt = ["<option value=\"__t\">Todo o período</option>", ...meses.map(m => `<option value="${m}">${m.slice(5)}/${m.slice(0, 4)}</option>`)].join("");
+  if (sel.dataset.o !== opt){ sel.innerHTML = opt; sel.dataset.o = opt; }
+  sel.value = pvMes || "__t";
+  const lista = pvDocs.filter(d => pvMes === "__t" || d.data.startsWith(pvMes));
+  const prod = {}, est = {};
+  lista.forEach(d => { d.mats.forEach(x => { const o = (prod[x.m] ||= { q: 0, kg: 0 }); o.q += x.q; o.kg += x.kg; }); d.est.forEach(x => { est[x.m] = (est[x.m] || 0) + x.q; }); });
+  const dias = [...new Set(lista.map(d => d.data))];
+  $("pvInfo").textContent = lista.length ? `${fmtNum(lista.length)} turno(s) em ${fmtNum(dias.length)} dia(s), até ${fmtDiaKey(lista.map(d => d.data).sort().pop())}` : "Nenhum dado. Use “Importar planilha”.";
+  const extra = Object.keys({ ...prod, ...est }).filter(m => !PV_FARDOS.includes(m) && !PV_OUTROS.includes(m));
+  const linhaF = m => {
+    const p = prod[m] || { q: 0, kg: 0 }, e = est[m] || 0, med = p.q ? p.kg / p.q : 0;
+    if (!p.q && !p.kg && !e) return "";
+    return `<tr><td>${badgeMat(m)}</td><td class="num">${fmtNum(p.q)}</td><td class="num">${fmtNum(p.kg)}</td><td class="num">${fmtNum(e)}</td><td class="num">${fmtNum(p.q - e)}</td><td class="num">${fmtNum(Math.round(p.kg - e * med))}</td><td class="num">${p.q ? Math.round(e / p.q * 100) + "%" : "—"}</td></tr>`;
+  };
+  const tot = PV_FARDOS.reduce((a, m) => { const p = prod[m] || { q: 0, kg: 0 }, e = est[m] || 0, med = p.q ? p.kg / p.q : 0; a.q += p.q; a.kg += p.kg; a.e += e; a.liq += p.kg - e * med; return a; }, { q: 0, kg: 0, e: 0, liq: 0 });
+  const linhasO = [...PV_OUTROS, ...extra].map(m => { const p = prod[m]; return p && (p.q || p.kg) ? `<tr class="muted"><td>${badgeMat(m)} <span class="muted">(${PV_UNID[m] || "un"})</span></td><td class="num">${fmtNum(p.q)}</td><td class="num">${fmtNum(p.kg)}</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>` : ""; }).join("");
+  tb.innerHTML = lista.length ? PV_FARDOS.map(linhaF).join("") + `<tr class="total"><td>Total dos fardos</td><td class="num">${fmtNum(tot.q)}</td><td class="num">${fmtNum(tot.kg)}</td><td class="num">${fmtNum(tot.e)}</td><td class="num">${fmtNum(tot.q - tot.e)}</td><td class="num">${fmtNum(Math.round(tot.liq))}</td><td class="num">${tot.q ? Math.round(tot.e / tot.q * 100) + "%" : "—"}</td></tr>` + linhasO : vazio(7, "Nenhum dado de saída da prensa neste período.");
+  const porDia = {}; lista.forEach(d => (porDia[d.data] ||= []).push(d));
+  $("pvDias").innerHTML = Object.keys(porDia).sort().reverse().map(k => {
+    const ds = porDia[k], m = {}, e = {}; ds.forEach(d => { d.mats.forEach(x => { const o = (m[x.m] ||= { q: 0, kg: 0 }); o.q += x.q; o.kg += x.kg; }); d.est.forEach(x => { e[x.m] = (e[x.m] || 0) + x.q; }); });
+    const fd = PV_FARDOS.reduce((a, n) => a + (m[n] ? m[n].q : 0), 0), kg = Object.values(m).reduce((a, o) => a + o.kg, 0), es = Object.values(e).reduce((a, n) => a + n, 0);
+    const det = Object.keys(m).map(n => `${esc(n)} ${fmtNum(m[n].q)} · ${fmtNum(m[n].kg)}`).join(" | ");
+    const sem = new Date(k + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+    return `<tr><td>${fmtDiaKey(k)} <span class="muted">${esc(sem)}</span></td><td class="num">${fmtNum(fd)}</td><td class="num">${fmtNum(kg)}</td><td class="num">${fmtNum(es)}</td><td class="muted" style="font-size:12.5px">${det}${es ? `<br>Estourados: ${Object.keys(e).map(n => esc(n) + " " + fmtNum(e[n])).join(" | ")}` : ""}</td></tr>`;
+  }).join("") || vazio(5, "Nenhum dado neste período.");
+}
+
+montarViewsExp(); montarViewPrecos(); montarViewMateriais(); montarViewPrensaV();
 // campos de busca: ficam somente-leitura até o foco, para o navegador não preencher o e-mail do login
 document.addEventListener("focusin", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined) el.removeAttribute("readonly"); });
 document.addEventListener("focusout", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined && !el.value) el.setAttribute("readonly", ""); });
@@ -2197,6 +2313,12 @@ function iniciarListeners(){
     renderPrecos(); agendarSync();
   }, err => { console.error("Erro " + COL_PRECOS + ":", err); expErroPrecos = err && err.message ? err.message : String(err); renderPrecos(); }));
 
+  unsubs.push(onSnapshot(collection(db, COL_PV), snap => {
+    pvDocs = []; pvErro = "";
+    snap.forEach(dc => { const d = dc.data(); pvDocs.push({ id: dc.id, data: d.data || dc.id.slice(0, 10), turno: d.turno || 0, mats: d.mats || [], est: d.est || [] }); });
+    renderPV();
+  }, err => { console.error("Erro " + COL_PV + ":", err); pvErro = err && err.message ? err.message : String(err); renderPV(); }));
+
   unsubs.push(onSnapshot(query(collection(db, "logs_bloqueios"), orderBy("criado_em", "desc"), limit(500)), snap => {
     logs = [];
     snap.forEach(doc => { const d = doc.data(); logs.push({ id: doc.id, ts: toDate(d.criado_em), tipo: d.operacao_tentada || "EVENTO", material: d.material || "", peso: Number(d.peso_kg || 0), epc: d.epc || "", motivo: d.motivo_bloqueio || "" }); });
@@ -2230,7 +2352,7 @@ onAuthStateChanged(auth, user => {
     iniciarListeners(); irPara(viewAtual);
   } else {
     unsubs.forEach(u => u()); unsubs = [];
-    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = []; expPrecos = []; syncFlags.car = syncFlags.info = syncFlags.exp = false;
+    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = []; expPrecos = []; pvDocs = []; syncFlags.car = syncFlags.info = syncFlags.exp = false;
     $("telaErp").style.display = "none"; $("telaLogin").style.display = "flex";
     $("senhaInput").value = "";
   }
