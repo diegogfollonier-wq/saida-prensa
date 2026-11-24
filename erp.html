@@ -289,7 +289,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 .lg-m{display:none}
 .topbar-m{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
 .topbar-m .btn{padding:6px 12px;font-size:12.5px}
-body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
+body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="vendas"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
 body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 </style>
 </head>
@@ -1490,7 +1490,7 @@ function montarViewsExp(){
   Object.keys(EXP_TABS).forEach(k => {
     const t = EXP_TABS[k], sec = $("v-" + t.id);
     const extra = k === "notas"
-      ? `<button class="btn sm pri" data-expbtn="novo">+ Nova nota</button><button class="btn sm" data-expbtn="importar">Importar planilha</button><button class="btn sm danger" data-expbtn="excluir">Excluir notas exibidas</button>`
+      ? `<button class="btn sm pri" data-expbtn="novo">+ Nova nota</button><button class="btn sm" data-expbtn="importar">Importar planilha</button><button class="btn sm" data-expbtn="vendas" title="Lê a aba Base Diária do DADOS_COLETAS_GERAL.xlsx e lança as vendas com materiais">Importar vendas (.xlsx)</button><button class="btn sm danger" data-expbtn="excluir">Excluir notas exibidas</button>`
       : "";
     sec.innerHTML = `
       <div class="page-head"><div><h1>${t.h}</h1><p>${t.p}</p></div></div>
@@ -1522,6 +1522,7 @@ function montarViewsExp(){
       if (op === "limpar"){ [t.id + "Q", t.id + "De", t.id + "Ate", t.id + "Cli"].forEach(i => $(i).value = ""); renderExp(k); }
       else if (op === "novo") run(() => editarExp(null, "notas"));
       else if (op === "importar") run(importarSeed);
+      else if (op === "vendas"){ const i = document.createElement("input"); i.type = "file"; i.accept = ".xlsx,.xlsm"; i.onchange = () => { const f = i.files[0]; if (f) run(() => importarVendas(f)); }; i.click(); }
       else if (op === "excluir") run(() => excluirExp(expFiltrado("notas"), "as notas exibidas"));
     });
   });
@@ -1760,7 +1761,7 @@ let expPrecos = [];
 const syncFlags = { car: false, info: false, exp: false };
 let syncTimer = null, syncBusy = false;
 const normMat = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "").replace(/s$/, "");
-const ALIAS_MAT = { petcor: "petmistocor", ppbandeja: "ppnatural", peadbr: "peadbranco", flexivel: "flexivei", aerosol: "aerossol" };
+const ALIAS_MAT = { petmisto: "petmistocor", petcor: "petmistocor", ppbandeja: "ppnatural", peadbr: "peadbranco", flexivel: "flexivei", aerosol: "aerossol" };
 const chaveMat = s => { const k = normMat(s); return ALIAS_MAT[k] || k; };
 function valorEstimado(mats){
   if (!mats || !mats.length) return null;
@@ -2105,6 +2106,63 @@ async function importarPV(arq){
   await gravarLote(docs, (b, x) => b.set(doc(db, COL_PV, x.id), { data: x.data, turno: x.turno, mats: x.mats, est: x.est, origem: "planilha veolia_controle · " + arq.name, atualizado_em: serverTimestamp() }));
   aviso("Saída da prensa importada ✔ (" + fmtNum(docs.length) + " turnos)");
 }
+function bdHora(v){
+  if (typeof v === "number" && v >= 0 && v < 1){ const m = Math.round(v * 1440); return String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+  const m = String(v == null ? "" : v).match(/^(\d{1,2}):(\d{2})/); return m ? m[1].padStart(2, "0") + ":" + m[2] : "";
+}
+function bdQtd(v){ if (typeof v === "number") return isFinite(v) ? v : 0; const t = String(v == null ? "" : v).replace(/[^\d.,]/g, ""); if (!t) return 0; const n = lerBR(t); return isNaN(n) ? 0 : n; }
+function bdLer(wb){
+  const nome = wb.SheetNames.find(n => pvNorm(n).replace(/[^A-Z]/g, "") === "BASEDIARIA");
+  if (!nome) throw new Error("Esta planilha não tem a aba Base Diária.");
+  const L = XLSX.utils.sheet_to_json(wb.Sheets[nome], { header: 1, raw: true, defval: "" });
+  const hi = L.findIndex(r => r.some(c => pvNorm(c) === "NF") && r.some(c => pvNorm(c) === "MATERIAL"));
+  if (hi < 0) throw new Error("Não achei o cabeçalho da Base Diária (colunas NF e Material).");
+  const H = L[hi].map(pvNorm), col = n => H.indexOf(n), cm = col("MATERIAL");
+  const c = { data: col("DATA"), cli: col("CLIENTE"), placa: col("PLACA"), mtr: col("MTR"), nf: col("NF"), peso: col("PESO (KG)"), valor: col("VALOR R$"), obs: col("OBSERVACOES"),
+    ent: col("ENTRADA PATIO"), sai: col("SAIDA PATIO"), ped: col("PEDIDO NF"), emi: col("NF EMITIDA"), hi: col("HR INICIO"), hf: col("HR FINAL") };
+  const nomes = {}; expNotas.forEach(n => { nomes[pvNorm(n.cliente)] = n.cliente; });
+  const bonito = t => nomes[pvNorm(t)] || String(t).trim().toLowerCase().replace(/(^|\s)\S/g, x => x.toUpperCase());
+  const out = [], ign = [];
+  L.slice(hi + 1).forEach(r => {
+    const nf = String(r[c.nf] || "").replace(/\D/g, ""), iso = ecData(r[c.data]);
+    if (!nf || !iso){ if (String(r[c.cli] || "").trim() || String(r[c.obs] || "").trim()) ign.push(String(r[c.cli] || "") + " " + String(r[c.obs] || "").slice(0, 40)); return; }
+    const peso = bdQtd(r[c.peso]), valor = bdQtd(r[c.valor]), obs = String(r[c.obs] || "").trim();
+    const mats = [];
+    [0, 3, 6, 9].forEach(o => { const m = String(r[cm + o] || "").trim(), q = bdQtd(r[cm + o + 1]); if (m && m.length <= 25) mats.push({ m, q }); });
+    const comQ = mats.filter(x => x.q > 0);
+    let ms = comQ.map(x => ({ m: x.m, q: x.q, u: "kg" })), aviso1 = "";
+    if (!comQ.length && mats.length === 1 && peso > 0) ms = [{ m: mats[0].m, q: peso, u: "kg" }];
+    else if (mats.length > comQ.length) aviso1 = "material sem quantidade";
+    const soma = ms.reduce((t, x) => t + x.q, 0);
+    if (ms.length > 1 && peso > 0 && soma > peso * 1.01 && soma <= peso * 1.1){ const mx = ms.reduce((x, y) => y.q > x.q ? y : x); mx.q = Math.round((mx.q - (soma - peso)) * 100) / 100; aviso1 = "quantidades somavam mais que o peso da NF; ajustei o maior material"; }
+    const mtr = (String(r[c.mtr] || "").match(/\d{6,}/) || [""])[0];
+    out.push({ id: "NF" + nf.padStart(6, "0"), nf: nf.padStart(6, "0"), data: iso, cliente: bonito(r[c.cli]), placa: normPlaca(r[c.placa]), mtr, peso, valor: valor > 0 ? valor : null, mats: ms, obs, aviso: aviso1,
+      ent: bdHora(r[c.ent]), sai: bdHora(r[c.sai]), ped: bdHora(r[c.ped]), emi: bdHora(r[c.emi]), hi: bdHora(r[c.hi]), hf: bdHora(r[c.hf]), status: /cancelad/i.test(obs) ? "Cancelada" : "Ativa" });
+  });
+  return { notas: out, ign };
+}
+async function importarVendas(arq){
+  await carregarXLSX();
+  const wb = XLSX.read(new Uint8Array(await arq.arrayBuffer()), { type: "array", cellDates: false });
+  const { notas, ign } = bdLer(wb);
+  if (!notas.length) throw new Error("Não encontrei notas na aba Base Diária.");
+  const exist = {}; expNotas.forEach(n => { exist[n.id] = n; });
+  const novas = notas.filter(n => !exist[n.id]);
+  const comp = notas.filter(n => exist[n.id] && !(exist[n.id].mats || []).length && n.mats.length);
+  const sem = notas.filter(n => n.status === "Ativa" && !n.mats.length).length;
+  const ds = notas.map(n => n.data).sort();
+  const r = await abrirModal({ titulo: "Importar vendas (Base Diária)", ok: "Importar",
+    html: `<div class="txt">Arquivo <b>${esc(arq.name)}</b><br>${fmtNum(notas.length)} nota(s), de <b>${fmtIso(ds[0])}</b> a <b>${fmtIso(ds[ds.length - 1])}</b>.<br><b>${fmtNum(novas.length)}</b> nova(s) serão lançadas; <b>${fmtNum(comp.length)}</b> já existente(s) sem material receberão os materiais; as demais ficam como estão.${sem ? `<br><span class="warn">${fmtNum(sem)} nota(s) ativa(s) sem material informado (não entram no cruzamento).</span>` : ""}${ign.length ? `<br>${fmtNum(ign.length)} linha(s) sem NF ignorada(s).` : ""}</div>` });
+  if (!r) return;
+  const lista = novas.concat(comp);
+  await gravarLote(lista, (b, n) => {
+    const ref = doc(db, COL_EXP, n.id);
+    if (exist[n.id]) b.set(ref, { materiais: n.mats, atualizado_em: serverTimestamp() }, { merge: true });
+    else b.set(ref, { ...paraDoc(n), criado_em: serverTimestamp(), origem: "planilha Base Diária · " + arq.name });
+  });
+  aviso("Vendas importadas ✔ (" + fmtNum(novas.length) + " novas, " + fmtNum(comp.length) + " atualizadas)");
+}
+
 /* ---------- Estoque (planilha de contagem) × produção Veolia × saídas por NF ---------- */
 const COL_EC = "estoque_contagens";
 let estContagens = [], estErro = "", xcDe = "", xcAte = "";
