@@ -289,7 +289,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 .lg-m{display:none}
 .topbar-m{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
 .topbar-m .btn{padding:6px 12px;font-size:12.5px}
-body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="vendas"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
+body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-cadm],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="vendas"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
 body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 </style>
 </head>
@@ -329,6 +329,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
       <button data-v="expFat"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/></svg><span><span class="lg-d">Faturamento (lead)</span><span class="lg-m">Fatur.</span></span></button><button data-v="expPatio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg><span><span class="lg-d">Pátio (dwell)</span><span class="lg-m">Pátio</span></span></button><button data-v="expCarga"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17V9l7-4 7 4v8"/><path d="M10 17v-4h4v4"/></svg><span><span class="lg-d">Tempo de carga</span><span class="lg-m">T. carga</span></span></button>
       <button data-v="expMateriais"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg><span><span class="lg-d">Materiais</span><span class="lg-m">Material</span></span></button>
       <button data-v="expPrecos"><svg viewBox="0 0 24 24"><path d="M12 3v18M16 7.5c-.7-1.2-2.1-2-4-2-2.3 0-4 1.1-4 3 0 4.5 8 2.2 8 6.5 0 1.9-1.8 3-4 3-2 0-3.5-.9-4.2-2.3"/></svg><span><span class="lg-d">Preços</span><span class="lg-m">Preços</span></span></button>
+      <button data-v="certs"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 14l2 2 4-4"/></svg><span><span class="lg-d">Certificados (MTR·NF·CDF)</span><span class="lg-m">CDF</span></span><b class="count hide" id="navCdf">0</b></button>
       <div class="nav-sep">Produção</div><button data-v="prensaV"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 4v16"/></svg><span><span class="lg-d">Saída da prensa (Veolia)</span><span class="lg-m">Prensa V.</span></span></button>
     </nav>
     <div class="side-foot">
@@ -474,6 +475,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
     <section class="view" id="v-expMateriais"></section>
     <section class="view" id="v-expPrecos"></section>
     <section class="view" id="v-prensaV"></section>
+    <section class="view" id="v-certs"></section>
     <!-- ===== CONFERÊNCIA ===== -->
     <section class="view" id="v-conferencia">
       <div class="page-head"><div><h1>Conferência de estoque</h1><p>Compara a leitura física em massa com o estoque do sistema.</p></div></div>
@@ -1652,7 +1654,7 @@ function renderExp(k){
     return `<div class="acc ${ab ? "open" : ""}"><button class="acc-h" data-expacc="${s}"><span class="seta">${ab ? "▾" : "▸"}</span><span class="d">${nome}</span><span class="w">sex a qui</span><span class="r">${resumo}</span></button>${ab ? `<div class="acc-b">${expLinhas(k, l)}</div>` : ""}</div>`;
   }).join("") || `<div class="muted">${expNotas.length ? "Nenhum registro com esses filtros." : "Nenhuma nota lançada ainda. Use “+ Nova nota” ou “Importar planilha” na aba Notas / Coletas."}</div>`;
 }
-function renderExpTodas(){ Object.keys(EXP_TABS).forEach(renderExp); if (typeof renderMateriais === "function") renderMateriais(); if (typeof renderXC === "function") renderXC(); }
+function renderExpTodas(){ Object.keys(EXP_TABS).forEach(renderExp); if (typeof renderMateriais === "function") renderMateriais(); if (typeof renderXC === "function") renderXC(); if (typeof renderCerts === "function") renderCerts(); }
 
 /* ----- formulário ----- */
 const campo = (rot, html) => `<div><label>${rot}</label>${html}</div>`;
@@ -2135,7 +2137,7 @@ function bdLer(wb){
     else if (mats.length > comQ.length) aviso1 = "material sem quantidade";
     const soma = ms.reduce((t, x) => t + x.q, 0);
     if (ms.length > 1 && peso > 0 && soma > peso * 1.01 && soma <= peso * 1.1){ const mx = ms.reduce((x, y) => y.q > x.q ? y : x); mx.q = Math.round((mx.q - (soma - peso)) * 100) / 100; aviso1 = "quantidades somavam mais que o peso da NF; ajustei o maior material"; }
-    const mtr = (String(r[c.mtr] || "").match(/\d{6,}/) || [""])[0];
+    const mtr = Array.from(new Set(String(r[c.mtr] || "").match(/\d{8,}/g) || [])).join(" / ");
     out.push({ id: "NF" + nf.padStart(6, "0"), nf: nf.padStart(6, "0"), data: iso, cliente: bonito(r[c.cli]), placa: normPlaca(r[c.placa]), mtr, peso, valor: valor > 0 ? valor : null, mats: ms, obs, aviso: aviso1,
       ent: bdHora(r[c.ent]), sai: bdHora(r[c.sai]), ped: bdHora(r[c.ped]), emi: bdHora(r[c.emi]), hi: bdHora(r[c.hi]), hf: bdHora(r[c.hf]), status: /cancelad/i.test(obs) ? "Cancelada" : "Ativa" });
   });
@@ -2148,7 +2150,8 @@ async function importarVendas(arq){
   if (!notas.length) throw new Error("Não encontrei notas na aba Base Diária.");
   const exist = {}; expNotas.forEach(n => { exist[n.id] = n; });
   const novas = notas.filter(n => !exist[n.id]);
-  const comp = notas.filter(n => exist[n.id] && !(exist[n.id].mats || []).length && n.mats.length);
+  const nIds = t => (String(t || "").match(/\d{8,}/g) || []).length;
+  const comp = notas.filter(n => exist[n.id] && ((!(exist[n.id].mats || []).length && n.mats.length) || nIds(n.mtr) > nIds(exist[n.id].mtr)));
   const sem = notas.filter(n => n.status === "Ativa" && !n.mats.length).length;
   const ds = notas.map(n => n.data).sort();
   const r = await abrirModal({ titulo: "Importar vendas (Base Diária)", ok: "Importar",
@@ -2157,10 +2160,134 @@ async function importarVendas(arq){
   const lista = novas.concat(comp);
   await gravarLote(lista, (b, n) => {
     const ref = doc(db, COL_EXP, n.id);
-    if (exist[n.id]) b.set(ref, { materiais: n.mats, atualizado_em: serverTimestamp() }, { merge: true });
+    if (exist[n.id]){ const u = { atualizado_em: serverTimestamp() }; if (!(exist[n.id].mats || []).length && n.mats.length) u.materiais = n.mats; if (nIds(n.mtr) > nIds(exist[n.id].mtr)) u.mtr = n.mtr; b.set(ref, u, { merge: true }); }
     else b.set(ref, { ...paraDoc(n), criado_em: serverTimestamp(), origem: "planilha Base Diária · " + arq.name });
   });
   aviso("Vendas importadas ✔ (" + fmtNum(novas.length) + " novas, " + fmtNum(comp.length) + " atualizadas)");
+}
+
+/* ---------- Certificados de destinação: MTR + NF + CDF ---------- */
+const COL_CDF = "certificados_cdf";
+let cdfDocs = {}, cdfErro = "", cdSt = "", cdCli = "", cdQ = "";
+const CDF_EXCL = ["SUTCO", "ENGEPECAS"];
+function cdfLinhas(){
+  const out = [];
+  expNotas.forEach(n => {
+    if (n.status === "Cancelada") return;
+    const c = pvNorm(n.cliente); if (CDF_EXCL.some(x => c.includes(x))) return;
+    const ids = Array.from(new Set(String(n.mtr || "").match(/\d{8,}/g) || []));
+    if (!ids.length) out.push({ mtr: "", nf: n.nf, cliente: n.cliente || "", data: n.data || "", cdf: null, st: "sem" });
+    else ids.forEach(m => { const d = cdfDocs[m] || null; out.push({ mtr: m, nf: n.nf, cliente: n.cliente || "", data: n.data || "", cdf: d, st: d ? "ok" : "falta" }); });
+  });
+  return out.sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : (a.nf < b.nf ? 1 : -1));
+}
+function cdfTextoPedido(cli, ls){
+  return "Olá! Preciso do CDF (Certificado de Destinação Final) dos MTRs abaixo, referentes às coletas de " + cli + ":\n" +
+    ls.map(l => "- MTR " + l.mtr + " (NF " + l.nf + ", " + fmtIso(l.data) + ")").join("\n") + "\n\nPode me enviar o PDF? Obrigado.";
+}
+function montarViewCerts(){
+  const sec = $("v-certs");
+  sec.innerHTML = `<div class="page-head"><div><h1>Certificados · MTR + NF + CDF</h1><p>Cada MTR já vem da nota fiscal correspondente. O que falta é o CDF emitido no sistema MTR do IMA-SC. Suba o PDF do CDF e o sistema lê a quais MTRs ele corresponde para dar a baixa.</p></div></div>
+    <div id="cdErro"></div>
+    <div class="toolbar"><select class="input" id="cdCliSel" style="max-width:220px"></select><select class="input" id="cdStSel" style="max-width:190px"><option value="">Todos os status</option><option value="falta">Falta CDF</option><option value="ok">Completo</option><option value="sem">Sem MTR</option></select>
+      <input class="input" id="cdQ" placeholder="Buscar MTR, NF ou CDF" style="max-width:220px">
+      <button class="btn sm pri" data-cbtn="pdf" data-cadm="1">Subir PDF do CDF</button><input type="file" id="cdFile" accept=".pdf,application/pdf" class="hide">
+      <button class="btn sm" data-cbtn="exportar">Exportar pendências (.xlsx)</button><span class="muted" id="cdInfo"></span></div>
+    <h3 style="margin:14px 0 6px">Falta CDF · por cliente</h3><div id="cdPend"></div>
+    <h3 style="margin:22px 0 6px">Todos os MTRs</h3>
+    <div class="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>NF</th><th>MTR</th><th>CDF</th><th>Data do CDF</th><th>Status</th><th></th></tr></thead><tbody id="cdTodos"></tbody></table></div>`;
+  sec.addEventListener("click", e => {
+    const b = e.target.closest("button[data-cbtn]"); if (!b) return; const op = b.dataset.cbtn;
+    if (op === "pdf") $("cdFile").click();
+    else if (op === "exportar") run(exportarPendCDF);
+    else if (op === "copiar"){ const cli = b.dataset.cli, ls = cdfLinhas().filter(l => l.st === "falta" && l.cliente === cli); copiarTexto(cdfTextoPedido(cli, ls)).then(() => aviso("Texto copiado ✔ — cole no e-mail ou WhatsApp")); }
+    else if (op === "baixa") run(() => baixaCDF(b.dataset.mtr));
+  });
+  $("cdFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) run(() => lerCDFpdf(f)); });
+  $("cdCliSel").addEventListener("change", e => { cdCli = e.target.value; renderCerts(); });
+  $("cdStSel").addEventListener("change", e => { cdSt = e.target.value; renderCerts(); });
+  $("cdQ").addEventListener("input", e => { cdQ = e.target.value; renderCerts(); });
+}
+function copiarTexto(t){
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).catch(() => copiarFallback(t));
+  return Promise.resolve(copiarFallback(t));
+}
+function copiarFallback(t){ const a = document.createElement("textarea"); a.value = t; a.style.position = "fixed"; a.style.opacity = "0"; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); } catch (x) {} a.remove(); }
+function renderCerts(){
+  const sec = $("v-certs"); if (!sec || !$("cdPend")) return;
+  $("cdErro").innerHTML = cdfErro ? `<div class="panel" style="border-color:var(--bad);margin-bottom:12px"><b>Não consegui ler os certificados:</b> ${esc(cdfErro)}<br>Publique as regras do Firestore (arquivo regras_firestore.txt) com a coleção certificados_cdf.</div>` : "";
+  const todas = cdfLinhas(), clis = Array.from(new Set(todas.map(l => l.cliente))).sort();
+  const sel = $("cdCliSel"), atual = cdCli;
+  sel.innerHTML = `<option value="">Todos os clientes</option>` + clis.map(c => `<option ${c === atual ? "selected" : ""}>${esc(c)}</option>`).join("");
+  const q = pvNorm(cdQ);
+  const passa = l => (!cdCli || l.cliente === cdCli) && (!q || pvNorm(l.mtr + " " + l.nf + " " + (l.cdf ? l.cdf.cdf : "")).includes(q));
+  const cont = s => todas.filter(l => l.st === s).length;
+  { const nb = $("navCdf"); if (nb){ nb.textContent = cont("falta"); nb.classList.toggle("hide", !cont("falta")); } }
+  $("cdInfo").textContent = fmtNum(cont("falta")) + " sem CDF · " + fmtNum(cont("ok")) + " completos · " + fmtNum(cont("sem")) + " sem MTR";
+  const falta = todas.filter(l => l.st === "falta" && passa(l)), grupos = {};
+  falta.forEach(l => { (grupos[l.cliente] ||= []).push(l); });
+  const nomes = Object.keys(grupos).sort((a, b) => grupos[b].length - grupos[a].length);
+  $("cdPend").innerHTML = nomes.length ? nomes.map(c => `<div class="panel" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b>${esc(c)}</b><span><span class="muted">${fmtNum(grupos[c].length)} MTR(s) sem CDF</span> <button class="btn xs" data-cbtn="copiar" data-cli="${esc(c)}">Copiar lista para pedir o CDF</button></span></div>
+      <div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>MTR</th><th></th></tr></thead><tbody>${grupos[c].map(l => `<tr><td>${fmtIso(l.data)}</td><td class="mono">${esc(l.nf)}</td><td class="mono">${esc(l.mtr)}</td><td class="ac"><button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">Dar baixa</button></td></tr>`).join("")}</tbody></table></div></div>`).join("")
+    : `<div class="muted">Nenhum MTR pendente${cdCli || cdQ ? " neste filtro" : ""}.</div>`;
+  const lista = todas.filter(l => passa(l) && (!cdSt || l.st === cdSt));
+  const rot = { ok: "Completo", falta: "Falta CDF", sem: "Sem MTR" }, cor = { ok: "var(--ok)", falta: "var(--warn)", sem: "var(--bad)" };
+  $("cdTodos").innerHTML = lista.length ? lista.map(l => `<tr><td>${fmtIso(l.data)}</td><td>${esc(l.cliente)}</td><td class="mono">${esc(l.nf)}</td><td class="mono">${esc(l.mtr || "—")}</td><td class="mono">${l.cdf ? esc(l.cdf.cdf) : "—"}</td><td>${l.cdf && l.cdf.data ? fmtIso(l.cdf.data) : "—"}</td><td style="color:${cor[l.st]}">${rot[l.st]}</td><td class="ac">${l.mtr ? `<button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">${l.cdf ? "Editar" : "Dar baixa"}</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="8" class="muted">Nada para mostrar.</td></tr>`;
+}
+async function baixaCDF(mtr){
+  const at = cdfDocs[mtr] || null;
+  const r = await abrirModal({ titulo: (at ? "Editar CDF" : "Dar baixa") + " · MTR " + mtr, ok: "Gravar",
+    html: `<label>Número do CDF</label>${inp("cdf", at ? at.cdf : "", 'maxlength="40"')}<label>Data de emissão do CDF</label><input class="input" type="date" data-mf="data" value="${esc(at ? at.data : "")}">${at ? `<label class="ck"><input type="checkbox" data-mf="remover"> Remover a baixa (voltar a pendente)</label>` : ""}`,
+    validar: d => d.remover || String(d.cdf).trim() ? "" : "Informe o número do CDF." });
+  if (!r) return;
+  if (r.remover) await deleteDoc(doc(db, COL_CDF, mtr));
+  else await setDoc(doc(db, COL_CDF, mtr), { mtr, cdf: String(r.cdf).trim(), data: r.data || "", origem: "manual", baixado_por: (auth.currentUser || {}).email || "", baixado_em: serverTimestamp() });
+  aviso(r.remover ? "Baixa removida ✔" : "Baixa gravada ✔");
+}
+async function carregarPDFJS(){
+  if (window.pdfjsLib) return;
+  const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  await new Promise((ok, no) => { const s = document.createElement("script"); s.src = base + "pdf.min.js"; s.onload = ok; s.onerror = () => no(new Error("Não consegui carregar o leitor de PDF. Confira a internet e tente de novo.")); document.head.appendChild(s); });
+  const w = await (await fetch(base + "pdf.worker.min.js")).text();
+  pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([w], { type: "text/javascript" }));
+}
+async function textoPDF(arq){
+  await carregarPDFJS();
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await arq.arrayBuffer()) }).promise;
+  let t = "";
+  for (let i = 1; i <= pdf.numPages; i++){ const p = await pdf.getPage(i); const c = await p.getTextContent(); t += c.items.map(x => x.str).join(" ") + "\n"; }
+  return t;
+}
+function cdfAchaCampos(t){
+  const mtrs = Array.from(new Set(t.replace(/(\d)\s+(?=\d{3,}\b)/g, "$1 ").match(/\b\d{10}\b/g) || []));
+  let cdf = ""; const m = t.match(/(?:CDF|Certificado de Destina[^\d]{0,40})[^\d]{0,25}(\d[\d./-]{2,20})/i); if (m) cdf = m[1].replace(/[./-]+$/, "");
+  let data = ""; const d = t.match(/(?:emiss[ãa]o|emitido)[^\d]{0,30}(\d{2})\/(\d{2})\/(\d{4})/i) || t.match(/(\d{2})\/(\d{2})\/(\d{4})/); if (d) data = d[3] + "-" + d[2] + "-" + d[1];
+  return { mtrs, cdf, data };
+}
+async function lerCDFpdf(arq){
+  const t = await textoPDF(arq);
+  if (t.replace(/\s/g, "").length < 20) throw new Error("Este PDF não tem texto selecionável (parece escaneado). Use “Dar baixa” em cada MTR e digite o número do CDF.");
+  const f = cdfAchaCampos(t), sab = new Set(cdfLinhas().filter(l => l.mtr).map(l => l.mtr));
+  const ach = f.mtrs.filter(m => sab.has(m)), fora = f.mtrs.filter(m => !sab.has(m) && /^2[0-9]\d{8}$/.test(m));
+  if (!ach.length) throw new Error("Não achei, nesse PDF, nenhum MTR que esteja nas notas do sistema." + (fora.length ? " MTRs lidos no PDF: " + fora.join(", ") + "." : ""));
+  const info = {}; cdfLinhas().forEach(l => { if (l.mtr && !info[l.mtr]) info[l.mtr] = l; });
+  const r = await abrirModal({ titulo: "Baixa de CDF · " + arq.name, ok: "Dar baixa",
+    html: `<label>Número do CDF</label>${inp("cdf", f.cdf, 'maxlength="40"')}<label>Data de emissão do CDF</label><input class="input" type="date" data-mf="data" value="${esc(f.data)}">
+      <div class="txt" style="margin-top:10px"><b>MTRs encontrados no PDF</b> (desmarque os que não devem receber a baixa):</div>
+      ${ach.map((m, i) => `<label class="ck"><input type="checkbox" data-mf="m${i}" ${cdfDocs[m] ? "" : "checked"}> ${esc(m)} · ${esc(info[m].cliente)} · NF ${esc(info[m].nf)} · ${fmtIso(info[m].data)}${cdfDocs[m] ? ` <span class="warn">(já tem CDF ${esc(cdfDocs[m].cdf)}; marque para substituir)</span>` : ""}</label>`).join("")}
+      ${fora.length ? `<div class="txt warn" style="margin-top:8px">Também aparecem no PDF, mas não estão nas notas do sistema: ${esc(fora.join(", "))}</div>` : ""}`,
+    validar: d => !String(d.cdf).trim() ? "Informe o número do CDF." : ach.some((m, i) => d["m" + i]) ? "" : "Marque pelo menos um MTR." });
+  if (!r) return;
+  const sel = ach.filter((m, i) => r["m" + i]);
+  await gravarLote(sel, (b, m) => b.set(doc(db, COL_CDF, m), { mtr: m, cdf: String(r.cdf).trim(), data: r.data || "", origem: "pdf · " + arq.name, baixado_por: (auth.currentUser || {}).email || "", baixado_em: serverTimestamp() }));
+  aviso("Baixa gravada em " + fmtNum(sel.length) + " MTR(s) ✔");
+}
+async function exportarPendCDF(){
+  await carregarXLSX();
+  const ls = cdfLinhas().filter(l => l.st !== "ok" && (!cdCli || l.cliente === cdCli));
+  if (!ls.length) throw new Error("Não há pendências para exportar.");
+  const aoa = [["Cliente", "Data", "NF", "MTR", "Situação"]].concat(ls.sort((a, b) => a.cliente < b.cliente ? -1 : a.cliente > b.cliente ? 1 : (a.data < b.data ? -1 : 1)).map(l => [l.cliente, fmtIso(l.data), l.nf, l.mtr, l.st === "sem" ? "Sem MTR" : "Falta CDF"]));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "Pendencias CDF"); XLSX.writeFile(wb, "pendencias_CDF.xlsx");
 }
 
 /* ---------- Estoque (planilha de contagem) × produção Veolia × saídas por NF ---------- */
@@ -2335,7 +2462,7 @@ function renderPV(){
   }).join("") || vazio(5, "Nenhum dado neste período.");
 }
 
-montarViewsExp(); montarViewPrecos(); montarViewMateriais(); montarViewPrensaV();
+montarViewsExp(); montarViewPrecos(); montarViewMateriais(); montarViewPrensaV(); montarViewCerts();
 // campos de busca: ficam somente-leitura até o foco, para o navegador não preencher o e-mail do login
 document.addEventListener("focusin", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined) el.removeAttribute("readonly"); });
 document.addEventListener("focusout", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined && !el.value) el.setAttribute("readonly", ""); });
@@ -2502,6 +2629,12 @@ function iniciarListeners(){
     renderPV();
   }, err => { console.error("Erro " + COL_PV + ":", err); pvErro = err && err.message ? err.message : String(err); renderPV(); }));
 
+  unsubs.push(onSnapshot(collection(db, COL_CDF), snap => {
+    cdfDocs = {}; cdfErro = "";
+    snap.forEach(dc => { const d = dc.data(); cdfDocs[dc.id] = { cdf: d.cdf || "", data: d.data || "" }; });
+    renderCerts();
+  }, err => { console.error("Erro " + COL_CDF + ":", err); cdfErro = err && err.message ? err.message : String(err); renderCerts(); }));
+
   unsubs.push(onSnapshot(collection(db, COL_EC), snap => {
     estContagens = []; estErro = "";
     snap.forEach(dc => { const d = dc.data(); estContagens.push({ id: dc.id, data: d.data || dc.id, v: d.v || [] }); });
@@ -2541,7 +2674,7 @@ onAuthStateChanged(auth, user => {
     iniciarListeners(); irPara(viewAtual);
   } else {
     unsubs.forEach(u => u()); unsubs = [];
-    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = []; expPrecos = []; pvDocs = []; estContagens = []; syncFlags.car = syncFlags.info = syncFlags.exp = false;
+    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = []; expPrecos = []; pvDocs = []; estContagens = []; cdfDocs = {}; syncFlags.car = syncFlags.info = syncFlags.exp = false;
     $("telaErp").style.display = "none"; $("telaLogin").style.display = "flex";
     $("senhaInput").value = "";
   }
