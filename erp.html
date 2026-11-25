@@ -2586,6 +2586,12 @@ function pgCalc(){
   });
   return { linhas, sel: linhas.filter(l => l.q > 0), fd, kg, cap: lerBR(pg.cap) || 0, ult };
 }
+function pgDisp(m){ const S = edSerie(), u = S[S.length - 1]; return u && u.v[m] != null ? Math.max(0, Math.floor(u.v[m])) : null; }
+function pgSet(m, v){
+  v = Math.max(0, Math.floor(Number(v) || 0)); const d = pgDisp(m);
+  if (d != null && v > d){ v = d; aviso(m + ": só há " + d + " em estoque (última contagem).", "warn"); }
+  pg.it[m] = v; return v;
+}
 function pgTilesHtml(c){
   return c.linhas.map(l => {
     const over = l.disp != null && l.q > l.disp, vazio = l.disp != null && l.disp <= 0 && !l.q;
@@ -2593,7 +2599,7 @@ function pgTilesHtml(c){
       <div class="top"><span class="badge b-mat">${esc(l.m)}</span><span class="pgdisp">${l.disp != null ? "disp. " + edF(l.disp) : "sem contagem"}</span></div>
       <div class="q"><b>${fmtNum(l.q)}</b>${pgUn(l.m)}</div>
       <div class="kg">${l.q ? "≈ " + fmtNum(Math.round(l.kg)) + " kg" : nf2.format(l.kf) + " kg/" + (pgUn(l.m) === "bags" ? "bag" : "fardo")}${l.base !== "pm" ? ' <span class="muted" style="font-size:11px;font-weight:600" title="Sem média nas NFs; usando ' + (l.base === "vo" ? "a média da Veolia" : "300 kg (padrão)") + '">(est.)</span>' : ""}</div>
-      <div class="pgbtns"><button data-pgop="dec" title="Tirar 1">−</button><input type="number" min="0" step="1" value="${l.q || ""}" placeholder="0" data-pgq="${esc(l.m)}" aria-label="Quantidade de ${esc(l.m)}"><button data-pgop="inc" title="Somar 1">+</button><button data-pgop="inc5" title="Somar 5">+5</button></div>
+      <div class="pgbtns"><button data-pgop="dec" title="Tirar 1">−</button><input type="number" min="0" step="1" ${l.disp != null ? 'max="' + Math.max(0, Math.floor(l.disp)) + '"' : ""} value="${l.q || ""}" placeholder="0" data-pgq="${esc(l.m)}" aria-label="Quantidade de ${esc(l.m)}"><button data-pgop="inc" title="Somar 1">+</button><button data-pgop="inc5" title="Somar 5">+5</button></div>
     </div>`;
   }).join("");
 }
@@ -2665,19 +2671,19 @@ document.addEventListener("click", e => {
   const box = e.target.closest("#carProg"); if (!box) return;
   const bt = e.target.closest("[data-pgop]"), tile = e.target.closest(".pgtile");
   const op = bt ? bt.dataset.pgop : "", m = tile ? tile.dataset.pgmat : "";
-  if (op === "inc" || op === "inc5" || op === "dec"){ pg.it[m] = Math.max(0, (Number(pg.it[m]) || 0) + (op === "dec" ? -1 : op === "inc" ? 1 : 5)); pgAtualiza(); return; }
-  if (op === "fill"){ const mm = $("pgFillMat").value, c = pgCalc(), l = c.linhas.find(x => x.m === mm); if (!(c.cap > 0)){ aviso("Informe a capacidade do caminhão."); return; } const n = Math.floor((c.cap - c.kg) / l.kf); if (n > 0){ pg.it[mm] = (Number(pg.it[mm]) || 0) + n; pgAtualiza(); $("pgFillMat").value = mm; } else aviso("Já está na capacidade."); return; }
+  if (op === "inc" || op === "inc5" || op === "dec"){ pgSet(m, (Number(pg.it[m]) || 0) + (op === "dec" ? -1 : op === "inc" ? 1 : 5)); pgAtualiza(); return; }
+  if (op === "fill"){ const mm = $("pgFillMat").value, c = pgCalc(), l = c.linhas.find(x => x.m === mm); if (!(c.cap > 0)){ aviso("Informe a capacidade do caminhão."); return; } const n = Math.floor((c.cap - c.kg) / l.kf); if (n > 0){ const antes = Number(pg.it[mm]) || 0, dep = pgSet(mm, antes + n); pgAtualiza(); $("pgFillMat").value = mm; if (dep === antes) aviso("Sem estoque disponível de " + mm + "."); } else aviso("Já está na capacidade."); return; }
   if (op === "clear"){ pg = pgNovo(); renderProg(); return; }
   if (op === "print"){ const p = pgAtual(); if (!p.it.length){ aviso("Escolha ao menos um material."); return; } pgImprimir(p); return; }
   if (op === "save"){ run(pgSalvar); return; }
   if (op === "open"){ const p = progs.find(x => x.id === bt.dataset.id); if (p){ pg = { id: p.id, cliente: p.cliente, placa: p.placa || "", cap: String(p.cap || ""), data: p.data || diaKey(new Date()), obs: p.obs || "", it: {} }; (p.it || []).forEach(x => { pg.it[x.m] = x.q; }); renderProg(); window.scrollTo({ top: 0, behavior: "smooth" }); } return; }
   if (op === "printsalva"){ const p = progs.find(x => x.id === bt.dataset.id); if (p) pgImprimir({ data: p.data, cliente: p.cliente, placa: p.placa, cap: p.cap, obs: p.obs, it: (p.it || []).map(x => ({ m: x.m, q: x.q, kf: x.kf })) }); return; }
   if (op === "del"){ run(() => pgExcluir(bt.dataset.id)); return; }
-  if (tile && !e.target.closest("input")){ pg.it[m] = (Number(pg.it[m]) || 0) + 1; pgAtualiza(); }
+  if (tile && !e.target.closest("input")){ pgSet(m, (Number(pg.it[m]) || 0) + 1); pgAtualiza(); }
 });
 document.addEventListener("change", e => {
   if (!e.target.closest("#carProg")) return;
-  const q = e.target.dataset.pgq; if (q){ pg.it[q] = Math.max(0, Math.floor(Number(e.target.value) || 0)); pgAtualiza(); return; }
+  const q = e.target.dataset.pgq; if (q){ pgSet(q, e.target.value); pgAtualiza(); return; }
   if (e.target.id === "pgCli"){ pg.cliente = e.target.value; const cp = pgCapCliente(pg.cliente) || (lerBR(pg.cap) > 0 ? "" : pgCapUltima()); if (cp){ pg.cap = cp; $("pgCap").value = cp; } pgAtualiza(); }
   if (e.target.id === "pgData") pg.data = e.target.value;
 });
