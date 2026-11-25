@@ -322,7 +322,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 .lg-m{display:none}
 .topbar-m{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
 .topbar-m .btn{padding:6px 12px;font-size:12.5px}
-body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-cadm],body.leitura [data-eadm],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="vendas"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
+body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-cadm],body.leitura [data-vincdel],body.leitura [data-eadm],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="vendas"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
 body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 </style>
 </head>
@@ -1529,7 +1529,7 @@ function montarViewsExp(){
   Object.keys(EXP_TABS).forEach(k => {
     const t = EXP_TABS[k], sec = $("v-" + t.id);
     const extra = k === "notas"
-      ? `<button class="btn sm pri" data-expbtn="novo">+ Nova nota</button><button class="btn sm" data-expbtn="importar">Importar planilha</button><button class="btn sm" data-expbtn="vendas" title="Lê a aba Base Diária do DADOS_COLETAS_GERAL.xlsx e lança as vendas com materiais">Importar vendas (.xlsx)</button><button class="btn sm danger" data-expbtn="excluir">Excluir notas exibidas</button>`
+      ? `<button class="btn sm pri" data-expbtn="novo">+ Nova nota</button><button class="btn sm" data-expbtn="importar">Importar planilha</button><button class="btn sm" data-expbtn="vendas" title="Lê a aba Base Diária do DADOS_COLETAS_GERAL.xlsx e lança as vendas com materiais">Importar vendas (.xlsx)</button><button class="btn sm danger" data-expbtn="excluir">Excluir notas exibidas</button><button class="btn sm" data-vinc="vendas" data-eadm="1" title="Escolha uma vez a planilha DADOS_COLETAS_GERAL.xlsx; o ERP passa a importar sozinho as novas vendas">Vincular planilha (automático)</button><button class="btn xs" data-vincdel="vendas" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="vendas"></span>`
       : "";
     sec.innerHTML = `
       <div class="page-head"><div><h1>${t.h}</h1><p>${t.p}</p></div></div>
@@ -2196,26 +2196,33 @@ function bdLer(wb){
   });
   return { notas: out, ign };
 }
+const nIdsMtr = t => (String(t || "").match(/\d{8,}/g) || []).length;
+function vendasPlano(notas){
+  const exist = {}; expNotas.forEach(n => { exist[n.id] = n; });
+  const novas = notas.filter(n => !exist[n.id]);
+  const comp = notas.filter(n => exist[n.id] && ((!(exist[n.id].mats || []).length && n.mats.length) || nIdsMtr(n.mtr) > nIdsMtr(exist[n.id].mtr)));
+  return { exist, novas, comp };
+}
+async function vendasGravar(plano, origem){
+  const { exist, novas, comp } = plano;
+  await gravarLote(novas.concat(comp), (b, n) => {
+    const ref = doc(db, COL_EXP, n.id);
+    if (exist[n.id]){ const u = { atualizado_em: serverTimestamp() }; if (!(exist[n.id].mats || []).length && n.mats.length) u.materiais = n.mats; if (nIdsMtr(n.mtr) > nIdsMtr(exist[n.id].mtr)) u.mtr = n.mtr; b.set(ref, u, { merge: true }); }
+    else b.set(ref, { ...paraDoc(n), criado_em: serverTimestamp(), origem: "planilha Base Diária · " + origem });
+  });
+}
 async function importarVendas(arq){
   await carregarXLSX();
   const wb = XLSX.read(new Uint8Array(await arq.arrayBuffer()), { type: "array", cellDates: false });
   const { notas, ign } = bdLer(wb);
   if (!notas.length) throw new Error("Não encontrei notas na aba Base Diária.");
-  const exist = {}; expNotas.forEach(n => { exist[n.id] = n; });
-  const novas = notas.filter(n => !exist[n.id]);
-  const nIds = t => (String(t || "").match(/\d{8,}/g) || []).length;
-  const comp = notas.filter(n => exist[n.id] && ((!(exist[n.id].mats || []).length && n.mats.length) || nIds(n.mtr) > nIds(exist[n.id].mtr)));
+  const plano = vendasPlano(notas), { novas, comp } = plano;
   const sem = notas.filter(n => n.status === "Ativa" && !n.mats.length).length;
   const ds = notas.map(n => n.data).sort();
   const r = await abrirModal({ titulo: "Importar vendas (Base Diária)", ok: "Importar",
     html: `<div class="txt">Arquivo <b>${esc(arq.name)}</b><br>${fmtNum(notas.length)} nota(s), de <b>${fmtIso(ds[0])}</b> a <b>${fmtIso(ds[ds.length - 1])}</b>.<br><b>${fmtNum(novas.length)}</b> nova(s) serão lançadas; <b>${fmtNum(comp.length)}</b> já existente(s) sem material receberão os materiais; as demais ficam como estão.${sem ? `<br><span class="warn">${fmtNum(sem)} nota(s) ativa(s) sem material informado (não entram no cruzamento).</span>` : ""}${ign.length ? `<br>${fmtNum(ign.length)} linha(s) sem NF ignorada(s).` : ""}</div>` });
   if (!r) return;
-  const lista = novas.concat(comp);
-  await gravarLote(lista, (b, n) => {
-    const ref = doc(db, COL_EXP, n.id);
-    if (exist[n.id]){ const u = { atualizado_em: serverTimestamp() }; if (!(exist[n.id].mats || []).length && n.mats.length) u.materiais = n.mats; if (nIds(n.mtr) > nIds(exist[n.id].mtr)) u.mtr = n.mtr; b.set(ref, u, { merge: true }); }
-    else b.set(ref, { ...paraDoc(n), criado_em: serverTimestamp(), origem: "planilha Base Diária · " + arq.name });
-  });
+  await vendasGravar(plano, arq.name);
   aviso("Vendas importadas ✔ (" + fmtNum(novas.length) + " novas, " + fmtNum(comp.length) + " atualizadas)");
 }
 
@@ -2517,7 +2524,7 @@ function montarViewEstDia(){
   const sec = $("v-estDia");
   sec.innerHTML = `<div class="page-head"><div><h1>Estoque diário</h1><p>Contagem diária do pátio: painel por material, evolução, entradas e saídas do dia, dias de estoque e alertas. Lance a contagem aqui ou importe o Excel; o botão Exportar gera o Excel no mesmo layout.</p></div></div>
     <div id="edErro"></div>
-    <div class="toolbar"><button class="btn sm pri" data-ebtn="lancar" data-eadm="1">Lançar contagem</button><button class="btn sm" data-ebtn="importar" data-eadm="1">Importar do Excel</button><input type="file" id="edFile" accept=".xlsx,.xlsm" class="hide"><button class="btn sm" data-ebtn="exportar">Exportar para Excel</button><button class="btn sm" data-ebtn="limites" data-eadm="1">Definir limites</button><span class="muted" id="edInfo"></span></div>
+    <div class="toolbar"><button class="btn sm pri" data-ebtn="lancar" data-eadm="1">Lançar contagem</button><button class="btn sm" data-ebtn="importar" data-eadm="1">Importar do Excel</button><input type="file" id="edFile" accept=".xlsx,.xlsm" class="hide"><button class="btn sm" data-ebtn="exportar">Exportar para Excel</button><button class="btn sm" data-ebtn="limites" data-eadm="1">Definir limites</button><button class="btn sm" data-vinc="estoque" data-eadm="1" title="Escolha uma vez a planilha de estoque diário; o ERP passa a importar sozinho as novas contagens">Vincular planilha (automático)</button><button class="btn xs" data-vincdel="estoque" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="estoque"></span><span class="muted" id="edInfo"></span></div>
     <div id="edAlertas"></div>
     <div class="kpis k4" id="edKpis"></div>
     <div class="matcards" id="edCards"></div>
@@ -2769,6 +2776,70 @@ function irPara(v){
   if (v === "visao") requestAnimationFrame(desenharGraficos);
 }
 
+
+/* ---------- planilhas vinculadas: importação automática (Chrome/Edge no computador) ---------- */
+const VINC_OK = typeof window.showOpenFilePicker === "function" && typeof indexedDB !== "undefined";
+let ecPronto = false;
+const vincDB = () => new Promise((ok, no) => { const r = indexedDB.open("erp_vinc", 1); r.onupgradeneeded = () => r.result.createObjectStore("h"); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+const vincGet = async k => { const d = await vincDB(); return new Promise(ok => { const q = d.transaction("h").objectStore("h").get(k); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); }); };
+const vincPut = async (k, v) => { const d = await vincDB(); return new Promise((ok, no) => { const t = d.transaction("h", "readwrite"); t.objectStore("h").put(v, k); t.oncomplete = ok; t.onerror = () => no(t.error); }); };
+const vincDel = async k => { const d = await vincDB(); return new Promise(ok => { const t = d.transaction("h", "readwrite"); t.objectStore("h").delete(k); t.oncomplete = ok; t.onerror = ok; }); };
+async function vendasAuto(f){
+  await carregarXLSX();
+  const { notas } = bdLer(XLSX.read(new Uint8Array(await f.arrayBuffer()), { type: "array" }));
+  const plano = vendasPlano(notas), n = plano.novas.length + plano.comp.length;
+  if (n){ await vendasGravar(plano, f.name); aviso("Vendas atualizadas automaticamente ✔ (" + fmtNum(plano.novas.length) + " nova(s), " + fmtNum(plano.comp.length) + " atualizada(s))"); }
+  return n;
+}
+async function estoqueAuto(f){
+  await carregarXLSX();
+  const docs = ecLer(XLSX.read(new Uint8Array(await f.arrayBuffer()), { type: "array" }));
+  const chave = v => v.map(x => x.m + ":" + x.q).sort().join("|"), ex = {}; estContagens.forEach(c => { ex[c.id] = chave(c.v); });
+  const mud = docs.filter(d => ex[d.id] !== chave(d.v));
+  if (mud.length){ await gravarLote(mud, (b, x) => b.set(doc(db, COL_EC, x.id), { data: x.data, v: x.v, origem: "planilha " + f.name + " (automático)", atualizado_em: serverTimestamp() })); aviso("Estoque atualizado automaticamente ✔ (" + fmtNum(mud.length) + " dia(s))"); }
+  return mud.length;
+}
+const VINC = { vendas: { ler: vendasAuto, pronto: () => syncFlags.exp }, estoque: { ler: estoqueAuto, pronto: () => ecPronto } };
+function vincTexto(k, estado, v){
+  const hora = v && v.ult ? new Date(v.ult).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: TZ }) : "";
+  return estado === "off" ? "" : estado === "permitir" ? "Planilha vinculada. Clique em “Sincronizar” para permitir a leitura." : "Sincronizada" + (v && v.nome ? " com " + v.nome : "") + (hora ? " · última leitura " + hora : "");
+}
+async function vincRender(k, estado){
+  const btn = document.querySelector('[data-vinc="' + k + '"]'), inf = document.querySelector('[data-vincinfo="' + k + '"]'), des = document.querySelector('[data-vincdel="' + k + '"]');
+  if (!btn) return;
+  if (!VINC_OK){ [btn, inf, des].forEach(e => { if (e) e.style.display = "none"; }); return; }
+  const v = await vincGet(k);
+  btn.textContent = v ? "Sincronizar agora" : "Vincular planilha (automático)";
+  if (des) des.style.display = v ? "" : "none";
+  if (inf) inf.textContent = v ? vincTexto(k, estado || "ok", v) : "";
+}
+async function vincSync(k, forcar, gesto){
+  const v = await vincGet(k); if (!v) return;
+  let perm = "prompt"; try { perm = await v.handle.queryPermission({ mode: "read" }); } catch (e) {}
+  if (perm !== "granted"){ if (gesto){ try { perm = await v.handle.requestPermission({ mode: "read" }); } catch (e) {} } if (perm !== "granted"){ vincRender(k, "permitir"); return; } }
+  const f = await v.handle.getFile();
+  if (!forcar && f.lastModified <= (v.mtime || 0)){ vincRender(k); return; }
+  await VINC[k].ler(f);
+  v.mtime = f.lastModified; v.ult = Date.now(); v.nome = f.name; await vincPut(k, v); vincRender(k);
+}
+async function vincTick(){
+  if (!ehAdmin || !VINC_OK) return;
+  for (const k of Object.keys(VINC)){ if (!VINC[k].pronto()) continue; try { await vincSync(k, false, false); } catch (e) { console.error("vínculo " + k, e); } }
+}
+async function vincAcao(k){
+  const v = await vincGet(k);
+  if (v) return vincSync(k, true, true);
+  let h; try { [h] = await window.showOpenFilePicker({ types: [{ description: "Planilha Excel", accept: { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx", ".xlsm"] } }] }); } catch (e) { return; }
+  await vincPut(k, { handle: h, mtime: 0, nome: h.name });
+  await vincSync(k, true, true);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-vinc]"); if (b){ run(() => vincAcao(b.dataset.vinc)); return; }
+  const d = e.target.closest("[data-vincdel]"); if (d){ run(async () => { await vincDel(d.dataset.vincdel); await vincRender(d.dataset.vincdel); aviso("Planilha desvinculada"); }); }
+});
+function vincInit(){ Object.keys(VINC).forEach(k => vincRender(k)); setTimeout(vincTick, 8000); setInterval(vincTick, 300000); document.addEventListener("visibilitychange", () => { if (!document.hidden) vincTick(); }); }
+vincInit();
+
 /* campos de data: abrem o calendário ao clicar em qualquer ponto */
 document.addEventListener("click", e => { const el = e.target; if (el && el.tagName === "INPUT" && el.type === "date" && !el.disabled && !el.readOnly && typeof el.showPicker === "function"){ try { el.showPicker(); } catch (x) {} } });
 /* ---------- menu do celular ---------- */
@@ -2951,7 +3022,7 @@ function iniciarListeners(){
   }, err => { console.error("Erro " + COL_CDF + ":", err); cdfErro = err && err.message ? err.message : String(err); renderCerts(); }));
 
   unsubs.push(onSnapshot(collection(db, COL_EC), snap => {
-    estContagens = []; estErro = "";
+    estContagens = []; estErro = ""; ecPronto = true;
     snap.forEach(dc => { const d = dc.data(); estContagens.push({ id: dc.id, data: d.data || dc.id, v: d.v || [] }); });
     renderXC();
   }, err => { console.error("Erro " + COL_EC + ":", err); estErro = err && err.message ? err.message : String(err); renderXC(); }));
