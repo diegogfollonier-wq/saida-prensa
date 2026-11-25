@@ -2769,6 +2769,8 @@ function irPara(v){
   if (v === "visao") requestAnimationFrame(desenharGraficos);
 }
 
+/* campos de data: abrem o calendário ao clicar em qualquer ponto */
+document.addEventListener("click", e => { const el = e.target; if (el && el.tagName === "INPUT" && el.type === "date" && !el.disabled && !el.readOnly && typeof el.showPicker === "function"){ try { el.showPicker(); } catch (x) {} } });
 /* ---------- menu do celular ---------- */
 function montarMenuMovel(){
   const bar = $("mbar"), body = $("msBody"); if (!bar || !body) return;
