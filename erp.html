@@ -2453,7 +2453,7 @@ function ecLer(wb){
     for (let k = hi - 1; dc < 0 && k >= Math.max(0, hi - 2); k--) dc = linhas[k].findIndex(c => pvNorm(c) === "DATA");
     if (dc < 0) dc = 0;
     linhas.slice(hi + 1).forEach(r => {
-      const iso = ecData(r[dc]); if (!iso || out[iso]) return;
+      const iso = ecData(r[dc]); if (!iso || out[iso] || iso > diaKey(new Date())) return;
       const mes = Number(iso.slice(5, 7)), ant = a.mes === 1 ? 12 : a.mes - 1;
       if (mes !== a.mes && mes !== ant) return;
       const v = {};
