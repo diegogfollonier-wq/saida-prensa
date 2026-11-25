@@ -2495,7 +2495,6 @@ function edStatus(m, q, de){
   if (q == null) return s;
   if (l.max != null && q > l.max) s.push({ t: "cheio", c: "err", x: "Acima do máximo (" + l.max + ")" });
   if (l.min != null && q < l.min) s.push({ t: "baixo", c: "warn", x: "Abaixo do mínimo (" + l.min + ")" });
-  if (de && de.dias != null && de.dias < 2) s.push({ t: "acaba", c: "warn", x: "Estoque para ~" + edF(de.dias) + " dia(s)" });
   return s;
 }
 function montarViewEstDia(){
