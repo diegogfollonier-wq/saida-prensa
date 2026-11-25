@@ -337,6 +337,11 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 .pgbtns input{flex:1 1 40px;width:40px;min-width:36px;padding:0;height:36px;text-align:center;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:8px;font-size:15px;font-weight:700}
 .pglock{grid-column:1/-1;background:rgba(232,176,75,.12);border:1px solid var(--warn);color:var(--txt);border-radius:12px;padding:12px 14px;font-size:14px}.pgtile.lock{opacity:.5}
 .pgtab th,.pgtab td{padding:8px 6px}.pgtab .btn.xs{padding:3px 8px}
+
+.matgrupo{margin-bottom:18px}.matgrupo-t{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gc);margin:0 0 8px 2px}.matgrupo-t i{width:10px;height:10px;border-radius:50%;background:var(--gc)}
+.matgrupo .matcards{margin-bottom:0;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.matgrupo .matcard,.matgrupo .pgtile{border:2px solid var(--gc)}
+.matgrupo .pgtile:hover{border-color:var(--gc);filter:brightness(1.12)}.matgrupo .pgtile.on{border-color:var(--gc);box-shadow:0 0 0 3px var(--gc);background:#173f57}.matgrupo .pgtile.over{border-color:var(--warn);box-shadow:0 0 0 3px var(--warn)}
 .pgdisp{font-size:15px;font-weight:800;color:var(--txt)}
 .pgbat{position:relative;padding-right:14px;margin-bottom:12px}.pgbat::after{content:"";position:absolute;right:0;top:34%;height:32%;width:10px;background:#5b7f93;border-radius:0 5px 5px 0}
 .pgbat-c{position:relative;height:64px;border:4px solid #5b7f93;border-radius:14px;background:#0b1f2b;overflow:hidden}
@@ -2514,9 +2519,28 @@ const COL_CFG = "estoque_config";
 const ED_FARDOS = ["PET cristal", "PET misto", "PET óleo", "PET azul", "PET verde", "PET natural", "Latas", "PP natural", "PP colorido", "PEAD natural", "PEAD colorido", "Flexíveis"];
 const ED_OUTROS = ["Ferroso", "Alum. bag", "Aero. bag", "Eletr. bag", "Papelão", "PEBD cristal", "PEBD cor", "PP vol", "PEAD vol"];
 const ED_TODOS = ED_FARDOS.concat(ED_OUTROS);
+/* grupos de materiais (cores pastel): usados no Estoque diário e em Programar carregamento */
+const GRUPOS_MAT = [
+  { nome: "PET", cor: "#9CC9F0", mats: ["PET cristal", "PET misto", "PET óleo", "PET azul", "PET verde", "PET natural"] },
+  { nome: "PP", cor: "#A8DDB5", mats: ["PP natural", "PP colorido"] },
+  { nome: "PEAD", cor: "#F2D49B", mats: ["PEAD natural", "PEAD colorido"] },
+  { nome: "Ferroso, papelão, PEBD e volumosos", cor: "#CDB8EC", mats: ["Ferroso", "Papelão", "PEBD cristal", "PEBD cor", "PP vol", "PEAD vol"] },
+  { nome: "Bags", cor: "#F2B5C6", mats: ["Alum. bag", "Aero. bag", "Eletr. bag"] },
+  { nome: "Outros", cor: "#BFD0D6", mats: ["Latas", "Flexíveis"] }
+];
+function matGrupos(lista, fn, cls){
+  const usados = new Set(); let h = "";
+  GRUPOS_MAT.forEach(g => {
+    const it = g.mats.filter(m => lista.includes(m)); if (!it.length) return; it.forEach(m => usados.add(m));
+    h += `<div class="matgrupo" style="--gc:${g.cor}"><div class="matgrupo-t"><i></i>${esc(g.nome)}</div><div class="${cls}">${it.map(fn).join("")}</div></div>`;
+  });
+  const resto = lista.filter(m => !usados.has(m));
+  if (resto.length) h += `<div class="matgrupo" style="--gc:#BFD0D6"><div class="matgrupo-t"><i></i>Outros</div><div class="${cls}">${resto.map(fn).join("")}</div></div>`;
+  return h;
+}
 /* ---------- peso médio por fardo: últimos 100 fardos carregados (casando fardos e kg de cada NF) ---------- */
 const PM_N = 100;
-const PM_NOMES = { "PET cristal": "PET Cristal", "PET misto": "PET Misto", "PET óleo": "PET Oleo", "PET azul": "PET Azul", "PET verde": "PET Verde", "PET natural": "PET Natural", "Latas": "Lata", "PP natural": "PP Natural", "PP colorido": "PP Cor", "PEAD natural": "PEAD Branco", "PEAD colorido": "PEAD Cor", "Flexíveis": "Flexíveis", "Alum. bag": "Alumínio", "Aero. bag": "Aerosol" };
+const PM_NOMES = { "Eletr. bag": "Eletrônicos", "PET cristal": "PET Cristal", "PET misto": "PET Misto", "PET óleo": "PET Oleo", "PET azul": "PET Azul", "PET verde": "PET Verde", "PET natural": "PET Natural", "Latas": "Lata", "PP natural": "PP Natural", "PP colorido": "PP Cor", "PEAD natural": "PEAD Branco", "PEAD colorido": "PEAD Cor", "Flexíveis": "Flexíveis", "Alum. bag": "Alumínio", "Aero. bag": "Aerosol" };
 function pmMatTexto(t){
   t = String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const k = n => chaveMat(n);
@@ -2528,6 +2552,7 @@ function pmMatTexto(t){
   if (/flex/.test(t)) return k("Flexíveis");
   if (/alumin/.test(t)) return k("Alumínio");
   if (/aeros/.test(t)) return k("Aerosol");
+  if (/eletron|eletr\./.test(t)) return k("Eletrônicos");
   if (/bandeja/.test(t)) return k("PET Natural");
   if (/cristal/.test(t)) return k("PET Cristal");
   if (/azul/.test(t)) return k("PET Azul");
@@ -2571,8 +2596,13 @@ const fmtKgT = kg => kg >= 10000 ? fmt1.format(Math.round(kg / 100) / 10) + " t"
 
 /* ---------- Carregamentos › Programar carregamento (simulação da carga do caminhão) ---------- */
 let carTab = "rfid", progs = [], pg = { id: "", cliente: "", placa: "", cap: "", data: "", obs: "", it: {} };
-const PG_MATS = ED_FARDOS.concat(["Alum. bag", "Aero. bag"]);
-const pgUn = m => /bag/i.test(m) ? "bags" : "fardos";
+const PG_MATS = ED_TODOS;
+const PG_T = ["Ferroso", "Papelão", "PEBD cristal", "PEBD cor", "PP vol", "PEAD vol"];   /* contados em toneladas na planilha */
+const pgT = m => PG_T.includes(m);
+const pgUn = m => pgT(m) ? "t" : /bag/i.test(m) ? "bags" : "fardos";
+const pgUn1 = m => pgT(m) ? "t" : /bag/i.test(m) ? "bag" : "fardo";
+const pgQ = (m, q) => pgT(m) ? edF(q) : fmtNum(q);
+const pgPasso = m => pgT(m) ? 0.5 : 1, pgPasso5 = m => pgT(m) ? 1 : 5;
 const pgIgn = c => /sutco|engepe/i.test(String(c).normalize("NFD").replace(/[̀-ͯ]/g, ""));
 const pgNovo = () => ({ id: "", cliente: "", placa: "", cap: "", data: diaKey(new Date()), obs: "", it: {} });
 function pgClientes(){
@@ -2584,11 +2614,12 @@ const pgCapUltima = () => { const p = progs.filter(x => x.cap > 0).sort((a, b) =
 function pgCalc(){
   const PMX = pesoMedios(), med = xcDados().med, S = edSerie(), ult = S[S.length - 1] || null, linhas = []; let fd = 0, kg = 0;
   PG_MATS.forEach(m => {
-    const dmax = ult && ult.v[m] != null ? Math.max(0, Math.floor(ult.v[m])) : null;
-    let q = Math.max(0, Math.floor(Number(pg.it[m]) || 0)); if (dmax != null && q > dmax) q = dmax; pg.it[m] = q;   /* nunca passa do estoque */
-    const x = pmDe(m, PMX), kf = x ? x.med : (med[m] || 300), base = x ? "pm" : med[m] ? "vo" : "pad";
+    const t = pgT(m), arr = v => t ? Math.round(v * 10) / 10 : Math.floor(v);
+    const dmax = ult && ult.v[m] != null ? Math.max(0, arr(ult.v[m])) : null;
+    let q = Math.max(0, arr(Number(pg.it[m]) || 0)); if (dmax != null && q > dmax) q = dmax; pg.it[m] = q;   /* nunca passa do estoque */
+    const x = pmDe(m, PMX), kf = t ? 1000 : x ? x.med : (med[m] || 300), base = t || x ? "pm" : med[m] ? "vo" : "pad";
     const disp = ult && ult.v[m] != null ? ult.v[m] : null;
-    linhas.push({ m, q, kf, base, disp, kg: q * kf }); fd += q; kg += q * kf;
+    linhas.push({ m, q, kf, base, disp, kg: q * kf }); if (!pgT(m)) fd += q; kg += q * kf;
   });
   return { linhas, sel: linhas.filter(l => l.q > 0), fd, kg, cap: lerBR(pg.cap) || 0, ult, pronto: !!pg.cliente && (lerBR(pg.cap) || 0) > 0 };
 }
@@ -2597,26 +2628,38 @@ function pgExige(){
   if (!((lerBR(pg.cap) || 0) > 0)){ aviso("Primeiro informe a capacidade do caminhão (kg).", "warn"); const e = $("pgCap"); if (e){ e.removeAttribute("readonly"); e.focus(); } return false; }
   return true;
 }
-function pgDisp(m){ const S = edSerie(), u = S[S.length - 1]; return u && u.v[m] != null ? Math.max(0, Math.floor(u.v[m])) : null; }
+function pgConfirma(titulo, msg, okTxt){
+  return new Promise(res => {
+    const bg = document.createElement("div"); bg.style.cssText = "position:fixed;inset:0;background:rgba(3,12,18,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+    bg.innerHTML = `<div class="panel" style="max-width:430px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)"><h3 style="margin:0 0 8px">${esc(titulo)}</h3><div class="txt" style="margin-bottom:16px">${msg}</div><div class="toolbar" style="justify-content:flex-end"><button class="btn" data-r="0">Cancelar</button><button class="btn pri" data-r="1">${esc(okTxt)}</button></div></div>`;
+    const fim = v => { bg.remove(); document.removeEventListener("keydown", tecla, true); res(v); };
+    const tecla = ev => { if (ev.key === "Escape"){ ev.stopPropagation(); fim(false); } };
+    bg.addEventListener("click", ev => { const b = ev.target.closest("[data-r]"); if (b) fim(b.dataset.r === "1"); else if (ev.target === bg) fim(false); });
+    document.addEventListener("keydown", tecla, true); document.body.appendChild(bg); bg.querySelector("[data-r='0']").focus();
+  });
+}
+function pgTemDados(){ return pgCalc().fd > 0 || String(pg.placa || "").trim() !== "" || String(pg.obs || "").trim() !== ""; }
+function pgDisp(m){ const S = edSerie(), u = S[S.length - 1]; return u && u.v[m] != null ? Math.max(0, pgT(m) ? Math.round(u.v[m] * 10) / 10 : Math.floor(u.v[m])) : null; }
 function pgSet(m, v){
-  v = Math.max(0, Math.floor(Number(v) || 0)); const d = pgDisp(m);
-  if (d != null && v > d){ v = d; aviso(rotMat(m) + ": só há " + d + " em estoque (última contagem).", "warn"); }
+  v = Number(v) || 0; v = Math.max(0, pgT(m) ? Math.round(v * 10) / 10 : Math.floor(v)); const d = pgDisp(m);
+  if (d != null && v > d){ v = d; aviso(rotMat(m) + ": só há " + pgQ(m, d) + " " + pgUn(m) + " em estoque (última contagem).", "warn"); }
   pg.it[m] = v; return v;
 }
 function pgTilesHtml(c){
-  return (c.pronto ? "" : `<div class="pglock">Escolha o <b>cliente</b> e informe a <b>capacidade do caminhão</b> para começar a montar a carga.</div>`) + c.linhas.map(l => {
+  return (c.pronto ? "" : `<div class="pglock">Escolha o <b>cliente</b> e informe a <b>capacidade do caminhão</b> para começar a montar a carga.</div>`) + matGrupos(c.linhas.map(x => x.m), m => {
+    const l = c.linhas.find(x => x.m === m);
     const over = l.disp != null && l.q > l.disp, vazio = l.disp != null && l.disp <= 0 && !l.q;
     return `<div class="pgtile ${c.pronto ? "" : "lock"} ${l.q ? "on" : ""} ${over ? "over" : ""} ${vazio ? "dim" : ""}" data-pgmat="${esc(l.m)}">
       <div class="top"><span class="badge b-mat">${esc(rotMat(l.m))}</span><span class="pgdisp">${l.disp != null ? "disp. " + edF(l.disp) : "sem contagem"}</span></div>
-      <div class="q"><b>${fmtNum(l.q)}</b>${pgUn(l.m)}</div>
-      <div class="kg">${l.q ? "≈ " + fmtNum(Math.round(l.kg)) + " kg" : nf2.format(l.kf) + " kg/" + (pgUn(l.m) === "bags" ? "bag" : "fardo")}${l.base !== "pm" ? ' <span class="muted" style="font-size:11px;font-weight:600" title="Sem média nas NFs; usando ' + (l.base === "vo" ? "a média da Veolia" : "300 kg (padrão)") + '">(est.)</span>' : ""}</div>
-      <div class="pgbtns"><button data-pgop="dec" title="Tirar 1">−</button><input type="number" min="0" step="1" ${c.pronto ? "" : "disabled"} ${l.disp != null ? 'max="' + Math.max(0, Math.floor(l.disp)) + '"' : ""} value="${l.q || ""}" placeholder="0" data-pgq="${esc(l.m)}" aria-label="Quantidade de ${esc(l.m)}"><button data-pgop="inc" title="Somar 1">+</button><button data-pgop="inc5" title="Somar 5">+5</button></div>
+      <div class="q"><b>${pgQ(l.m, l.q)}</b>${pgUn(l.m)}</div>
+      <div class="kg">${l.q ? "≈ " + fmtNum(Math.round(l.kg)) + " kg" : (pgT(l.m) ? "1.000" : nf2.format(l.kf)) + " kg/" + pgUn1(l.m)}${l.base !== "pm" ? ' <span class="muted" style="font-size:11px;font-weight:600" title="Sem média nas NFs; usando ' + (l.base === "vo" ? "a média da Veolia" : "300 kg (padrão)") + '">(est.)</span>' : ""}</div>
+      <div class="pgbtns"><button data-pgop="dec" title="Tirar ${pgPasso(l.m)}">−</button><input type="number" min="0" step="${pgT(l.m) ? "0.1" : "1"}" ${c.pronto ? "" : "disabled"} ${l.disp != null ? 'max="' + l.disp + '"' : ""} value="${l.q || ""}" placeholder="0" data-pgq="${esc(l.m)}" aria-label="Quantidade de ${esc(l.m)}"><button data-pgop="inc" title="Somar ${pgPasso(l.m)}">+</button><button data-pgop="inc5" title="Somar ${pgPasso5(l.m)}">+${pgPasso5(l.m)}</button></div>
     </div>`;
-  }).join("");
+  }, "pgtiles");
 }
 function pgResumoHtml(c){
   const pct = c.cap ? Math.round(c.kg / c.cap * 100) : 0, cor = !c.cap ? "blue" : pct > 100 ? "err" : pct >= 90 ? "warn" : "ok", resta = c.cap - c.kg;
-  const linhas = c.sel.map(l => `<tr><td>${badgeMat(l.m)}</td><td class="num">${fmtNum(l.q)}</td><td class="num">${nf2.format(l.kf)}</td><td class="num">${fmtNum(Math.round(l.kg))}</td><td class="num ${l.disp != null && l.q > l.disp ? "err" : "muted"}">${l.disp == null ? "—" : l.q > l.disp ? "falta " + edF(l.q - l.disp) : "sobra " + edF(l.disp - l.q)}</td><td class="ac"><button class="btn xs danger" data-pgop="rm" data-m="${esc(l.m)}" title="Tirar ${esc(rotMat(l.m))} da carga" aria-label="Tirar ${esc(rotMat(l.m))} da carga">✕</button></td></tr>`).join("");
+  const linhas = c.sel.map(l => `<tr><td>${badgeMat(l.m)}</td><td class="num">${pgQ(l.m, l.q)}${pgT(l.m) ? " t" : ""}</td><td class="num">${nf2.format(l.kf)}</td><td class="num">${fmtNum(Math.round(l.kg))}</td><td class="num ${l.disp != null && l.q > l.disp ? "err" : "muted"}">${l.disp == null ? "—" : l.q > l.disp ? "falta " + edF(l.q - l.disp) : "sobra " + edF(l.disp - l.q)}</td><td class="ac"><button class="btn xs danger" data-pgop="rm" data-m="${esc(l.m)}" title="Tirar ${esc(rotMat(l.m))} da carga" aria-label="Tirar ${esc(rotMat(l.m))} da carga">✕</button></td></tr>`).join("");
   return `<div class="pgcab"><div class="pgbat ${cor}"><div class="pgbat-c"><div class="pgbat-f" style="width:${Math.min(100, pct)}%"></div><span class="pgbat-p ${c.cap ? "" : "need"}">${c.cap ? pct + "%" : "Informe a capacidade do caminhão ↑"}</span></div></div>
       <div class="pgtot"><b>${fmtNum(c.fd)}</b> fardos/bags · <b>${fmtNum(Math.round(c.kg))}</b> kg ${c.cap ? "de " + fmtNum(c.cap) + " kg" : "· informe a capacidade"}</div>
       <div class="muted" style="font-size:12.5px">${!c.cap ? "&nbsp;" : resta >= 0 ? "Cabe ainda ≈ " + fmtNum(Math.round(resta)) + " kg" : '<b style="color:var(--err)">Passou ≈ ' + fmtNum(Math.round(-resta)) + " kg da capacidade</b>"}</div></div>
@@ -2624,9 +2667,9 @@ function pgResumoHtml(c){
     <div class="toolbar" style="margin-top:10px"><select class="input" id="pgFillMat" style="max-width:190px">${PG_MATS.map(m => `<option value="${esc(m)}">${esc(rotMat(m))}</option>`).join("")}</select><button class="btn sm" data-pgop="fill" title="Soma o que falta para chegar na capacidade">Completar a capacidade</button></div>`;
 }
 function pgAtualiza(){ const c = pgCalc(); const ci = $("pgCap"); if (ci) ci.classList.toggle("need", !(c.cap > 0)); $("pgTiles").innerHTML = pgTilesHtml(c); $("pgResumo").innerHTML = pgResumoHtml(c); }
-function renderProg(){
+function renderProg(forcar){
   const box = $("carProg"); if (!box) return;
-  const ae = document.activeElement; if (ae && box.contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT") && $("pgForm")) return;   // não atrapalha quem está digitando
+  const ae = document.activeElement; if (!forcar && ae && box.contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT") && $("pgForm")) return;   // não atrapalha quem está digitando
   const clis = pgClientes(), c = pgCalc();
   const salvas = progs.slice().sort((a, b) => (b.data || "").localeCompare(a.data || "") || b.ts - a.ts);
   box.innerHTML = `<div class="panel" id="pgForm"><div class="pgform">
@@ -2636,19 +2679,19 @@ function renderProg(){
       <div><label>Data</label><input class="input" type="date" id="pgData" value="${esc(pg.data)}"></div>
       <div class="pgobs"><label>Observação</label><textarea class="input" id="pgObs" name="pg_obs" autocomplete="off" readonly data-ro rows="3" placeholder="Anotações da carga: motorista, horário, cuidados, o que separar primeiro… (opcional)">${esc(pg.obs)}</textarea></div></div>
     <div class="muted" style="font-size:12.5px;margin-top:8px">${pg.id ? "Editando uma programação salva. " : ""}${c.ult ? "Estoque disponível: contagem de " + fmtDiaKey(c.ult.data) + "." : "Sem contagem de estoque ainda."} A capacidade é lembrada por cliente, mas você pode alterá-la aqui antes de simular.</div></div>
-    <div class="pggrid"><div><div class="pgtiles" id="pgTiles">${pgTilesHtml(c)}</div></div>
+    <div class="pggrid"><div><div id="pgTiles">${pgTilesHtml(c)}</div></div>
       <div class="pgside"><div class="panel" id="pgResumo">${pgResumoHtml(c)}</div>
         <div class="toolbar" style="margin-top:10px"><button class="btn pri" data-pgop="print">Imprimir</button><button class="btn" data-pgop="save" data-eadm="1">${pg.id ? "Atualizar programação" : "Salvar programação"}</button><button class="btn danger" data-pgop="clear" title="Limpa cliente, placa, capacidade, observação e todos os materiais para começar de novo">Zerar tudo</button></div></div></div>
     <h3 style="margin:22px 0 6px">Programações salvas</h3>
     <div class="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>Placa</th><th class="num">Fardos</th><th class="num">Peso est. (kg)</th><th class="num">Capacidade (kg)</th><th></th></tr></thead><tbody>${salvas.map(p => `<tr><td>${p.data ? fmtDiaKey(p.data) : "—"}</td><td>${esc(p.cliente)}</td><td class="mono">${esc(p.placa) || "—"}</td><td class="num">${fmtNum(p.fardos || 0)}</td><td class="num">${fmtNum(p.kg || 0)}</td><td class="num">${fmtNum(p.cap || 0)}</td><td class="ac"><button class="btn xs" data-pgop="open" data-id="${esc(p.id)}">Abrir</button> <button class="btn xs" data-pgop="printsalva" data-id="${esc(p.id)}">Imprimir</button> <button class="btn xs danger" data-pgop="del" data-id="${esc(p.id)}" data-eadm="1">Excluir</button></td></tr>`).join("") || vazio(7, "Nenhuma programação salva ainda.")}</tbody></table></div>`;
 }
 function pgImprimir(p){
-  const tot = p.it.reduce((a, x) => a + x.q * x.kf, 0), fd = p.it.reduce((a, x) => a + x.q, 0), resta = p.cap - tot;
+  const tot = p.it.reduce((a, x) => a + x.q * x.kf, 0), fd = p.it.reduce((a, x) => a + (pgT(x.m) ? 0 : x.q), 0), tt = p.it.reduce((a, x) => a + (pgT(x.m) ? x.q : 0), 0), resta = p.cap - tot;
   let a = $("printArea"); if (!a){ a = document.createElement("div"); a.id = "printArea"; document.body.appendChild(a); }
   a.innerHTML = `<h1>Programação de carregamento</h1>
     <table class="cab"><tr><td><b>Data</b><br>${p.data ? fmtDiaKey(p.data) : ""}</td><td><b>Cliente</b><br>${esc(p.cliente)}</td><td><b>Placa</b><br>${esc(p.placa) || "&nbsp;"}</td><td><b>Capacidade</b><br>${p.cap ? fmtNum(p.cap) + " kg" : "—"}</td></tr></table>
-    <table class="itens"><thead><tr><th>Material</th><th>Quantidade</th><th>kg/fardo (média)</th><th>Peso estimado (kg)</th><th>Conferido</th></tr></thead><tbody>${p.it.map(x => `<tr><td>${esc(rotMat(x.m))}</td><td class="n">${fmtNum(x.q)} ${pgUn(x.m)}</td><td class="n">${nf2.format(x.kf)}</td><td class="n">${fmtNum(Math.round(x.q * x.kf))}</td><td class="n">☐ ______</td></tr>`).join("")}</tbody>
-      <tfoot><tr><td><b>Total</b></td><td class="n"><b>${fmtNum(fd)}</b></td><td></td><td class="n"><b>${fmtNum(Math.round(tot))}</b></td><td></td></tr></tfoot></table>
+    <table class="itens"><thead><tr><th>Material</th><th>Quantidade</th><th>kg/fardo (média)</th><th>Peso estimado (kg)</th><th>Conferido</th></tr></thead><tbody>${p.it.map(x => `<tr><td>${esc(rotMat(x.m))}</td><td class="n">${pgQ(x.m, x.q)} ${pgUn(x.m)}</td><td class="n">${nf2.format(x.kf)}</td><td class="n">${fmtNum(Math.round(x.q * x.kf))}</td><td class="n">☐ ______</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td><b>Total</b></td><td class="n"><b>${fmtNum(fd)}</b>${tt ? " + " + edF(tt) + " t" : ""}</td><td></td><td class="n"><b>${fmtNum(Math.round(tot))}</b></td><td></td></tr></tfoot></table>
     <p>${p.cap ? "Capacidade: " + fmtNum(p.cap) + " kg · " + (resta >= 0 ? "saldo ≈ " + fmtNum(Math.round(resta)) + " kg" : "EXCEDE ≈ " + fmtNum(Math.round(-resta)) + " kg") + " · " : ""}Pesos estimados pela média das últimas ${PM_N} fardos carregadas de cada material.</p>
     ${p.obs ? `<p><b>Obs.:</b> ${esc(p.obs)}</p>` : ""}
     <div class="ass"><div>Separado por: ______________________</div><div>Conferido por: ______________________</div></div>`;
@@ -2685,20 +2728,31 @@ document.addEventListener("click", e => {
   if ((op === "inc" || op === "inc5" || op === "dec" || op === "fill" || op === "save" || op === "print") && !pgExige()) return;
   if (tile && !op && !e.target.closest("input") && !pgExige()) return;
   if (op === "rm"){ pg.it[bt.dataset.m] = 0; pgAtualiza(); return; }
-  if (op === "inc" || op === "inc5" || op === "dec"){ pgSet(m, (Number(pg.it[m]) || 0) + (op === "dec" ? -1 : op === "inc" ? 1 : 5)); pgAtualiza(); return; }
-  if (op === "fill"){ const mm = $("pgFillMat").value, c = pgCalc(), l = c.linhas.find(x => x.m === mm); if (!(c.cap > 0)){ aviso("Informe a capacidade do caminhão."); return; } const n = Math.floor((c.cap - c.kg) / l.kf); if (n > 0){ const antes = Number(pg.it[mm]) || 0, dep = pgSet(mm, antes + n); pgAtualiza(); $("pgFillMat").value = mm; if (dep === antes) aviso("Sem estoque disponível de " + rotMat(mm) + "."); } else aviso("Já está na capacidade."); return; }
+  if (op === "inc" || op === "inc5" || op === "dec"){ pgSet(m, (Number(pg.it[m]) || 0) + (op === "dec" ? -pgPasso(m) : op === "inc" ? pgPasso(m) : pgPasso5(m))); pgAtualiza(); return; }
+  if (op === "fill"){ const mm = $("pgFillMat").value, c = pgCalc(), l = c.linhas.find(x => x.m === mm); if (!(c.cap > 0)){ aviso("Informe a capacidade do caminhão."); return; } const n = pgT(mm) ? Math.floor((c.cap - c.kg) / l.kf * 10) / 10 : Math.floor((c.cap - c.kg) / l.kf); if (n > 0){ const antes = Number(pg.it[mm]) || 0, dep = pgSet(mm, antes + n); pgAtualiza(); $("pgFillMat").value = mm; if (dep === antes) aviso("Sem estoque disponível de " + rotMat(mm) + "."); } else aviso("Já está na capacidade."); return; }
   if (op === "clear"){ pg = pgNovo(); renderProg(); aviso("Programação zerada. Escolha o cliente e a capacidade para começar."); return; }
   if (op === "print"){ const p = pgAtual(); if (!p.it.length){ aviso("Escolha ao menos um material."); return; } pgImprimir(p); return; }
   if (op === "save"){ run(pgSalvar); return; }
   if (op === "open"){ const p = progs.find(x => x.id === bt.dataset.id); if (p){ pg = { id: p.id, cliente: p.cliente, placa: p.placa || "", cap: String(p.cap || ""), data: p.data || diaKey(new Date()), obs: p.obs || "", it: {} }; (p.it || []).forEach(x => { pg.it[x.m] = x.q; }); renderProg(); window.scrollTo({ top: 0, behavior: "smooth" }); } return; }
   if (op === "printsalva"){ const p = progs.find(x => x.id === bt.dataset.id); if (p) pgImprimir({ data: p.data, cliente: p.cliente, placa: p.placa, cap: p.cap, obs: p.obs, it: (p.it || []).map(x => ({ m: x.m, q: x.q, kf: x.kf })) }); return; }
   if (op === "del"){ run(() => pgExcluir(bt.dataset.id)); return; }
-  if (tile && !e.target.closest("input")){ pgSet(m, (Number(pg.it[m]) || 0) + 1); pgAtualiza(); }
+  if (tile && !e.target.closest("input")){ pgSet(m, (Number(pg.it[m]) || 0) + pgPasso(m)); pgAtualiza(); }
 });
 document.addEventListener("change", e => {
   if (!e.target.closest("#carProg")) return;
   const q = e.target.dataset.pgq; if (q){ pgSet(q, e.target.value); pgAtualiza(); return; }
-  if (e.target.id === "pgCli"){ pg.cliente = e.target.value; const cp = pgCapCliente(pg.cliente) || (lerBR(pg.cap) > 0 ? "" : pgCapUltima()); if (cp){ pg.cap = cp; $("pgCap").value = cp; } pgAtualiza(); }
+  if (e.target.id === "pgCli"){
+    const sel = e.target, novo = sel.value, antigo = pg.cliente;
+    if (antigo && novo !== antigo && pgTemDados()){
+      sel.blur();
+      pgConfirma("Trocar de cliente?", "Você já começou a montar a carga de <b>" + esc(antigo) + "</b>. Ao trocar para <b>" + esc(novo || "nenhum cliente") + "</b>, tudo será <b>zerado</b> (materiais, placa e observação) e você começa de novo.", "Zerar e trocar").then(ok => {
+        if (!ok){ sel.value = antigo; return; }
+        pg = pgNovo(); pg.cliente = novo; pg.cap = novo ? (pgCapCliente(novo) || pgCapUltima()) : ""; renderProg(true); aviso("Carga zerada. Começando para " + (novo || "novo cliente") + ".");
+      });
+      return;
+    }
+    pg.cliente = novo; const cp = pgCapCliente(pg.cliente) || (lerBR(pg.cap) > 0 ? "" : pgCapUltima()); if (cp){ pg.cap = cp; $("pgCap").value = cp; } pgAtualiza();
+  }
   if (e.target.id === "pgData") pg.data = e.target.value;
 });
 document.addEventListener("input", e => {
@@ -2760,7 +2814,7 @@ function montarViewEstDia(){
     <div class="toolbar"><button class="btn sm pri" data-ebtn="lancar" data-eadm="1">Lançar contagem</button><button class="btn sm" data-ebtn="importar" data-eadm="1">Importar: Acompanhamento Estoque Diario.xlsx</button><input type="file" id="edFile" accept=".xlsx,.xlsm" class="hide"><button class="btn sm" data-ebtn="exportar">Exportar para Excel</button><button class="btn sm" data-ebtn="limites" data-eadm="1">Definir limites</button><button class="btn sm" data-vinc="estoque" data-eadm="1" title="Escolha uma vez a planilha Acompanhamento Estoque Diario.xlsx; o ERP passa a importar sozinho as novas contagens">Vincular Acompanhamento Estoque Diario.xlsx (automático)</button><button class="btn xs" data-vincdel="estoque" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="estoque"></span><span class="muted" id="edInfo"></span></div>
     <div id="edAlertas"></div>
     <div class="kpis" id="edKpis"></div>
-    <div class="matcards" id="edCards"></div>
+    <div id="edCards"></div>
     <div class="panel"><div class="toolbar" style="margin-bottom:6px"><b>Evolução</b><select class="input" id="edMatSel" style="max-width:220px"></select><select class="input" id="edJanSel" style="max-width:170px"><option value="14">Últimas 14 contagens</option><option value="30">Últimas 30 contagens</option><option value="0">Todas</option></select></div><div id="edGraf"></div></div>
     <h3 style="margin:22px 0 6px">Entradas e saídas do dia <span class="muted" style="font-size:13px;font-weight:500" id="edEsTit"></span></h3>
     <p class="muted" style="margin:0 0 8px">Entre uma contagem e a seguinte: estoque anterior + produção da Veolia − estourados − saídas por NF = esperado. A diferença mostra o que a contagem não explica.</p>
@@ -2800,12 +2854,12 @@ function renderEstDia(){
     <div class="kpi"><div class="l">Maior variação</div><div class="v" style="font-size:20px">${mv ? esc(mv.m) : "—"}</div><div class="s">${mv ? (mv.d >= 0 ? "+" : "") + edF(mv.d) + " desde a contagem anterior" : "&nbsp;"}</div></div>
     <div class="kpi ${alertas.length ? "" : "ok"}"><div class="l">Alertas</div><div class="v">${alertas.length}</div><div class="s">${Object.keys(edLim).length ? "limites definidos" : "defina limites para ativar"}</div></div>`;
   const spark = m => edSvg(S.slice(-14).map(c => ({ x: fmtDiaKey(c.data).slice(0, 5), y: c.v[m] == null ? null : c.v[m] })), 160, 40, { pad: 3 });
-  $("edCards").innerHTML = dadosCards.map(m => {
+  $("edCards").innerHTML = matGrupos(dadosCards, m => {
     const q = ult.v[m], d = ant && ant.v[m] != null ? q - ant.v[m] : null, l = edLim[m] || {}, st = edStatus(m, q, DE[m]), cor = st.some(s => s.c === "err") ? "err" : st.length ? "warn" : null;
     const pct = l.max ? Math.min(100, Math.round(q / l.max * 100)) : null, un = ED_FARDOS.includes(m) ? "fardos" : "";
     return `<div class="matcard" data-edmat="${esc(m)}" style="cursor:pointer;${cor ? "border-color:var(--" + cor + ")" : ""}${edMat === m ? ";box-shadow:0 0 0 2px var(--blue)" : ""}"><div style="display:flex;justify-content:space-between;align-items:center"><span class="badge b-mat">${esc(rotMat(m))}</span>${d != null ? `<span style="font-size:12.5px;font-weight:700;color:${d > 0 ? "var(--blue)" : d < 0 ? "var(--warn)" : "var(--muted)"}">${d > 0 ? "▲ +" : d < 0 ? "▼ " : "= "}${edF(d)}</span>` : ""}</div>
       <div class="q"><b>${edF(q)}</b>${un}</div>${kgEst(m, q) != null ? `<div style="font-size:13px;color:var(--blue);font-weight:700">≈ ${fmtNum(Math.round(kgEst(m, q)))} kg <span class="muted" style="font-weight:500;font-size:11.5px">(${nf2.format(pmDe(m, PMX).med)} kg/fardo)</span></div>` : ""}${spark(m)}${pct != null ? `<div style="height:6px;border-radius:6px;background:#1c3a4a"><div style="height:6px;border-radius:6px;width:${pct}%;background:var(--${pct >= 100 ? "err" : pct >= 80 ? "warn" : "blue"})"></div></div><div class="muted" style="font-size:11.5px">${pct}% do máximo (${l.max})</div>` : ""}${st.length ? `<div style="font-size:12px;color:var(--${st[0].c});font-weight:700">${esc(st[0].x)}</div>` : ""}${DE[m] && DE[m].dias != null ? `<div class="muted" style="font-size:12px">≈ ${edF(DE[m].dias)} dia(s) de estoque</div>` : ""}</div>`;
-  }).join("");
+  }, "matcards");
   const sel = $("edMatSel"), opcs = ["__total"].concat(dadosCards);
   sel.innerHTML = opcs.map(m => `<option value="${esc(m)}" ${m === edMat ? "selected" : ""}>${m === "__total" ? "Total de fardos" : esc(rotMat(m))}</option>`).join(""); if (!opcs.includes(edMat)){ edMat = "__total"; sel.value = edMat; }
   $("edJanSel").value = edJan;
