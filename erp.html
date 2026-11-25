@@ -1538,17 +1538,27 @@ function montarViewsExp(){
       <div class="toolbar">
         <input class="input grow" id="${t.id}Q" name="busca_${t.id}" autocomplete="off" readonly data-ro placeholder="Buscar por NF, cliente, placa, MTR ou observação…">
         <select class="input" id="${t.id}Cli"><option value="">Todos os clientes</option></select>
-        <input class="input" type="date" id="${t.id}De" title="De"><input class="input" type="date" id="${t.id}Ate" title="Até">
+        <label class="muted" for="${t.id}De">De</label><input class="input" type="date" id="${t.id}De" title="De"><label class="muted" for="${t.id}Ate">até</label><input class="input" type="date" id="${t.id}Ate" title="Até">
         ${k === "notas" ? "" : `<select class="input" id="${t.id}Mostrar"><option value="dados">Só com dados</option><option value="todas">Todas as notas</option><option value="pend">Só pendentes</option></select>`}
         ${k === "fat" ? `<select class="input" id="expFatOrd"><option value="rec">Mais recentes primeiro</option><option value="dem">Mais demoradas primeiro</option><option value="rap">Mais rápidas primeiro</option></select>` : ""}
         <button class="btn sm" data-expbtn="limpar">Limpar filtros</button>${extra}
       </div>
+      <div class="toolbar" style="margin-bottom:8px"><span class="muted">Período rápido:</span><button class="btn xs" data-per="hoje">Hoje</button><button class="btn xs" data-per="7">Últimos 7 dias</button><button class="btn xs" data-per="mes">Este mês</button><button class="btn xs" data-per="mesant">Mês anterior</button><button class="btn xs" data-per="tudo">Tudo</button></div>
       <div class="sub" id="${t.id}Info" style="margin-bottom:10px"></div>
       <div id="${t.id}Resumo"></div>
       <div id="${t.id}Lista"></div>${k === "notas" ? "</div>" : ""}`;
     [t.id + "Q", t.id + "De", t.id + "Ate", t.id + "Cli", t.id + "Mostrar", k === "fat" ? "expFatOrd" : "x_"].forEach(i => { const el = $(i); if (el) el.addEventListener(i.endsWith("Q") ? "input" : "change", () => renderExp(k)); });
     if (k === "notas"){ sec.addEventListener("input", e => { if (e.target.id && e.target.id.startsWith("q_")) renderConsulta(); }); sec.addEventListener("change", e => { if (e.target.id && e.target.id.startsWith("q_")) renderConsulta(); }); }
     sec.addEventListener("click", e => {
+      const pb = e.target.closest("button[data-per]");
+      if (pb){
+        const hj = diaKey(new Date()), y = Number(hj.slice(0, 4)), m = Number(hj.slice(5, 7)), pad = n => String(n).padStart(2, "0"); let de = "", ate = "";
+        if (pb.dataset.per === "hoje") de = ate = hj;
+        else if (pb.dataset.per === "7"){ de = addDiasIso(hj, -6); ate = hj; }
+        else if (pb.dataset.per === "mes"){ de = y + "-" + pad(m) + "-01"; ate = hj; }
+        else if (pb.dataset.per === "mesant"){ const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1; de = py + "-" + pad(pm) + "-01"; ate = addDiasIso(y + "-" + pad(m) + "-01", -1); }
+        $(t.id + "De").value = de; $(t.id + "Ate").value = ate; return renderExp(k);
+      }
       const a = e.target.closest("button[data-expacc]");
       if (a){ semAberta[k] = semAberta[k] === a.dataset.expacc ? "" : a.dataset.expacc; return renderExp(k); }
       const qb = e.target.closest("button[data-q]"); if (qb) return setConsulta(qb.dataset.q);
@@ -1625,7 +1635,13 @@ function expResumoCliente(k, lista){
     const v = l.map(f).filter(x => x != null); if (!v.length) return "";
     return `<tr><td>${esc(c)}</td><td class="num">${fmtNum(v.length)}</td><td class="num">${fmtHM(media(v))}</td><td class="num">${fmtHM(Math.max(...v))}</td></tr>`;
   }).join("");
-  return `<div class="panel" style="margin-bottom:14px"><h3 style="margin:0 0 8px;font-size:14px">Resumo por cliente</h3><div class="table-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${lin}</tbody></table></div></div>`;
+  let mat = "";
+  if (k === "notas"){
+    const M = {}; at.forEach(n => (n.mats || []).forEach(x => { const c = chaveMat(x.m), o = (M[c] ||= { n: x.m, kg: 0, fd: 0, notas: new Set() }); if (x.u === "fardos") o.fd += x.q; else o.kg += x.q; o.notas.add(n.nf); }));
+    const ls = Object.values(M).sort((a, b) => b.kg - a.kg);
+    if (ls.length) mat = `<div class="panel" style="margin-bottom:14px"><h3 style="margin:0 0 8px;font-size:14px">Resumo por material <span class="muted" style="font-weight:500">(só notas com material informado)</span></h3><div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Notas</th><th class="num">Peso (kg)</th><th class="num">Fardos informados</th></tr></thead><tbody>${ls.map(o => `<tr><td>${badgeMat(o.n)}</td><td class="num">${fmtNum(o.notas.size)}</td><td class="num">${fmtNum(o.kg)}</td><td class="num">${o.fd ? fmtNum(o.fd) : "—"}</td></tr>`).join("")}</tbody></table></div></div>`;
+  }
+  return `<div class="panel" style="margin-bottom:14px"><h3 style="margin:0 0 8px;font-size:14px">Resumo por cliente</h3><div class="table-wrap"><table><thead><tr>${cab}</tr></thead><tbody>${lin}</tbody></table></div></div>` + mat;
 }
 
 const fmtObsData = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString("pt-BR", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); };
@@ -1677,8 +1693,8 @@ function renderExp(k){
   const chaves = [...grupos.keys()].sort((a, b) => a < b ? 1 : -1);
   if (semAberta[k] === undefined && chaves.length) semAberta[k] = chaves[0];
   if (semAberta[k] && !grupos.has(semAberta[k])) semAberta[k] = "";
-  const buscando = $(t.id + "Q").value.trim() !== "";
-  $(t.id + "Info").textContent = `${fmtNum(lista.length)} nota(s) em ${fmtNum(chaves.length)} semana(s) · mais recente em cima${buscando ? " · busca ativa: todas as semanas abertas" : " · clique na semana para abrir"}`;
+  const dDe = $(t.id + "De").value, dAte = $(t.id + "Ate").value, buscando = $(t.id + "Q").value.trim() !== "" || dDe !== "" || dAte !== "";
+  $(t.id + "Info").textContent = (dDe || dAte ? `Período de ${dDe ? fmtIso(dDe) : "o início"} até ${dAte ? fmtIso(dAte) : "hoje"} · ` : "") + `${fmtNum(lista.length)} nota(s) em ${fmtNum(chaves.length)} semana(s) · mais recente em cima${buscando ? " · filtro ativo: todas as semanas abertas" : " · clique na semana para abrir"}`;
   const f = METRICA[k];
   if (k === "fat"){ $(t.id + "Info").textContent = `${fmtNum(lista.length)} NF(s) · tempo que cada uma levou para sair, do pedido à emissão`; $(t.id + "Lista").innerHTML = fatLista(lista); return; }
   $(t.id + "Lista").innerHTML = chaves.map(s => {
