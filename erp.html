@@ -1529,7 +1529,7 @@ function montarViewsExp(){
   Object.keys(EXP_TABS).forEach(k => {
     const t = EXP_TABS[k], sec = $("v-" + t.id);
     const extra = k === "notas"
-      ? `<button class="btn sm pri" data-expbtn="novo">+ Nova nota</button><button class="btn sm" data-expbtn="importar">Importar planilha</button><button class="btn sm" data-expbtn="vendas" title="Lê a aba Base Diária do DADOS_COLETAS_GERAL.xlsx e lança as vendas com materiais">Importar vendas (.xlsx)</button><button class="btn sm danger" data-expbtn="excluir">Excluir notas exibidas</button><button class="btn sm" data-vinc="vendas" data-eadm="1" title="Escolha uma vez a planilha DADOS_COLETAS_GERAL.xlsx; o ERP passa a importar sozinho as novas vendas">Vincular planilha (automático)</button><button class="btn xs" data-vincdel="vendas" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="vendas"></span>`
+      ? `<button class="btn sm pri" data-expbtn="novo">+ Nova nota</button><button class="btn sm" data-expbtn="importar">Importar planilha</button><button class="btn sm" data-expbtn="vendas" title="Lê a aba Base Diária do DADOS_COLETAS_GERAL.xlsx e lança as vendas com materiais">Importar vendas: DADOS_COLETAS_GERAL.xlsx</button><button class="btn sm danger" data-expbtn="excluir">Excluir notas exibidas</button><button class="btn sm" data-vinc="vendas" data-eadm="1" title="Escolha uma vez a planilha DADOS_COLETAS_GERAL.xlsx; o ERP passa a importar sozinho as novas vendas">Vincular DADOS_COLETAS_GERAL.xlsx (automático)</button><button class="btn xs" data-vincdel="vendas" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="vendas"></span>`
       : "";
     sec.innerHTML = `
       <div class="page-head"><div><h1>${t.h}</h1><p>${t.p}</p></div></div>
@@ -2530,7 +2530,7 @@ function montarViewEstDia(){
   const sec = $("v-estDia");
   sec.innerHTML = `<div class="page-head"><div><h1>Estoque diário</h1><p>Contagem diária do pátio: painel por material, evolução, entradas e saídas do dia, dias de estoque e alertas. Lance a contagem aqui ou importe o Excel; o botão Exportar gera o Excel no mesmo layout.</p></div></div>
     <div id="edErro"></div>
-    <div class="toolbar"><button class="btn sm pri" data-ebtn="lancar" data-eadm="1">Lançar contagem</button><button class="btn sm" data-ebtn="importar" data-eadm="1">Importar do Excel</button><input type="file" id="edFile" accept=".xlsx,.xlsm" class="hide"><button class="btn sm" data-ebtn="exportar">Exportar para Excel</button><button class="btn sm" data-ebtn="limites" data-eadm="1">Definir limites</button><button class="btn sm" data-vinc="estoque" data-eadm="1" title="Escolha uma vez a planilha de estoque diário; o ERP passa a importar sozinho as novas contagens">Vincular planilha (automático)</button><button class="btn xs" data-vincdel="estoque" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="estoque"></span><span class="muted" id="edInfo"></span></div>
+    <div class="toolbar"><button class="btn sm pri" data-ebtn="lancar" data-eadm="1">Lançar contagem</button><button class="btn sm" data-ebtn="importar" data-eadm="1">Importar: Acompanhamento Estoque Diario.xlsx</button><input type="file" id="edFile" accept=".xlsx,.xlsm" class="hide"><button class="btn sm" data-ebtn="exportar">Exportar para Excel</button><button class="btn sm" data-ebtn="limites" data-eadm="1">Definir limites</button><button class="btn sm" data-vinc="estoque" data-eadm="1" title="Escolha uma vez a planilha Acompanhamento Estoque Diario.xlsx; o ERP passa a importar sozinho as novas contagens">Vincular Acompanhamento Estoque Diario.xlsx (automático)</button><button class="btn xs" data-vincdel="estoque" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="estoque"></span><span class="muted" id="edInfo"></span></div>
     <div id="edAlertas"></div>
     <div class="kpis k4" id="edKpis"></div>
     <div class="matcards" id="edCards"></div>
@@ -2815,7 +2815,7 @@ async function vincRender(k, estado){
   if (!btn) return;
   if (!VINC_OK){ [btn, inf, des].forEach(e => { if (e) e.style.display = "none"; }); return; }
   const v = await vincGet(k);
-  btn.textContent = v ? "Sincronizar agora" : "Vincular planilha (automático)";
+  btn.textContent = v ? "Sincronizar agora" : "Vincular " + (k === "vendas" ? "DADOS_COLETAS_GERAL.xlsx" : "Acompanhamento Estoque Diario.xlsx") + " (automático)";
   if (des) des.style.display = v ? "" : "none";
   if (inf) inf.textContent = v ? vincTexto(k, estado || "ok", v) : "";
 }
@@ -2835,7 +2835,7 @@ async function vincTick(){
 async function vincAcao(k){
   const v = await vincGet(k);
   if (v) return vincSync(k, true, true);
-  let h; try { [h] = await window.showOpenFilePicker({ types: [{ description: "Planilha Excel", accept: { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx", ".xlsm"] } }] }); } catch (e) { return; }
+  let h; try { [h] = await window.showOpenFilePicker({ id: "erp_" + k, types: [{ description: "Planilha Excel", accept: { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx", ".xlsm"] } }] }); } catch (e) { return; }
   await vincPut(k, { handle: h, mtime: 0, nome: h.name });
   await vincSync(k, true, true);
 }
@@ -3035,7 +3035,7 @@ function iniciarListeners(){
 
   unsubs.push(onSnapshot(collection(db, COL_EC), snap => {
     estContagens = []; estErro = ""; ecPronto = true;
-    snap.forEach(dc => { const d = dc.data(); estContagens.push({ id: dc.id, data: d.data || dc.id, v: d.v || [], origem: d.origem || "" }); });
+    snap.forEach(dc => { const d = dc.data(), og = d.origem || "", dt = d.data || dc.id; if (/DADOS_COLETAS/i.test(og) || dt > diaKey(new Date())) return; /* ignora o que veio da planilha de vendas e datas futuras */ estContagens.push({ id: dc.id, data: dt, v: d.v || [], origem: og }); });
     renderXC();
   }, err => { console.error("Erro " + COL_EC + ":", err); estErro = err && err.message ? err.message : String(err); renderXC(); }));
 
