@@ -335,6 +335,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 .pgtile .top{display:flex;justify-content:space-between;align-items:center;gap:6px}.pgtile .q{font-size:14px;color:var(--txt2);font-weight:600}.pgtile .q b{font-size:28px;color:var(--txt);margin-right:5px}.pgtile .kg{font-size:12.5px;color:var(--blue);font-weight:700;min-height:18px}
 .pgbtns{display:flex;gap:5px;align-items:center}.pgbtns button{flex:0 0 auto;border:1px solid var(--line);background:var(--bg);color:var(--txt);border-radius:8px;min-width:32px;padding:0 6px;height:36px;font-size:15px;font-weight:700}.pgbtns button:active{background:var(--blue);color:#06202E}
 .pgbtns input{flex:1 1 40px;width:40px;min-width:36px;padding:0;height:36px;text-align:center;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:8px;font-size:15px;font-weight:700}
+.pglock{grid-column:1/-1;background:rgba(232,176,75,.12);border:1px solid var(--warn);color:var(--txt);border-radius:12px;padding:12px 14px;font-size:14px}.pgtile.lock{opacity:.5}
 .pgdisp{font-size:15px;font-weight:800;color:var(--txt)}
 .pgbat{position:relative;padding-right:14px;margin-bottom:12px}.pgbat::after{content:"";position:absolute;right:0;top:34%;height:32%;width:10px;background:#5b7f93;border-radius:0 5px 5px 0}
 .pgbat-c{position:relative;height:64px;border:4px solid #5b7f93;border-radius:14px;background:#0b1f2b;overflow:hidden}
@@ -2580,11 +2581,18 @@ const pgCapUltima = () => { const p = progs.filter(x => x.cap > 0).sort((a, b) =
 function pgCalc(){
   const PMX = pesoMedios(), med = xcDados().med, S = edSerie(), ult = S[S.length - 1] || null, linhas = []; let fd = 0, kg = 0;
   PG_MATS.forEach(m => {
-    const q = Math.max(0, Math.floor(Number(pg.it[m]) || 0)), x = pmDe(m, PMX), kf = x ? x.med : (med[m] || 300), base = x ? "pm" : med[m] ? "vo" : "pad";
+    const dmax = ult && ult.v[m] != null ? Math.max(0, Math.floor(ult.v[m])) : null;
+    let q = Math.max(0, Math.floor(Number(pg.it[m]) || 0)); if (dmax != null && q > dmax) q = dmax; pg.it[m] = q;   /* nunca passa do estoque */
+    const x = pmDe(m, PMX), kf = x ? x.med : (med[m] || 300), base = x ? "pm" : med[m] ? "vo" : "pad";
     const disp = ult && ult.v[m] != null ? ult.v[m] : null;
     linhas.push({ m, q, kf, base, disp, kg: q * kf }); fd += q; kg += q * kf;
   });
-  return { linhas, sel: linhas.filter(l => l.q > 0), fd, kg, cap: lerBR(pg.cap) || 0, ult };
+  return { linhas, sel: linhas.filter(l => l.q > 0), fd, kg, cap: lerBR(pg.cap) || 0, ult, pronto: !!pg.cliente && (lerBR(pg.cap) || 0) > 0 };
+}
+function pgExige(){
+  if (!pg.cliente){ aviso("Primeiro escolha o cliente.", "warn"); const e = $("pgCli"); if (e) e.focus(); return false; }
+  if (!((lerBR(pg.cap) || 0) > 0)){ aviso("Primeiro informe a capacidade do caminhão (kg).", "warn"); const e = $("pgCap"); if (e){ e.removeAttribute("readonly"); e.focus(); } return false; }
+  return true;
 }
 function pgDisp(m){ const S = edSerie(), u = S[S.length - 1]; return u && u.v[m] != null ? Math.max(0, Math.floor(u.v[m])) : null; }
 function pgSet(m, v){
@@ -2593,13 +2601,13 @@ function pgSet(m, v){
   pg.it[m] = v; return v;
 }
 function pgTilesHtml(c){
-  return c.linhas.map(l => {
+  return (c.pronto ? "" : `<div class="pglock">Escolha o <b>cliente</b> e informe a <b>capacidade do caminhão</b> para começar a montar a carga.</div>`) + c.linhas.map(l => {
     const over = l.disp != null && l.q > l.disp, vazio = l.disp != null && l.disp <= 0 && !l.q;
-    return `<div class="pgtile ${l.q ? "on" : ""} ${over ? "over" : ""} ${vazio ? "dim" : ""}" data-pgmat="${esc(l.m)}">
+    return `<div class="pgtile ${c.pronto ? "" : "lock"} ${l.q ? "on" : ""} ${over ? "over" : ""} ${vazio ? "dim" : ""}" data-pgmat="${esc(l.m)}">
       <div class="top"><span class="badge b-mat">${esc(l.m)}</span><span class="pgdisp">${l.disp != null ? "disp. " + edF(l.disp) : "sem contagem"}</span></div>
       <div class="q"><b>${fmtNum(l.q)}</b>${pgUn(l.m)}</div>
       <div class="kg">${l.q ? "≈ " + fmtNum(Math.round(l.kg)) + " kg" : nf2.format(l.kf) + " kg/" + (pgUn(l.m) === "bags" ? "bag" : "fardo")}${l.base !== "pm" ? ' <span class="muted" style="font-size:11px;font-weight:600" title="Sem média nas NFs; usando ' + (l.base === "vo" ? "a média da Veolia" : "300 kg (padrão)") + '">(est.)</span>' : ""}</div>
-      <div class="pgbtns"><button data-pgop="dec" title="Tirar 1">−</button><input type="number" min="0" step="1" ${l.disp != null ? 'max="' + Math.max(0, Math.floor(l.disp)) + '"' : ""} value="${l.q || ""}" placeholder="0" data-pgq="${esc(l.m)}" aria-label="Quantidade de ${esc(l.m)}"><button data-pgop="inc" title="Somar 1">+</button><button data-pgop="inc5" title="Somar 5">+5</button></div>
+      <div class="pgbtns"><button data-pgop="dec" title="Tirar 1">−</button><input type="number" min="0" step="1" ${c.pronto ? "" : "disabled"} ${l.disp != null ? 'max="' + Math.max(0, Math.floor(l.disp)) + '"' : ""} value="${l.q || ""}" placeholder="0" data-pgq="${esc(l.m)}" aria-label="Quantidade de ${esc(l.m)}"><button data-pgop="inc" title="Somar 1">+</button><button data-pgop="inc5" title="Somar 5">+5</button></div>
     </div>`;
   }).join("");
 }
@@ -2671,6 +2679,8 @@ document.addEventListener("click", e => {
   const box = e.target.closest("#carProg"); if (!box) return;
   const bt = e.target.closest("[data-pgop]"), tile = e.target.closest(".pgtile");
   const op = bt ? bt.dataset.pgop : "", m = tile ? tile.dataset.pgmat : "";
+  if ((op === "inc" || op === "inc5" || op === "dec" || op === "fill" || op === "save" || op === "print") && !pgExige()) return;
+  if (tile && !op && !e.target.closest("input") && !pgExige()) return;
   if (op === "inc" || op === "inc5" || op === "dec"){ pgSet(m, (Number(pg.it[m]) || 0) + (op === "dec" ? -1 : op === "inc" ? 1 : 5)); pgAtualiza(); return; }
   if (op === "fill"){ const mm = $("pgFillMat").value, c = pgCalc(), l = c.linhas.find(x => x.m === mm); if (!(c.cap > 0)){ aviso("Informe a capacidade do caminhão."); return; } const n = Math.floor((c.cap - c.kg) / l.kf); if (n > 0){ const antes = Number(pg.it[mm]) || 0, dep = pgSet(mm, antes + n); pgAtualiza(); $("pgFillMat").value = mm; if (dep === antes) aviso("Sem estoque disponível de " + mm + "."); } else aviso("Já está na capacidade."); return; }
   if (op === "clear"){ pg = pgNovo(); renderProg(); return; }
@@ -2689,7 +2699,7 @@ document.addEventListener("change", e => {
 });
 document.addEventListener("input", e => {
   if (!e.target.closest("#carProg")) return;
-  if (e.target.id === "pgCap"){ pg.cap = e.target.value; e.target.classList.toggle("need", !(lerBR(pg.cap) > 0)); $("pgResumo").innerHTML = pgResumoHtml(pgCalc()); }
+  if (e.target.id === "pgCap"){ pg.cap = e.target.value; pgAtualiza(); }
   else if (e.target.id === "pgPlaca"){ pg.placa = e.target.value.toUpperCase(); }
   else if (e.target.id === "pgObs"){ pg.obs = e.target.value; }
 });
