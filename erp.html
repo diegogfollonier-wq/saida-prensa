@@ -1647,7 +1647,7 @@ function expResumoCliente(k, lista){
 const fmtObsData = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString("pt-BR", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); };
 const obsExtra = n => (n.obsx || []).map(o => `<div class="obsx">+ ${esc(o.texto)} <i>${fmtObsData(o.em)}${o.por ? " · " + esc(String(o.por).split("@")[0]) : ""}</i></div>`).join("");
 const exAc = (k, n) => `<td class="ac">${k === "notas" ? `<button class="btn xs" data-tcnf="${esc(n.nf)}" title="Ver o tempo de carga desta nota">Tempo de carga</button> <button class="btn xs" data-act="obs-add" data-id="${esc(n.id)}" title="Escrever uma observação nesta nota">Observação</button> ` : ""}<button class="btn xs" data-act="exp-edit" data-id="${esc(n.id)}" data-kind="${k}">Editar</button> <button class="btn xs danger" data-act="exp-del" data-id="${esc(n.id)}">Excluir</button></td>`;
-const nfLink = nf => `<button class="lnk mono" data-nf="${esc(nf)}" title="Abrir os dados desta nota">${esc(nf)}</button>`;
+const nfLink = nf => !nf ? `<span class="badge b-warn" title="Ainda sem NF na planilha">Pendente de emissão de NF</span>` : `<button class="lnk mono" data-nf="${esc(nf)}" title="Abrir os dados desta nota">${esc(nf)}</button>`;
 const stBadge = n => n.status === "Cancelada" ? ` <span class="badge b-err">Cancelada</span>` : "";
 function expLinhas(k, l){
   const cab = {
@@ -1876,12 +1876,14 @@ function renderPend(){
   const primeira = cargas.length ? cargas.map(c => c.dia).sort()[0] : "";
   const nfSemCarga = primeira ? expNotas.filter(n => n.status !== "Cancelada" && n.data >= primeira && !n.carga_id && !ligadas.has(n.id)).sort((a, b) => a.data < b.data ? 1 : -1) : [];
   const diverg = expNotas.filter(n => n.status !== "Cancelada" && n.pesoRfid != null && n.peso > 0 && Math.abs(n.peso - n.pesoRfid) / n.peso > 0.03);
-  const total = semNf.length + nfSemCarga.length + diverg.length;
+  const pendEmi = expNotas.filter(n => n.status !== "Cancelada" && !n.nf).sort((a, b) => a.data < b.data ? 1 : -1);
+  const total = semNf.length + nfSemCarga.length + diverg.length + pendEmi.length;
   const nb = $("navPend"); if (nb){ nb.textContent = total; nb.classList.toggle("hide", !total); }
   if (!total){ box.innerHTML = cargas.length ? `<div class="panel" style="margin-bottom:14px"><span class="badge b-ok">Sem pendências</span> <span class="muted">Todos os carregamentos têm NF e os pesos conferem.</span></div>` : ""; return; }
   const bloco = (titulo, dica, linhas) => linhas.length ? `<div style="margin-top:10px"><b>${titulo}</b> <span class="badge b-warn">${linhas.length}</span><div class="muted" style="font-size:12.5px;margin:2px 0 6px">${dica}</div>${linhas.slice(0, 12).join("")}${linhas.length > 12 ? `<div class="muted">… e mais ${linhas.length - 12}</div>` : ""}</div>` : "";
   const lin = (txt, btn) => `<div style="display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)"><span style="flex:1">${txt}</span>${btn || ""}</div>`;
   box.innerHTML = `<div class="panel" style="border-color:var(--warn);margin-bottom:14px"><b style="color:var(--warn)">Pendências (${total})</b>`
+    + bloco("Pendente de emissão de NF", "Coletas já lançadas na planilha, com MTR, que ainda não têm número de NF. Quando a NF for lançada na planilha, a nota é completada na próxima importação.", pendEmi.map(n => lin(`${fmtCurto(n.data)} · ${esc(n.cliente)} · ${esc(fmtPlaca(n.placa) || "sem placa")} · MTR ${esc(n.mtr || "—")} · ${fmtNum(n.peso)} kg`)))
     + bloco("Carregamentos sem NF", "Informe o número da NF na aba Carregamentos, no campo NF, e a nota será criada sozinha.", semNf.map(c => { const dc = dadosCarga(c.id).salvo; return lin(`${fmtDiaKey(c.dia)} · ${fmtHora(c.ini)} · ${esc(dc.cliente || "sem cliente")} · ${esc(fmtPlaca(dc.placa) || "sem placa")} · ${fmtNum(c.qtd)} fardos · ${fmtNum(c.peso)} kg`, `<button class="btn xs" data-gocar="${c.dia}">Abrir carregamento</button>`); }))
     + bloco("Notas sem carregamento", "Notas lançadas depois do início do RFID que ainda não foram ligadas a um carregamento.", nfSemCarga.map(n => lin(`${fmtCurto(n.data)} · NF ${esc(n.nf)} · ${esc(n.cliente)} · ${fmtNum(n.peso)} kg`)))
     + bloco("Peso da NF diferente do RFID (mais de 3%)", "Confira se o peso da nota ou a leitura dos fardos está correto.", diverg.map(n => lin(`NF ${esc(n.nf)} · ${esc(n.cliente)} · NF ${fmtNum(n.peso)} kg × RFID ${fmtNum(n.pesoRfid)} kg (${n.peso ? ((n.pesoRfid - n.peso) / n.peso * 100).toFixed(1).replace(".", ",") : "0"}%)`)))
@@ -2179,8 +2181,8 @@ function bdLer(wb){
   const bonito = t => nomes[pvNorm(t)] || String(t).trim().toLowerCase().replace(/(^|\s)\S/g, x => x.toUpperCase());
   const out = [], ign = [];
   L.slice(hi + 1).forEach(r => {
-    const nf = String(r[c.nf] || "").replace(/\D/g, ""), iso = ecData(r[c.data]);
-    if (!nf || !iso){ if (String(r[c.cli] || "").trim() || String(r[c.obs] || "").trim()) ign.push(String(r[c.cli] || "") + " " + String(r[c.obs] || "").slice(0, 40)); return; }
+    const nf = String(r[c.nf] || "").replace(/\D/g, ""), iso = ecData(r[c.data]), mtr1 = (String(r[c.mtr] || "").match(/\d{8,}/) || [""])[0];
+    if (!iso || (!nf && !mtr1)){ if (String(r[c.cli] || "").trim() || String(r[c.obs] || "").trim()) ign.push(String(r[c.cli] || "") + " " + String(r[c.obs] || "").slice(0, 40)); return; }
     const peso = bdQtd(r[c.peso]), valor = bdQtd(r[c.valor]), obs = String(r[c.obs] || "").trim();
     const mats = [];
     [0, 3, 6, 9].forEach(o => { const m = String(r[cm + o] || "").trim(), q = bdQtd(r[cm + o + 1]); if (m && m.length <= 25) mats.push({ m, q }); });
@@ -2191,7 +2193,7 @@ function bdLer(wb){
     const soma = ms.reduce((t, x) => t + x.q, 0);
     if (ms.length > 1 && peso > 0 && soma > peso * 1.01 && soma <= peso * 1.1){ const mx = ms.reduce((x, y) => y.q > x.q ? y : x); mx.q = Math.round((mx.q - (soma - peso)) * 100) / 100; aviso1 = "quantidades somavam mais que o peso da NF; ajustei o maior material"; }
     const mtr = Array.from(new Set(String(r[c.mtr] || "").match(/\d{8,}/g) || [])).join(" / ");
-    out.push({ id: "NF" + nf.padStart(6, "0"), nf: nf.padStart(6, "0"), data: iso, cliente: bonito(r[c.cli]), placa: normPlaca(r[c.placa]), mtr, peso, valor: valor > 0 ? valor : null, mats: ms, obs, aviso: aviso1,
+    out.push({ id: nf ? "NF" + nf.padStart(6, "0") : "SEM" + mtr1, nf: nf ? nf.padStart(6, "0") : "", data: iso, cliente: bonito(r[c.cli]), placa: normPlaca(r[c.placa]), mtr, peso, valor: valor > 0 ? valor : null, mats: ms, obs, aviso: aviso1,
       ent: bdHora(r[c.ent]), sai: bdHora(r[c.sai]), ped: bdHora(r[c.ped]), emi: bdHora(r[c.emi]), hi: bdHora(r[c.hi]), hf: bdHora(r[c.hf]), status: /cancelad/i.test(obs) ? "Cancelada" : "Ativa" });
   });
   return { notas: out, ign };
@@ -2201,12 +2203,15 @@ function vendasPlano(notas){
   const exist = {}; expNotas.forEach(n => { exist[n.id] = n; });
   const novas = notas.filter(n => !exist[n.id]);
   const comp = notas.filter(n => exist[n.id] && ((!(exist[n.id].mats || []).length && n.mats.length) || nIdsMtr(n.mtr) > nIdsMtr(exist[n.id].mtr)));
-  return { exist, novas, comp };
+  const porMtr = {}; notas.filter(n => n.nf).forEach(n => (String(n.mtr).match(/\d{8,}/g) || []).forEach(m => { porMtr[m] = 1; }));
+  const remover = expNotas.filter(n => /^SEM/.test(n.id) && (String(n.mtr || "").match(/\d{8,}/g) || []).some(m => porMtr[m]));
+  return { exist, novas, comp, remover };
 }
 async function vendasGravar(plano, origem){
-  const { exist, novas, comp } = plano;
-  await gravarLote(novas.concat(comp), (b, n) => {
+  const { exist, novas, comp, remover } = plano;
+  await gravarLote(novas.concat(comp, remover.map(n => ({ id: n.id, _del: 1 }))), (b, n) => {
     const ref = doc(db, COL_EXP, n.id);
+    if (n._del){ b.delete(ref); return; }
     if (exist[n.id]){ const u = { atualizado_em: serverTimestamp() }; if (!(exist[n.id].mats || []).length && n.mats.length) u.materiais = n.mats; if (nIdsMtr(n.mtr) > nIdsMtr(exist[n.id].mtr)) u.mtr = n.mtr; b.set(ref, u, { merge: true }); }
     else b.set(ref, { ...paraDoc(n), criado_em: serverTimestamp(), origem: "planilha Base Diária · " + origem });
   });
@@ -2220,7 +2225,7 @@ async function importarVendas(arq){
   const sem = notas.filter(n => n.status === "Ativa" && !n.mats.length).length;
   const ds = notas.map(n => n.data).sort();
   const r = await abrirModal({ titulo: "Importar vendas (Base Diária)", ok: "Importar",
-    html: `<div class="txt">Arquivo <b>${esc(arq.name)}</b><br>${fmtNum(notas.length)} nota(s), de <b>${fmtIso(ds[0])}</b> a <b>${fmtIso(ds[ds.length - 1])}</b>.<br><b>${fmtNum(novas.length)}</b> nova(s) serão lançadas; <b>${fmtNum(comp.length)}</b> já existente(s) sem material receberão os materiais; as demais ficam como estão.${sem ? `<br><span class="warn">${fmtNum(sem)} nota(s) ativa(s) sem material informado (não entram no cruzamento).</span>` : ""}${ign.length ? `<br>${fmtNum(ign.length)} linha(s) sem NF ignorada(s).` : ""}</div>` });
+    html: `<div class="txt">Arquivo <b>${esc(arq.name)}</b><br>${fmtNum(notas.length)} nota(s), de <b>${fmtIso(ds[0])}</b> a <b>${fmtIso(ds[ds.length - 1])}</b>.<br><b>${fmtNum(novas.length)}</b> nova(s) serão lançadas; <b>${fmtNum(comp.length)}</b> já existente(s) sem material receberão os materiais; as demais ficam como estão.${sem ? `<br><span class="warn">${fmtNum(sem)} nota(s) ativa(s) sem material informado (não entram no cruzamento).</span>` : ""}${notas.filter(n => !n.nf).length ? `<br>${fmtNum(notas.filter(n => !n.nf).length)} linha(s) com MTR e ainda sem NF (entram como “sem NF” e viram a nota quando a NF for lançada).` : ""}${ign.length ? `<br>${fmtNum(ign.length)} linha(s) sem NF e sem MTR ignorada(s).` : ""}</div>` });
   if (!r) return;
   await vendasGravar(plano, arq.name);
   aviso("Vendas importadas ✔ (" + fmtNum(novas.length) + " novas, " + fmtNum(comp.length) + " atualizadas)");
@@ -2243,7 +2248,7 @@ function cdfLinhas(){
 }
 function cdfTextoPedido(cli, ls){
   return "Olá! Preciso do CDF (Certificado de Destinação Final) dos MTRs abaixo, referentes às coletas de " + cli + ":\n" +
-    ls.map(l => "- MTR " + l.mtr + " (NF " + l.nf + ", " + fmtIso(l.data) + ")").join("\n") + "\n\nPode me enviar o PDF? Obrigado.";
+    ls.map(l => "- MTR " + l.mtr + " (" + (l.nf ? "NF " + l.nf : "NF ainda não emitida") + ", " + fmtIso(l.data) + ")").join("\n") + "\n\nPode me enviar o PDF? Obrigado.";
 }
 function montarViewCerts(){
   const sec = $("v-certs");
@@ -2290,11 +2295,11 @@ function renderCerts(){
   falta.forEach(l => { (grupos[l.cliente] ||= []).push(l); });
   const nomes = Object.keys(grupos).sort((a, b) => grupos[b].length - grupos[a].length);
   $("cdPend").innerHTML = nomes.length ? nomes.map(c => `<div class="panel" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b>${esc(c)}</b><span><span class="muted">${fmtNum(grupos[c].length)} MTR(s) sem CDF</span> <button class="btn xs" data-cbtn="copiar" data-cli="${esc(c)}">Copiar lista para pedir o CDF</button></span></div>
-      <div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>MTR</th><th></th></tr></thead><tbody>${grupos[c].map(l => `<tr><td>${fmtIso(l.data)}</td><td class="mono">${esc(l.nf)}</td><td class="mono">${esc(l.mtr)}${l.pdf ? "" : ` <span class="warn">· digitado</span>`}</td><td class="ac"><button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">Dar baixa</button></td></tr>`).join("")}</tbody></table></div></div>`).join("")
+      <div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>MTR</th><th></th></tr></thead><tbody>${grupos[c].map(l => `<tr><td>${fmtIso(l.data)}</td><td class="mono">${l.nf ? esc(l.nf) : "pend. NF"}</td><td class="mono">${esc(l.mtr)}${l.pdf ? "" : ` <span class="warn">· digitado</span>`}</td><td class="ac"><button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">Dar baixa</button></td></tr>`).join("")}</tbody></table></div></div>`).join("")
     : `<div class="muted">Nenhum MTR pendente${cdCli || cdQ ? " neste filtro" : ""}.</div>`;
   const lista = todas.filter(l => passa(l) && (!cdSt || l.st === cdSt));
   const rot = { ok: "Completo", falta: "Falta CDF", sem: "Sem MTR" }, cor = { ok: "var(--ok)", falta: "var(--warn)", sem: "var(--bad)" };
-  $("cdTodos").innerHTML = lista.length ? lista.map(l => `<tr><td>${fmtIso(l.data)}</td><td>${esc(l.cliente)}</td><td class="mono">${esc(l.nf)}</td><td class="mono">${esc(l.mtr || "—")}${l.mtr ? (l.pdf ? ` <span class="muted" title="Confirmado pelo PDF do MTR">· PDF</span>` : ` <span class="warn" title="Número digitado na nota; ainda sem PDF">· digitado</span>`) : ""}</td><td class="num">${l.pdf && l.pdf.qtd_kg ? fmtNum(l.pdf.qtd_kg) : "—"}</td><td class="mono">${l.cdf ? esc(l.cdf.cdf) : "—"}</td><td>${l.cdf && l.cdf.data ? fmtIso(l.cdf.data) : "—"}</td><td style="color:${cor[l.st]}">${rot[l.st]}</td><td class="ac">${l.mtr ? `<button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">${l.cdf ? "Editar" : "Dar baixa"}</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="9" class="muted">Nada para mostrar.</td></tr>`;
+  $("cdTodos").innerHTML = lista.length ? lista.map(l => `<tr><td>${fmtIso(l.data)}</td><td>${esc(l.cliente)}</td><td class="mono">${l.nf ? esc(l.nf) : "pend. NF"}</td><td class="mono">${esc(l.mtr || "—")}${l.mtr ? (l.pdf ? ` <span class="muted" title="Confirmado pelo PDF do MTR">· PDF</span>` : ` <span class="warn" title="Número digitado na nota; ainda sem PDF">· digitado</span>`) : ""}</td><td class="num">${l.pdf && l.pdf.qtd_kg ? fmtNum(l.pdf.qtd_kg) : "—"}</td><td class="mono">${l.cdf ? esc(l.cdf.cdf) : "—"}</td><td>${l.cdf && l.cdf.data ? fmtIso(l.cdf.data) : "—"}</td><td style="color:${cor[l.st]}">${rot[l.st]}</td><td class="ac">${l.mtr ? `<button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">${l.cdf ? "Editar" : "Dar baixa"}</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="9" class="muted">Nada para mostrar.</td></tr>`;
 }
 async function baixaCDF(mtr){
   const at = cdfDocs[mtr] || null;
@@ -2787,7 +2792,7 @@ const vincDel = async k => { const d = await vincDB(); return new Promise(ok => 
 async function vendasAuto(f){
   await carregarXLSX();
   const { notas } = bdLer(XLSX.read(new Uint8Array(await f.arrayBuffer()), { type: "array" }));
-  const plano = vendasPlano(notas), n = plano.novas.length + plano.comp.length;
+  const plano = vendasPlano(notas), n = plano.novas.length + plano.comp.length + plano.remover.length;
   if (n){ await vendasGravar(plano, f.name); aviso("Vendas atualizadas automaticamente ✔ (" + fmtNum(plano.novas.length) + " nova(s), " + fmtNum(plano.comp.length) + " atualizada(s))"); }
   return n;
 }
