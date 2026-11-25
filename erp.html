@@ -336,6 +336,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 .pgbtns{display:flex;gap:5px;align-items:center}.pgbtns button{flex:0 0 auto;border:1px solid var(--line);background:var(--bg);color:var(--txt);border-radius:8px;min-width:32px;padding:0 6px;height:36px;font-size:15px;font-weight:700}.pgbtns button:active{background:var(--blue);color:#06202E}
 .pgbtns input{flex:1 1 40px;width:40px;min-width:36px;padding:0;height:36px;text-align:center;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:8px;font-size:15px;font-weight:700}
 .pglock{grid-column:1/-1;background:rgba(232,176,75,.12);border:1px solid var(--warn);color:var(--txt);border-radius:12px;padding:12px 14px;font-size:14px}.pgtile.lock{opacity:.5}
+.pgtab th,.pgtab td{padding:8px 6px}.pgtab .btn.xs{padding:3px 8px}
 .pgdisp{font-size:15px;font-weight:800;color:var(--txt)}
 .pgbat{position:relative;padding-right:14px;margin-bottom:12px}.pgbat::after{content:"";position:absolute;right:0;top:34%;height:32%;width:10px;background:#5b7f93;border-radius:0 5px 5px 0}
 .pgbat-c{position:relative;height:64px;border:4px solid #5b7f93;border-radius:14px;background:#0b1f2b;overflow:hidden}
@@ -666,7 +667,9 @@ function classeLog(tipo){
   if (tipo.includes("CONFERENCIA")) return "b-vio";
   return "b-err";
 }
-const badgeMat = m => `<span class="badge b-mat">${esc(m)}</span>`;
+const ROT_MAT = { "PEAD natural": "PEAD Branco" };   /* nome mostrado na tela; a chave interna não muda */
+const rotMat = m => ROT_MAT[m] || m;
+const badgeMat = m => `<span class="badge b-mat">${esc(rotMat(m))}</span>`;
 const vazio = (cols, msg) => `<tr class="empty"><td colspan="${cols}">${esc(msg)}</td></tr>`;
 function listaMateriais(extra){
   const s = new Set(ORDEM_MATERIAIS);
@@ -2597,14 +2600,14 @@ function pgExige(){
 function pgDisp(m){ const S = edSerie(), u = S[S.length - 1]; return u && u.v[m] != null ? Math.max(0, Math.floor(u.v[m])) : null; }
 function pgSet(m, v){
   v = Math.max(0, Math.floor(Number(v) || 0)); const d = pgDisp(m);
-  if (d != null && v > d){ v = d; aviso(m + ": só há " + d + " em estoque (última contagem).", "warn"); }
+  if (d != null && v > d){ v = d; aviso(rotMat(m) + ": só há " + d + " em estoque (última contagem).", "warn"); }
   pg.it[m] = v; return v;
 }
 function pgTilesHtml(c){
   return (c.pronto ? "" : `<div class="pglock">Escolha o <b>cliente</b> e informe a <b>capacidade do caminhão</b> para começar a montar a carga.</div>`) + c.linhas.map(l => {
     const over = l.disp != null && l.q > l.disp, vazio = l.disp != null && l.disp <= 0 && !l.q;
     return `<div class="pgtile ${c.pronto ? "" : "lock"} ${l.q ? "on" : ""} ${over ? "over" : ""} ${vazio ? "dim" : ""}" data-pgmat="${esc(l.m)}">
-      <div class="top"><span class="badge b-mat">${esc(l.m)}</span><span class="pgdisp">${l.disp != null ? "disp. " + edF(l.disp) : "sem contagem"}</span></div>
+      <div class="top"><span class="badge b-mat">${esc(rotMat(l.m))}</span><span class="pgdisp">${l.disp != null ? "disp. " + edF(l.disp) : "sem contagem"}</span></div>
       <div class="q"><b>${fmtNum(l.q)}</b>${pgUn(l.m)}</div>
       <div class="kg">${l.q ? "≈ " + fmtNum(Math.round(l.kg)) + " kg" : nf2.format(l.kf) + " kg/" + (pgUn(l.m) === "bags" ? "bag" : "fardo")}${l.base !== "pm" ? ' <span class="muted" style="font-size:11px;font-weight:600" title="Sem média nas NFs; usando ' + (l.base === "vo" ? "a média da Veolia" : "300 kg (padrão)") + '">(est.)</span>' : ""}</div>
       <div class="pgbtns"><button data-pgop="dec" title="Tirar 1">−</button><input type="number" min="0" step="1" ${c.pronto ? "" : "disabled"} ${l.disp != null ? 'max="' + Math.max(0, Math.floor(l.disp)) + '"' : ""} value="${l.q || ""}" placeholder="0" data-pgq="${esc(l.m)}" aria-label="Quantidade de ${esc(l.m)}"><button data-pgop="inc" title="Somar 1">+</button><button data-pgop="inc5" title="Somar 5">+5</button></div>
@@ -2613,12 +2616,12 @@ function pgTilesHtml(c){
 }
 function pgResumoHtml(c){
   const pct = c.cap ? Math.round(c.kg / c.cap * 100) : 0, cor = !c.cap ? "blue" : pct > 100 ? "err" : pct >= 90 ? "warn" : "ok", resta = c.cap - c.kg;
-  const linhas = c.sel.map(l => `<tr><td>${badgeMat(l.m)}</td><td class="num">${fmtNum(l.q)}</td><td class="num">${nf2.format(l.kf)}</td><td class="num">${fmtNum(Math.round(l.kg))}</td><td class="num ${l.disp != null && l.q > l.disp ? "err" : "muted"}">${l.disp == null ? "—" : l.q > l.disp ? "falta " + edF(l.q - l.disp) : "sobra " + edF(l.disp - l.q)}</td></tr>`).join("");
+  const linhas = c.sel.map(l => `<tr><td>${badgeMat(l.m)}</td><td class="num">${fmtNum(l.q)}</td><td class="num">${nf2.format(l.kf)}</td><td class="num">${fmtNum(Math.round(l.kg))}</td><td class="num ${l.disp != null && l.q > l.disp ? "err" : "muted"}">${l.disp == null ? "—" : l.q > l.disp ? "falta " + edF(l.q - l.disp) : "sobra " + edF(l.disp - l.q)}</td><td class="ac"><button class="btn xs danger" data-pgop="rm" data-m="${esc(l.m)}" title="Tirar ${esc(rotMat(l.m))} da carga" aria-label="Tirar ${esc(rotMat(l.m))} da carga">✕</button></td></tr>`).join("");
   return `<div class="pgcab"><div class="pgbat ${cor}"><div class="pgbat-c"><div class="pgbat-f" style="width:${Math.min(100, pct)}%"></div><span class="pgbat-p ${c.cap ? "" : "need"}">${c.cap ? pct + "%" : "Informe a capacidade do caminhão ↑"}</span></div></div>
       <div class="pgtot"><b>${fmtNum(c.fd)}</b> fardos/bags · <b>${fmtNum(Math.round(c.kg))}</b> kg ${c.cap ? "de " + fmtNum(c.cap) + " kg" : "· informe a capacidade"}</div>
       <div class="muted" style="font-size:12.5px">${!c.cap ? "&nbsp;" : resta >= 0 ? "Cabe ainda ≈ " + fmtNum(Math.round(resta)) + " kg" : '<b style="color:var(--err)">Passou ≈ ' + fmtNum(Math.round(-resta)) + " kg da capacidade</b>"}</div></div>
-    <div class="table-wrap" style="margin-top:10px;overflow-x:auto"><table style="font-size:13px"><thead><tr><th>Material</th><th class="num">Qtd</th><th class="num">kg/fd</th><th class="num">Peso (kg)</th><th class="num">Estoque</th></tr></thead><tbody>${linhas || vazio(5, "Clique nos quadrados para montar a carga.")}</tbody>${c.sel.length ? `<tfoot><tr class="total"><td>Total</td><td class="num">${fmtNum(c.fd)}</td><td></td><td class="num">${fmtNum(Math.round(c.kg))}</td><td></td></tr></tfoot>` : ""}</table></div>
-    <div class="toolbar" style="margin-top:10px"><select class="input" id="pgFillMat" style="max-width:190px">${PG_MATS.map(m => `<option>${esc(m)}</option>`).join("")}</select><button class="btn sm" data-pgop="fill" title="Soma o que falta para chegar na capacidade">Completar a capacidade</button></div>`;
+    <div class="table-wrap" style="margin-top:10px;overflow-x:auto"><table class="pgtab" style="font-size:13px"><thead><tr><th>Material</th><th class="num">Qtd</th><th class="num">kg/fd</th><th class="num">Peso (kg)</th><th class="num">Estoque</th><th></th></tr></thead><tbody>${linhas || vazio(6, "Clique nos quadrados para montar a carga.")}</tbody>${c.sel.length ? `<tfoot><tr class="total"><td>Total</td><td class="num">${fmtNum(c.fd)}</td><td></td><td class="num">${fmtNum(Math.round(c.kg))}</td><td></td><td></td></tr></tfoot>` : ""}</table></div>
+    <div class="toolbar" style="margin-top:10px"><select class="input" id="pgFillMat" style="max-width:190px">${PG_MATS.map(m => `<option value="${esc(m)}">${esc(rotMat(m))}</option>`).join("")}</select><button class="btn sm" data-pgop="fill" title="Soma o que falta para chegar na capacidade">Completar a capacidade</button></div>`;
 }
 function pgAtualiza(){ const c = pgCalc(); const ci = $("pgCap"); if (ci) ci.classList.toggle("need", !(c.cap > 0)); $("pgTiles").innerHTML = pgTilesHtml(c); $("pgResumo").innerHTML = pgResumoHtml(c); }
 function renderProg(){
@@ -2644,7 +2647,7 @@ function pgImprimir(p){
   let a = $("printArea"); if (!a){ a = document.createElement("div"); a.id = "printArea"; document.body.appendChild(a); }
   a.innerHTML = `<h1>Programação de carregamento</h1>
     <table class="cab"><tr><td><b>Data</b><br>${p.data ? fmtDiaKey(p.data) : ""}</td><td><b>Cliente</b><br>${esc(p.cliente)}</td><td><b>Placa</b><br>${esc(p.placa) || "&nbsp;"}</td><td><b>Capacidade</b><br>${p.cap ? fmtNum(p.cap) + " kg" : "—"}</td></tr></table>
-    <table class="itens"><thead><tr><th>Material</th><th>Quantidade</th><th>kg/fardo (média)</th><th>Peso estimado (kg)</th><th>Conferido</th></tr></thead><tbody>${p.it.map(x => `<tr><td>${esc(x.m)}</td><td class="n">${fmtNum(x.q)} ${pgUn(x.m)}</td><td class="n">${nf2.format(x.kf)}</td><td class="n">${fmtNum(Math.round(x.q * x.kf))}</td><td class="n">☐ ______</td></tr>`).join("")}</tbody>
+    <table class="itens"><thead><tr><th>Material</th><th>Quantidade</th><th>kg/fardo (média)</th><th>Peso estimado (kg)</th><th>Conferido</th></tr></thead><tbody>${p.it.map(x => `<tr><td>${esc(rotMat(x.m))}</td><td class="n">${fmtNum(x.q)} ${pgUn(x.m)}</td><td class="n">${nf2.format(x.kf)}</td><td class="n">${fmtNum(Math.round(x.q * x.kf))}</td><td class="n">☐ ______</td></tr>`).join("")}</tbody>
       <tfoot><tr><td><b>Total</b></td><td class="n"><b>${fmtNum(fd)}</b></td><td></td><td class="n"><b>${fmtNum(Math.round(tot))}</b></td><td></td></tr></tfoot></table>
     <p>${p.cap ? "Capacidade: " + fmtNum(p.cap) + " kg · " + (resta >= 0 ? "saldo ≈ " + fmtNum(Math.round(resta)) + " kg" : "EXCEDE ≈ " + fmtNum(Math.round(-resta)) + " kg") + " · " : ""}Pesos estimados pela média das últimas ${PM_N} fardos carregadas de cada material.</p>
     ${p.obs ? `<p><b>Obs.:</b> ${esc(p.obs)}</p>` : ""}
@@ -2681,8 +2684,9 @@ document.addEventListener("click", e => {
   const op = bt ? bt.dataset.pgop : "", m = tile ? tile.dataset.pgmat : "";
   if ((op === "inc" || op === "inc5" || op === "dec" || op === "fill" || op === "save" || op === "print") && !pgExige()) return;
   if (tile && !op && !e.target.closest("input") && !pgExige()) return;
+  if (op === "rm"){ pg.it[bt.dataset.m] = 0; pgAtualiza(); return; }
   if (op === "inc" || op === "inc5" || op === "dec"){ pgSet(m, (Number(pg.it[m]) || 0) + (op === "dec" ? -1 : op === "inc" ? 1 : 5)); pgAtualiza(); return; }
-  if (op === "fill"){ const mm = $("pgFillMat").value, c = pgCalc(), l = c.linhas.find(x => x.m === mm); if (!(c.cap > 0)){ aviso("Informe a capacidade do caminhão."); return; } const n = Math.floor((c.cap - c.kg) / l.kf); if (n > 0){ const antes = Number(pg.it[mm]) || 0, dep = pgSet(mm, antes + n); pgAtualiza(); $("pgFillMat").value = mm; if (dep === antes) aviso("Sem estoque disponível de " + mm + "."); } else aviso("Já está na capacidade."); return; }
+  if (op === "fill"){ const mm = $("pgFillMat").value, c = pgCalc(), l = c.linhas.find(x => x.m === mm); if (!(c.cap > 0)){ aviso("Informe a capacidade do caminhão."); return; } const n = Math.floor((c.cap - c.kg) / l.kf); if (n > 0){ const antes = Number(pg.it[mm]) || 0, dep = pgSet(mm, antes + n); pgAtualiza(); $("pgFillMat").value = mm; if (dep === antes) aviso("Sem estoque disponível de " + rotMat(mm) + "."); } else aviso("Já está na capacidade."); return; }
   if (op === "clear"){ pg = pgNovo(); renderProg(); aviso("Programação zerada. Escolha o cliente e a capacidade para começar."); return; }
   if (op === "print"){ const p = pgAtual(); if (!p.it.length){ aviso("Escolha ao menos um material."); return; } pgImprimir(p); return; }
   if (op === "save"){ run(pgSalvar); return; }
@@ -2787,7 +2791,7 @@ function renderEstDia(){
   const alertas = []; dadosCards.forEach(m => edStatus(m, ult.v[m], DE[m]).forEach(s => alertas.push({ m, ...s })));
   let mv = null; if (ant) dadosCards.forEach(m => { if (ant.v[m] != null){ const d = ult.v[m] - ant.v[m]; if (!mv || Math.abs(d) > Math.abs(mv.d)) mv = { m, d }; } });
   if (nb){ nb.textContent = alertas.length; nb.classList.toggle("hide", !alertas.length); }
-  $("edAlertas").innerHTML = alertas.length ? `<div class="panel" style="border-color:var(--warn);margin-bottom:14px"><b style="color:var(--warn)">${alertas.length} alerta(s)</b><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${alertas.map(a => `<span class="badge" style="border-color:var(--${a.c});color:var(--${a.c})">${esc(a.m)}: ${esc(a.x)}</span>`).join("")}</div></div>` : "";
+  $("edAlertas").innerHTML = alertas.length ? `<div class="panel" style="border-color:var(--warn);margin-bottom:14px"><b style="color:var(--warn)">${alertas.length} alerta(s)</b><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${alertas.map(a => `<span class="badge" style="border-color:var(--${a.c});color:var(--${a.c})">${esc(rotMat(a.m))}: ${esc(a.x)}</span>`).join("")}</div></div>` : "";
   const kgTot = { kg: 0, n: 0 }; dadosCards.forEach(m => { const k = kgEst(m, ult.v[m]); if (k != null){ kgTot.kg += k; kgTot.n++; } });
   const dias0 = Math.round((new Date(diaKey(new Date()) + "T12:00:00") - new Date(ult.data + "T12:00:00")) / 864e5);
   $("edKpis").innerHTML = `<div class="kpi"><div class="l">Última contagem</div><div class="v" style="font-size:22px">${fmtDiaKey(ult.data)}</div><div class="s">${dias0 <= 0 ? "hoje" : dias0 === 1 ? "ontem" : "há " + dias0 + " dias"}</div></div>
@@ -2799,18 +2803,18 @@ function renderEstDia(){
   $("edCards").innerHTML = dadosCards.map(m => {
     const q = ult.v[m], d = ant && ant.v[m] != null ? q - ant.v[m] : null, l = edLim[m] || {}, st = edStatus(m, q, DE[m]), cor = st.some(s => s.c === "err") ? "err" : st.length ? "warn" : null;
     const pct = l.max ? Math.min(100, Math.round(q / l.max * 100)) : null, un = ED_FARDOS.includes(m) ? "fardos" : "";
-    return `<div class="matcard" data-edmat="${esc(m)}" style="cursor:pointer;${cor ? "border-color:var(--" + cor + ")" : ""}${edMat === m ? ";box-shadow:0 0 0 2px var(--blue)" : ""}"><div style="display:flex;justify-content:space-between;align-items:center"><span class="badge b-mat">${esc(m)}</span>${d != null ? `<span style="font-size:12.5px;font-weight:700;color:${d > 0 ? "var(--blue)" : d < 0 ? "var(--warn)" : "var(--muted)"}">${d > 0 ? "▲ +" : d < 0 ? "▼ " : "= "}${edF(d)}</span>` : ""}</div>
+    return `<div class="matcard" data-edmat="${esc(m)}" style="cursor:pointer;${cor ? "border-color:var(--" + cor + ")" : ""}${edMat === m ? ";box-shadow:0 0 0 2px var(--blue)" : ""}"><div style="display:flex;justify-content:space-between;align-items:center"><span class="badge b-mat">${esc(rotMat(m))}</span>${d != null ? `<span style="font-size:12.5px;font-weight:700;color:${d > 0 ? "var(--blue)" : d < 0 ? "var(--warn)" : "var(--muted)"}">${d > 0 ? "▲ +" : d < 0 ? "▼ " : "= "}${edF(d)}</span>` : ""}</div>
       <div class="q"><b>${edF(q)}</b>${un}</div>${kgEst(m, q) != null ? `<div style="font-size:13px;color:var(--blue);font-weight:700">≈ ${fmtNum(Math.round(kgEst(m, q)))} kg <span class="muted" style="font-weight:500;font-size:11.5px">(${nf2.format(pmDe(m, PMX).med)} kg/fardo)</span></div>` : ""}${spark(m)}${pct != null ? `<div style="height:6px;border-radius:6px;background:#1c3a4a"><div style="height:6px;border-radius:6px;width:${pct}%;background:var(--${pct >= 100 ? "err" : pct >= 80 ? "warn" : "blue"})"></div></div><div class="muted" style="font-size:11.5px">${pct}% do máximo (${l.max})</div>` : ""}${st.length ? `<div style="font-size:12px;color:var(--${st[0].c});font-weight:700">${esc(st[0].x)}</div>` : ""}${DE[m] && DE[m].dias != null ? `<div class="muted" style="font-size:12px">≈ ${edF(DE[m].dias)} dia(s) de estoque</div>` : ""}</div>`;
   }).join("");
   const sel = $("edMatSel"), opcs = ["__total"].concat(dadosCards);
-  sel.innerHTML = opcs.map(m => `<option value="${esc(m)}" ${m === edMat ? "selected" : ""}>${m === "__total" ? "Total de fardos" : esc(m)}</option>`).join(""); if (!opcs.includes(edMat)){ edMat = "__total"; sel.value = edMat; }
+  sel.innerHTML = opcs.map(m => `<option value="${esc(m)}" ${m === edMat ? "selected" : ""}>${m === "__total" ? "Total de fardos" : esc(rotMat(m))}</option>`).join(""); if (!opcs.includes(edMat)){ edMat = "__total"; sel.value = edMat; }
   $("edJanSel").value = edJan;
   const fatia = edJan === "0" ? S : S.slice(-Number(edJan)), lm = edLim[edMat] || {};
   $("edGraf").innerHTML = edSvg(fatia.map(c => ({ x: fmtDiaKey(c.data).slice(0, 5), y: edVal(c, edMat) })), 760, 240, { eixos: true, min: lm.min, max: lm.max });
   /* entradas e saídas */
   const emPV = PV_FARDOS.includes(edMat), ints = [];
   for (let i = S.length - 1; i > 0 && ints.length < 12; i--) ints.push([S[i - 1], S[i]]);
-  $("edEsTit").textContent = "· " + (edMat === "__total" ? "total de fardos" : edMat);
+  $("edEsTit").textContent = "· " + (edMat === "__total" ? "total de fardos" : rotMat(edMat));
   $("edEs").innerHTML = (edMat === "__total" || !emPV) ? vazio(8, edMat === "__total" ? "Escolha um material no gráfico (clique no card) para ver entradas e saídas." : "Este material não tem produção da Veolia nem saídas por NF no sistema.") :
     ints.map(([c0, c1]) => {
       const a = c0.v[edMat], b = c1.v[edMat], rot = fmtDiaKey(c0.data).slice(0, 5) + " → " + fmtDiaKey(c1.data).slice(0, 5);
@@ -2832,7 +2836,7 @@ function renderEstDia(){
 }
 async function lancarContagem(){
   const S = edSerie(), ult = S[S.length - 1], hoje = diaKey(new Date());
-  const campo1 = (m, i) => `<div><label>${esc(m)}</label><input class="input" type="text" inputmode="decimal" data-mf="c${i}" value="${ult && ult.v[m] != null ? String(ult.v[m]).replace(".", ",") : ""}"></div>`;
+  const campo1 = (m, i) => `<div><label>${esc(rotMat(m))}</label><input class="input" type="text" inputmode="decimal" data-mf="c${i}" value="${ult && ult.v[m] != null ? String(ult.v[m]).replace(".", ",") : ""}"></div>`;
   const r = await abrirModal({ titulo: "Lançar contagem do estoque", ok: "Gravar",
     html: `<label>Data da contagem</label><input class="input" type="date" data-mf="data" value="${hoje}"><div class="txt" style="margin-top:8px">Os campos vêm com a última contagem. Altere o que mudou; se a data já existir, ela será substituída.</div>${grid(ED_ORDEM_XLS.map((m, i) => campo1(m, i)).join(""))}`,
     validar: d => !d.data ? "Informe a data." : ED_ORDEM_XLS.some((m, i) => String(d["c" + i]).trim() !== "" && isNaN(lerNum(d["c" + i]))) ? "Há um valor inválido. Use números (vírgula para decimais)." : "" });
@@ -2843,7 +2847,7 @@ async function lancarContagem(){
   aviso("Contagem de " + fmtDiaKey(r.data) + " gravada ✔");
 }
 async function definirLimites(){
-  const campo = (m, i) => `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center;margin-top:6px"><span>${esc(m)}</span><input class="input" type="text" inputmode="decimal" placeholder="mín." data-mf="mn${i}" value="${edLim[m] && edLim[m].min != null ? edLim[m].min : ""}"><input class="input" type="text" inputmode="decimal" placeholder="máx." data-mf="mx${i}" value="${edLim[m] && edLim[m].max != null ? edLim[m].max : ""}"></div>`;
+  const campo = (m, i) => `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center;margin-top:6px"><span>${esc(rotMat(m))}</span><input class="input" type="text" inputmode="decimal" placeholder="mín." data-mf="mn${i}" value="${edLim[m] && edLim[m].min != null ? edLim[m].min : ""}"><input class="input" type="text" inputmode="decimal" placeholder="máx." data-mf="mx${i}" value="${edLim[m] && edLim[m].max != null ? edLim[m].max : ""}"></div>`;
   const r = await abrirModal({ titulo: "Limites de estoque", ok: "Gravar",
     html: `<div class="txt">Defina o mínimo e o máximo de cada material (deixe vazio para não alertar). O painel avisa quando a última contagem passa dos limites.</div>${ED_TODOS.map(campo).join("")}`,
     validar: d => ED_TODOS.some((m, i) => ["mn", "mx"].some(p => String(d[p + i]).trim() !== "" && isNaN(lerNum(d[p + i])))) ? "Há um valor inválido." : "" });
@@ -2942,7 +2946,7 @@ function montarViewPrensaV(){
     <div id="xcAviso"></div>
     <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Estoque inicial</th><th class="num">+ Produção Veolia</th><th class="num">− Estourados</th><th class="num">− Saídas NF (fardos)</th><th class="num">Saídas NF (kg)</th><th class="num">= Esperado</th><th class="num">Estoque contado</th><th class="num">Diferença</th></tr></thead><tbody id="xcResumo"></tbody></table></div>
     <h3 style="margin:18px 0 6px">Diferença por intervalo entre contagens (fardos)</h3>
-    <div class="table-wrap"><table><thead><tr><th>Intervalo</th>${PV_FARDOS.map(m => `<th class="num">${m}</th>`).join("")}</tr></thead><tbody id="xcMatriz"></tbody></table></div>`;
+    <div class="table-wrap"><table><thead><tr><th>Intervalo</th>${PV_FARDOS.map(m => `<th class="num">${esc(rotMat(m))}</th>`).join("")}</tr></thead><tbody id="xcMatriz"></tbody></table></div>`;
   sec.addEventListener("click", e => { const b = e.target.closest("button[data-vbtn]"); if (b) $(b.dataset.vbtn === "est" ? "ecFile" : "pvFile").click(); });
   $("ecFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) run(() => importarEC(f)); });
   $("xcDeSel").addEventListener("change", e => { xcDe = e.target.value; renderXC(); });
