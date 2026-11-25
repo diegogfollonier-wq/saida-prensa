@@ -261,6 +261,39 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 .panel.alert{border-color:rgba(229,115,107,.55)}
 .stack{display:flex;flex-direction:column;gap:16px}
 
+
+/* ---------- CELULAR: barra inferior + menu completo ---------- */
+#mbar,#msheet{display:none}
+@media (max-width:980px){
+  .sidebar{display:none!important}
+  #mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card2);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:2px}
+  #mbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:0;color:var(--muted);font-size:11px;font-weight:700;padding:7px 2px;border-radius:10px;cursor:pointer;position:relative}
+  #mbar button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  #mbar button.on{color:var(--blue);background:rgba(94,170,236,.14)}
+  #msheet{display:block;position:fixed;inset:0;z-index:150}
+  #msheet.hide{display:none}
+  #msheet .ms-bg{position:absolute;inset:0;background:rgba(3,12,18,.7)}
+  #msheet .ms-box{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--card2);border-radius:18px 18px 0 0;border-top:1px solid var(--line);padding:14px 14px calc(18px + env(safe-area-inset-bottom))}
+  .ms-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.ms-h b{font-size:18px}
+  .ms-h button{background:transparent;border:0;color:var(--txt);font-size:22px;padding:4px 10px}
+  .ms-sep{margin:14px 4px 6px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .ms-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ms-btn{display:flex;align-items:center;gap:10px;text-align:left;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:13px 12px;font-size:14px;font-weight:700;cursor:pointer}
+  .ms-btn svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--blue);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .ms-btn.on{border-color:var(--blue);background:rgba(94,170,236,.16)}
+  .main{padding-bottom:92px}
+  .toolbar>.btn,.toolbar>.input{flex:1 1 150px;max-width:none!important}
+}
+@media (max-width:640px){
+  .input,select.input,input.input{font-size:16px}
+  .modal-bg{align-items:flex-end;padding:0}
+  .modal{border-radius:18px 18px 0 0;width:100%;max-height:92vh;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+  .page-head p{font-size:13px}
+  .matcards{grid-template-columns:1fr 1fr;gap:8px}.matcard{padding:11px 12px}.matcard .q b{font-size:22px}
+  .panel{padding:12px}
+  table{font-size:12.5px}
+}
+
 /* ---------- RESPONSIVO ---------- */
 @media (max-width:1200px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:980px){
@@ -289,7 +322,7 @@ tr.empty td{text-align:center;color:var(--muted);padding:26px}
 .lg-m{display:none}
 .topbar-m{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
 .topbar-m .btn{padding:6px 12px;font-size:12.5px}
-body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-cadm],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="vendas"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
+body.leitura [data-act],body.leitura [data-salvar],body.leitura [data-prbtn],body.leitura [data-vbtn],body.leitura [data-cadm],body.leitura [data-eadm],body.leitura [data-mbtn],body.leitura [data-expbtn="novo"],body.leitura [data-expbtn="importar"],body.leitura [data-expbtn="vendas"],body.leitura [data-expbtn="excluir"],body.leitura #btnEstExcluir,body.leitura #btnHistExcluir,body.leitura #btnLogExcluir,body.leitura #btnConfExcluir{display:none!important}
 body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 </style>
 </head>
@@ -320,6 +353,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
     <nav class="nav" id="nav">
       <button data-v="visao" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></svg><span><span class="lg-d">Visão geral</span><span class="lg-m">Geral</span></span></button>
       <button data-v="estoque"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg><span>Estoque</span></button>
+      <button data-v="estDia"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span><span class="lg-d">Estoque diário</span><span class="lg-m">Diário</span></span><b class="count hide" id="navEd">0</b></button>
       <button data-v="carregamentos"><svg viewBox="0 0 24 24"><path d="M2.5 6.5h11v9.5h-11z"/><path d="M13.5 9.5h4.2l3 3.2V16h-7.2z"/><circle cx="7" cy="17.8" r="1.8"/><circle cx="17.2" cy="17.8" r="1.8"/></svg><span><span class="lg-d">Carregamentos</span><span class="lg-m">Cargas</span></span></button>
       <button data-v="prensa"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="4" rx="1"/><rect x="6" y="16.5" width="12" height="4" rx="1"/><path d="M12 7.5v9M9.5 10.5 12 13l2.5-2.5"/></svg><span><span class="lg-d">Saída da Prensa</span><span class="lg-m">Prensa</span></span></button>
       <button data-v="conferencia"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span><span class="lg-d">Conferência</span><span class="lg-m">Confer.</span></span></button>
@@ -475,6 +509,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
     <section class="view" id="v-expMateriais"></section>
     <section class="view" id="v-expPrecos"></section>
     <section class="view" id="v-prensaV"></section>
+    <section class="view" id="v-estDia"></section>
     <section class="view" id="v-certs"></section>
     <!-- ===== CONFERÊNCIA ===== -->
     <section class="view" id="v-conferencia">
@@ -519,6 +554,8 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 </div>
 <div id="tip"></div>
 
+<div id="mbar"></div>
+<div id="msheet" class="hide"><div class="ms-bg" id="msBg"></div><div class="ms-box"><div class="ms-h"><b>Menu</b><button id="msClose" aria-label="Fechar">✕</button></div><div id="msBody"></div></div></div>
 <div class="modal-bg hide" id="modalBg"><div class="modal" role="dialog" aria-modal="true">
   <h3 id="mTitulo"></h3>
   <div id="mCorpo"></div>
@@ -2177,7 +2214,7 @@ function cdfLinhas(){
     const c = pvNorm(n.cliente); if (CDF_EXCL.some(x => c.includes(x))) return;
     const ids = Array.from(new Set(String(n.mtr || "").match(/\d{8,}/g) || []));
     if (!ids.length) out.push({ mtr: "", nf: n.nf, cliente: n.cliente || "", data: n.data || "", cdf: null, st: "sem" });
-    else ids.forEach(m => { const d = cdfDocs[m] || null; out.push({ mtr: m, nf: n.nf, cliente: n.cliente || "", data: n.data || "", cdf: d, st: d ? "ok" : "falta" }); });
+    else ids.forEach(m => { const d = cdfDocs[m] || null; out.push({ mtr: m, nf: n.nf, cliente: n.cliente || "", data: n.data || "", cdf: d, st: d ? "ok" : "falta", pdf: mtrDocs[m] || null }); });
   });
   return out.sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : (a.nf < b.nf ? 1 : -1));
 }
@@ -2191,18 +2228,20 @@ function montarViewCerts(){
     <div id="cdErro"></div>
     <div class="toolbar"><select class="input" id="cdCliSel" style="max-width:220px"></select><select class="input" id="cdStSel" style="max-width:190px"><option value="">Todos os status</option><option value="falta">Falta CDF</option><option value="ok">Completo</option><option value="sem">Sem MTR</option></select>
       <input class="input" id="cdQ" placeholder="Buscar MTR, NF ou CDF" style="max-width:220px">
-      <button class="btn sm pri" data-cbtn="pdf" data-cadm="1">Subir PDF do CDF</button><input type="file" id="cdFile" accept=".pdf,application/pdf" class="hide">
+      <button class="btn sm pri" data-cbtn="mtr" data-cadm="1">Subir PDFs dos MTRs</button><input type="file" id="mtFile" accept=".pdf,application/pdf" multiple class="hide"><button class="btn sm pri" data-cbtn="pdf" data-cadm="1">Subir PDF do CDF</button><input type="file" id="cdFile" accept=".pdf,application/pdf" class="hide">
       <button class="btn sm" data-cbtn="exportar">Exportar pendências (.xlsx)</button><span class="muted" id="cdInfo"></span></div>
     <h3 style="margin:14px 0 6px">Falta CDF · por cliente</h3><div id="cdPend"></div>
     <h3 style="margin:22px 0 6px">Todos os MTRs</h3>
-    <div class="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>NF</th><th>MTR</th><th>CDF</th><th>Data do CDF</th><th>Status</th><th></th></tr></thead><tbody id="cdTodos"></tbody></table></div>`;
+    <div class="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>NF</th><th>MTR</th><th class="num">Peso MTR (kg)</th><th>CDF</th><th>Data do CDF</th><th>Status</th><th></th></tr></thead><tbody id="cdTodos"></tbody></table></div>`;
   sec.addEventListener("click", e => {
     const b = e.target.closest("button[data-cbtn]"); if (!b) return; const op = b.dataset.cbtn;
     if (op === "pdf") $("cdFile").click();
+    else if (op === "mtr") $("mtFile").click();
     else if (op === "exportar") run(exportarPendCDF);
     else if (op === "copiar"){ const cli = b.dataset.cli, ls = cdfLinhas().filter(l => l.st === "falta" && l.cliente === cli); copiarTexto(cdfTextoPedido(cli, ls)).then(() => aviso("Texto copiado ✔ — cole no e-mail ou WhatsApp")); }
     else if (op === "baixa") run(() => baixaCDF(b.dataset.mtr));
   });
+  $("mtFile").addEventListener("change", e => { const f = Array.from(e.target.files); e.target.value = ""; if (f.length) run(() => subirMTRs(f)); });
   $("cdFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) run(() => lerCDFpdf(f)); });
   $("cdCliSel").addEventListener("change", e => { cdCli = e.target.value; renderCerts(); });
   $("cdStSel").addEventListener("change", e => { cdSt = e.target.value; renderCerts(); });
@@ -2223,16 +2262,16 @@ function renderCerts(){
   const passa = l => (!cdCli || l.cliente === cdCli) && (!q || pvNorm(l.mtr + " " + l.nf + " " + (l.cdf ? l.cdf.cdf : "")).includes(q));
   const cont = s => todas.filter(l => l.st === s).length;
   { const nb = $("navCdf"); if (nb){ nb.textContent = cont("falta"); nb.classList.toggle("hide", !cont("falta")); } }
-  $("cdInfo").textContent = fmtNum(cont("falta")) + " sem CDF · " + fmtNum(cont("ok")) + " completos · " + fmtNum(cont("sem")) + " sem MTR";
+  $("cdInfo").textContent = fmtNum(cont("falta")) + " sem CDF · " + fmtNum(cont("ok")) + " completos · " + fmtNum(cont("sem")) + " sem MTR · " + fmtNum(todas.filter(l => l.mtr && !l.pdf).length) + " MTR(s) sem PDF";
   const falta = todas.filter(l => l.st === "falta" && passa(l)), grupos = {};
   falta.forEach(l => { (grupos[l.cliente] ||= []).push(l); });
   const nomes = Object.keys(grupos).sort((a, b) => grupos[b].length - grupos[a].length);
   $("cdPend").innerHTML = nomes.length ? nomes.map(c => `<div class="panel" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b>${esc(c)}</b><span><span class="muted">${fmtNum(grupos[c].length)} MTR(s) sem CDF</span> <button class="btn xs" data-cbtn="copiar" data-cli="${esc(c)}">Copiar lista para pedir o CDF</button></span></div>
-      <div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>MTR</th><th></th></tr></thead><tbody>${grupos[c].map(l => `<tr><td>${fmtIso(l.data)}</td><td class="mono">${esc(l.nf)}</td><td class="mono">${esc(l.mtr)}</td><td class="ac"><button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">Dar baixa</button></td></tr>`).join("")}</tbody></table></div></div>`).join("")
+      <div class="table-wrap"><table><thead><tr><th>Data</th><th>NF</th><th>MTR</th><th></th></tr></thead><tbody>${grupos[c].map(l => `<tr><td>${fmtIso(l.data)}</td><td class="mono">${esc(l.nf)}</td><td class="mono">${esc(l.mtr)}${l.pdf ? "" : ` <span class="warn">· digitado</span>`}</td><td class="ac"><button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">Dar baixa</button></td></tr>`).join("")}</tbody></table></div></div>`).join("")
     : `<div class="muted">Nenhum MTR pendente${cdCli || cdQ ? " neste filtro" : ""}.</div>`;
   const lista = todas.filter(l => passa(l) && (!cdSt || l.st === cdSt));
   const rot = { ok: "Completo", falta: "Falta CDF", sem: "Sem MTR" }, cor = { ok: "var(--ok)", falta: "var(--warn)", sem: "var(--bad)" };
-  $("cdTodos").innerHTML = lista.length ? lista.map(l => `<tr><td>${fmtIso(l.data)}</td><td>${esc(l.cliente)}</td><td class="mono">${esc(l.nf)}</td><td class="mono">${esc(l.mtr || "—")}</td><td class="mono">${l.cdf ? esc(l.cdf.cdf) : "—"}</td><td>${l.cdf && l.cdf.data ? fmtIso(l.cdf.data) : "—"}</td><td style="color:${cor[l.st]}">${rot[l.st]}</td><td class="ac">${l.mtr ? `<button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">${l.cdf ? "Editar" : "Dar baixa"}</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="8" class="muted">Nada para mostrar.</td></tr>`;
+  $("cdTodos").innerHTML = lista.length ? lista.map(l => `<tr><td>${fmtIso(l.data)}</td><td>${esc(l.cliente)}</td><td class="mono">${esc(l.nf)}</td><td class="mono">${esc(l.mtr || "—")}${l.mtr ? (l.pdf ? ` <span class="muted" title="Confirmado pelo PDF do MTR">· PDF</span>` : ` <span class="warn" title="Número digitado na nota; ainda sem PDF">· digitado</span>`) : ""}</td><td class="num">${l.pdf && l.pdf.qtd_kg ? fmtNum(l.pdf.qtd_kg) : "—"}</td><td class="mono">${l.cdf ? esc(l.cdf.cdf) : "—"}</td><td>${l.cdf && l.cdf.data ? fmtIso(l.cdf.data) : "—"}</td><td style="color:${cor[l.st]}">${rot[l.st]}</td><td class="ac">${l.mtr ? `<button class="btn xs" data-cbtn="baixa" data-cadm="1" data-mtr="${esc(l.mtr)}">${l.cdf ? "Editar" : "Dar baixa"}</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="9" class="muted">Nada para mostrar.</td></tr>`;
 }
 async function baixaCDF(mtr){
   const at = cdfDocs[mtr] || null;
@@ -2255,7 +2294,12 @@ async function textoPDF(arq){
   await carregarPDFJS();
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await arq.arrayBuffer()) }).promise;
   let t = "";
-  for (let i = 1; i <= pdf.numPages; i++){ const p = await pdf.getPage(i); const c = await p.getTextContent(); t += c.items.map(x => x.str).join(" ") + "\n"; }
+  for (let i = 1; i <= pdf.numPages; i++){
+    const p = await pdf.getPage(i), c = await p.getTextContent();
+    const its = c.items.filter(x => x.str.trim()).map(x => ({ s: x.str, x: x.transform[4], y: x.transform[5] })).sort((a, b) => b.y - a.y || a.x - b.x);
+    const linhas = []; its.forEach(it => { const l = linhas[linhas.length - 1]; if (l && Math.abs(l.y - it.y) < 3) l.it.push(it); else linhas.push({ y: it.y, it: [it] }); });
+    t += linhas.map(l => l.it.sort((a, b) => a.x - b.x).map(z => z.s.trim()).join(" ")).join("\n") + "\n";
+  }
   return t;
 }
 function cdfAchaCampos(t){
@@ -2289,6 +2333,63 @@ async function exportarPendCDF(){
   if (!ls.length) throw new Error("Não há pendências para exportar.");
   const aoa = [["Cliente", "Data", "NF", "MTR", "Situação"]].concat(ls.sort((a, b) => a.cliente < b.cliente ? -1 : a.cliente > b.cliente ? 1 : (a.data < b.data ? -1 : 1)).map(l => [l.cliente, fmtIso(l.data), l.nf, l.mtr, l.st === "sem" ? "Sem MTR" : "Falta CDF"]));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "Pendencias CDF"); XLSX.writeFile(wb, "pendencias_CDF.xlsx");
+}
+/* ---------- MTR em PDF: leitura, casamento com a NF e confirmação ---------- */
+const COL_MTR = "mtr_docs";
+let mtrDocs = {};
+const mtrKg = (n, u) => { const v = lerBR(n); if (isNaN(v)) return 0; return /tonelada/i.test(u) ? Math.round(v * 1000) : Math.round(v * 100) / 100; };
+const dBR = s => { const m = String(s || "").match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? m[3] + "-" + m[2] + "-" + m[1] : ""; };
+function mtrLerTexto(t){
+  t = t.replace(/\s+/g, " ");
+  const num = (t.match(/MTR\s*n[º°o]?\s*(\d{10})/i) || [])[1]; if (!num) return null;
+  const seg = (a, b) => { const i = t.search(a); if (i < 0) return ""; const r = t.slice(i); const j = b ? r.search(b) : -1; return j > 0 ? r.slice(0, j) : r; };
+  const sGer = seg(/Identifica[çc][ãa]o do Gerador/i, /Identifica[çc][ãa]o do Transportador/i), sTra = seg(/Identifica[çc][ãa]o do Transportador/i, /Identifica[çc][ãa]o do Destinador/i), sDes = seg(/Identifica[çc][ãa]o do Destinador/i, /Identifica[çc][ãa]o dos Res[íi]duos/i);
+  const razao = s => { const m = s.match(/Raz[ãa]o Social:\s*(.+?)\s*CPF\/CNPJ:\s*([\d./-]+)/i); return m ? { n: m[1].replace(/\s*-\s*\d+\s*$/, "").trim(), c: m[2] } : { n: "", c: "" }; };
+  const dst = razao(sDes), ger = razao(sGer);
+  const placa = (sTra.match(/\b([A-Z]{3}-?\d[A-Z0-9]\d{2})\b/) || [])[1] || "";
+  const mot = (sTra.match(/respons[áa]vel\s+([A-ZÀ-Ú][A-ZÀ-Ú ]+?)\s+[A-Z]{3}-?\d[A-Z0-9]\d{2}/) || [])[1] || "";
+  const res = t.match(/\b1\.\s*(\d{6})\s*-\s*(.+?)\s+(?:S[óo]lido|L[íi]quido|Pastoso|Gasoso)/i);
+  const q = t.match(/(\d+[.,]\d+)\s+(Tonelada|Quilograma|kg)\b/i);
+  return { mtr: num, emissao: dBR((t.match(/data da emiss[ãa]o:\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1]), transporte: dBR((t.match(/data do transporte:\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1]),
+    recebimento: dBR((t.match(/data do recebimento:\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1]), placa: normPlaca(placa), motorista: mot.trim(), gerador: ger.n, destinador: dst.n, destinador_cnpj: dst.c,
+    residuo_cod: res ? res[1] : "", residuo: res ? res[2].trim() : "", qtd_kg: q ? mtrKg(q[1], q[2]) : 0 };
+}
+const difDias = (a, b) => Math.abs((new Date(a + "T12:00:00Z") - new Date(b + "T12:00:00Z")) / 864e5);
+function mtrCandidatas(m){
+  const dt = m.transporte || m.emissao, out = [];
+  expNotas.forEach(n => {
+    if (n.status === "Cancelada" || !n.data || !dt) return;
+    const c = pvNorm(n.cliente); if (CDF_EXCL.some(x => c.includes(x))) return;
+    const dd = difDias(n.data, dt); if (dd > 1) return;
+    if (m.placa && n.placa && normPlaca(n.placa) !== m.placa) return;
+    const dp = m.qtd_kg && n.peso ? Math.abs(n.peso - m.qtd_kg) / n.peso : 0; if (dp > 0.03) return;
+    out.push({ n, dd, dp });
+  });
+  return out.sort((a, b) => (a.dd + a.dp * 10) - (b.dd + b.dp * 10));
+}
+async function subirMTRs(arqs){
+  const lidos = [], falhas = [];
+  for (const a of arqs){
+    try { const m = mtrLerTexto(await textoPDF(a)); if (m){ m.arq = a.name; lidos.push(m); } else falhas.push(a.name); } catch (e){ falhas.push(a.name); }
+  }
+  if (!lidos.length) throw new Error("Não consegui ler nenhum MTR nos PDFs escolhidos" + (falhas.length ? " (" + falhas.join(", ") + ")" : "") + ". Confira se são PDFs de MTR com texto selecionável.");
+  const vis = {}; const unicos = lidos.filter(m => !vis[m.mtr] && (vis[m.mtr] = 1));
+  const cands = unicos.map(mtrCandidatas);
+  const opc = (m, c, i) => `<select class="input" data-mf="n${i}" style="margin-top:4px"><option value="">— não vincular a nenhuma nota —</option>${c.map((x, k) => `<option value="${esc(x.n.id)}" ${k === 0 ? "selected" : ""}>NF ${esc(x.n.nf)} · ${esc(x.n.cliente)} · ${fmtIso(x.n.data)} · ${fmtNum(x.n.peso)} kg · ${esc(x.n.placa)}${x.n.mtr ? " · MTR atual: " + esc(x.n.mtr) : ""}</option>`).join("")}</select>`;
+  const r = await abrirModal({ titulo: "MTRs lidos (" + unicos.length + ")", ok: "Gravar",
+    html: `<div class="txt">Confira o vínculo de cada MTR com a nota (casamento por placa, data e peso). O número do MTR do PDF substitui o digitado na nota.</div>` +
+      unicos.map((m, i) => `<div style="margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:8px"><b class="mono">${esc(m.mtr)}</b> · ${fmtIso(m.transporte || m.emissao)} · ${esc(m.placa || "sem placa")} · ${fmtNum(m.qtd_kg)} kg<br><span class="muted">${esc(m.residuo_cod)} ${esc(m.residuo)} · ${esc(m.destinador)}</span>
+        ${cands[i].length ? opc(m, cands[i], i) : `<div class="warn">Nenhuma nota com essa placa, data e peso. O MTR será guardado sem vínculo.</div><input type="hidden" data-mf="n${i}" value="">`}${cands[i].length > 1 ? `<div class="warn">Mais de uma nota possível. Escolha a certa.</div>` : ""}</div>`).join("") +
+      (falhas.length ? `<div class="txt warn">Não consegui ler: ${esc(falhas.join(", "))}</div>` : "") });
+  if (!r) return;
+  const porNota = {};
+  unicos.forEach((m, i) => { const id = r["n" + i]; if (id) (porNota[id] ||= []).push(m.mtr); });
+  const itens = unicos.map((m, i) => ({ t: "m", m, nid: r["n" + i] || "" })).concat(Object.keys(porNota).map(id => ({ t: "n", id, novos: porNota[id] })));
+  await gravarLote(itens, (b, x) => {
+    if (x.t === "m"){ const n = expNotas.find(y => y.id === x.nid); b.set(doc(db, COL_MTR, x.m.mtr), { mtr: x.m.mtr, emissao: x.m.emissao, transporte: x.m.transporte, recebimento: x.m.recebimento, placa: x.m.placa, motorista: x.m.motorista, gerador: x.m.gerador, destinador: x.m.destinador, destinador_cnpj: x.m.destinador_cnpj, residuo_cod: x.m.residuo_cod, residuo: x.m.residuo, qtd_kg: x.m.qtd_kg, nf: n ? n.nf : "", nota_id: x.nid, origem: "pdf · " + x.m.arq, enviado_por: (auth.currentUser || {}).email || "", enviado_em: serverTimestamp() }); }
+    else { const n = expNotas.find(y => y.id === x.id), velhos = String((n && n.mtr) || "").match(/\d{8,}/g) || []; const lista = velhos.length <= 1 ? x.novos : Array.from(new Set(velhos.concat(x.novos))); b.update(doc(db, COL_EXP, x.id), { mtr: lista.join(" / ") }); }
+  });
+  aviso("MTRs gravados ✔ (" + fmtNum(unicos.length) + ", " + fmtNum(Object.keys(porNota).length) + " nota(s) vinculada(s))");
 }
 
 /* ---------- Estoque (planilha de contagem) × produção Veolia × saídas por NF ---------- */
@@ -2346,6 +2447,170 @@ async function importarEC(arq){
   await gravarLote(docs, (b, x) => b.set(doc(db, COL_EC, x.id), { data: x.data, v: x.v, origem: "planilha " + arq.name, atualizado_em: serverTimestamp() }));
   aviso("Contagens de estoque importadas ✔ (" + fmtNum(docs.length) + ")");
 }
+const COL_CFG = "estoque_config";
+/* ---------- Estoque diário (contagens): painel, gráfico, entradas/saídas, dias de estoque, alertas ---------- */
+const ED_FARDOS = ["PET cristal", "PET misto", "PET óleo", "PET azul", "PET verde", "PET natural", "Latas", "PP natural", "PP colorido", "PEAD natural", "PEAD colorido", "Flexíveis"];
+const ED_OUTROS = ["Ferroso", "Alum. bag", "Aero. bag", "Eletr. bag", "Papelão", "PEBD cristal", "PEBD cor", "PP vol", "PEAD vol"];
+const ED_TODOS = ED_FARDOS.concat(ED_OUTROS);
+const ED_XLS = { "PET cristal": "PET Cristal", "PET misto": "PET Cor", "PET óleo": "PET Oleo", "PET azul": "PET Azul", "PET verde": "PET Verde", "Latas": "Latas", "PP natural": "PP Natural", "PET natural": "PET Natural", "PP colorido": "PP Cor", "PEAD natural": "PEAD Branco", "PEAD colorido": "PEAD Cor", "Ferroso": "Ferroso", "Alum. bag": "Alum. bag", "Aero. bag": "Aero. bag", "Eletr. bag": "Eletr. bag", "Flexíveis": "Flexíveis", "Papelão": "Papelão", "PEBD cristal": "PEBD Cris", "PEBD cor": "PEBD Cor", "PP vol": "PP VOL", "PEAD vol": "PEAD VOL" };
+const ED_ORDEM_XLS = ["PET cristal", "PET misto", "PET óleo", "PET azul", "PET verde", "Latas", "PP natural", "PET natural", "PP colorido", "PEAD natural", "PEAD colorido", "Ferroso", "Alum. bag", "Aero. bag", "Eletr. bag", "Flexíveis", "Papelão", "PEBD cristal", "PEBD cor", "PP vol", "PEAD vol"];
+let edLim = {}, edMat = "PET cristal", edJan = "30";
+Object.assign(EC_COLS, { "PET NATURAL": "PET natural", "FLEXIVEIS": "Flexíveis", "FERROSO": "Ferroso", "METALICOS": "Ferroso", "ALUM. BAG": "Alum. bag", "AERO. BAG": "Aero. bag", "AEROSOL": "Aero. bag", "ELETR. BAG": "Eletr. bag", "PAPELAO": "Papelão", "PEBD CRIS": "PEBD cristal", "PEBD COR": "PEBD cor", "PP VOL": "PP vol", "PEAD VOL": "PEAD vol" });
+const edF = n => n == null ? "—" : fmt1.format(Math.round(n * 10) / 10);
+function edSerie(){
+  return estContagens.slice().sort((a, b) => a.data < b.data ? -1 : 1).map(c => { const v = {}; c.v.forEach(x => { v[x.m] = x.q; }); return { data: c.data, v }; });
+}
+const edTotal = v => { let t = 0, k = 0; ED_FARDOS.forEach(m => { if (v[m] != null){ t += v[m]; k++; } }); return k ? t : null; };
+function edVal(c, m){ return m === "__total" ? edTotal(c.v) : c.v[m]; }
+function edSvg(pts, w, h, opts){
+  opts = opts || {};
+  const v = pts.filter(p => p.y != null); if (v.length < 2) return `<div class="muted" style="padding:20px">Poucos dados para o gráfico.</div>`;
+  const ys = v.map(p => p.y), mn = Math.min(0, ...ys), mx = Math.max(...ys, 1), pad = opts.pad == null ? 28 : opts.pad;
+  const X = i => pad + (w - 2 * pad) * (pts.length === 1 ? 0 : i / (pts.length - 1)), Y = y => h - pad - (h - 2 * pad) * ((y - mn) / ((mx - mn) || 1));
+  const d = pts.map((p, i) => p.y == null ? "" : (i && pts[i - 1].y != null ? "L" : "M") + X(i).toFixed(1) + "," + Y(p.y).toFixed(1)).join(" ");
+  let eixo = "";
+  if (opts.eixos){
+    for (let k = 0; k <= 4; k++){ const yy = mn + (mx - mn) * k / 4; eixo += `<line x1="${pad}" x2="${w - pad}" y1="${Y(yy).toFixed(1)}" y2="${Y(yy).toFixed(1)}" stroke="#2c4a5a" stroke-width="1" opacity=".5"/><text x="${pad - 6}" y="${(Y(yy) + 4).toFixed(1)}" fill="#7E9AA6" font-size="11" text-anchor="end">${Math.round(yy)}</text>`; }
+    const passo = Math.max(1, Math.ceil(pts.length / 8));
+    pts.forEach((p, i) => { if (i % passo === 0 || i === pts.length - 1) eixo += `<text x="${X(i).toFixed(1)}" y="${h - 8}" fill="#7E9AA6" font-size="11" text-anchor="middle">${p.x}</text>`; });
+    if (opts.min != null && opts.min >= mn && opts.min <= mx) eixo += `<line x1="${pad}" x2="${w - pad}" y1="${Y(opts.min).toFixed(1)}" y2="${Y(opts.min).toFixed(1)}" stroke="#E8B04B" stroke-dasharray="5 4"/>`;
+    if (opts.max != null && opts.max >= mn && opts.max <= mx) eixo += `<line x1="${pad}" x2="${w - pad}" y1="${Y(opts.max).toFixed(1)}" y2="${Y(opts.max).toFixed(1)}" stroke="#E5736B" stroke-dasharray="5 4"/>`;
+  }
+  const pontos = opts.eixos ? pts.map((p, i) => p.y == null ? "" : `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3.5" fill="#5EAAEC"><title>${p.x}: ${edF(p.y)}</title></circle>`).join("") : "";
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" style="display:block">${eixo}<path d="${d}" fill="none" stroke="#5EAAEC" stroke-width="${opts.eixos ? 2.5 : 2}" stroke-linejoin="round" stroke-linecap="round"/>${pontos}</svg>`;
+}
+function edDiasEst(D, serie){
+  const ult = serie[serie.length - 1]; if (!ult) return {};
+  const ini = new Date(new Date(ult.data + "T12:00:00").getTime() - 14 * 864e5).toISOString().slice(0, 10);
+  const out = {};
+  if (!D.primV || ult.data < D.primV) return out;
+  const fim = ult.data > D.lim ? D.lim : ult.data, a = ini < D.primV ? D.primV : ini;
+  const dias = Math.max(1, Math.round((new Date(fim + "T12:00:00") - new Date(a + "T12:00:00")) / 864e5));
+  const W = xcJanela(D, a, fim);
+  PV_FARDOS.forEach(m => { const q = ult.v[m]; out[m] = { q, sai: W.SF[m] / dias, prod: (W.P[m] - W.E[m]) / dias, dias: W.SF[m] > 0 && q != null ? q / (W.SF[m] / dias) : null }; });
+  return out;
+}
+function edStatus(m, q, de){
+  const l = edLim[m] || {}, s = [];
+  if (q == null) return s;
+  if (l.max != null && q > l.max) s.push({ t: "cheio", c: "err", x: "Acima do máximo (" + l.max + ")" });
+  if (l.min != null && q < l.min) s.push({ t: "baixo", c: "warn", x: "Abaixo do mínimo (" + l.min + ")" });
+  if (de && de.dias != null && de.dias < 2) s.push({ t: "acaba", c: "warn", x: "Estoque para ~" + edF(de.dias) + " dia(s)" });
+  return s;
+}
+function montarViewEstDia(){
+  const sec = $("v-estDia");
+  sec.innerHTML = `<div class="page-head"><div><h1>Estoque diário</h1><p>Contagem diária do pátio: painel por material, evolução, entradas e saídas do dia, dias de estoque e alertas. Lance a contagem aqui ou importe o Excel; o botão Exportar gera o Excel no mesmo layout.</p></div></div>
+    <div id="edErro"></div>
+    <div class="toolbar"><button class="btn sm pri" data-ebtn="lancar" data-eadm="1">Lançar contagem</button><button class="btn sm" data-ebtn="importar" data-eadm="1">Importar do Excel</button><input type="file" id="edFile" accept=".xlsx,.xlsm" class="hide"><button class="btn sm" data-ebtn="exportar">Exportar para Excel</button><button class="btn sm" data-ebtn="limites" data-eadm="1">Definir limites</button><span class="muted" id="edInfo"></span></div>
+    <div id="edAlertas"></div>
+    <div class="kpis k4" id="edKpis"></div>
+    <div class="matcards" id="edCards"></div>
+    <div class="panel"><div class="toolbar" style="margin-bottom:6px"><b>Evolução</b><select class="input" id="edMatSel" style="max-width:220px"></select><select class="input" id="edJanSel" style="max-width:170px"><option value="14">Últimas 14 contagens</option><option value="30">Últimas 30 contagens</option><option value="0">Todas</option></select></div><div id="edGraf"></div></div>
+    <h3 style="margin:22px 0 6px">Entradas e saídas do dia <span class="muted" style="font-size:13px;font-weight:500" id="edEsTit"></span></h3>
+    <p class="muted" style="margin:0 0 8px">Entre uma contagem e a seguinte: estoque anterior + produção da Veolia − estourados − saídas por NF = esperado. A diferença mostra o que a contagem não explica.</p>
+    <div class="table-wrap"><table><thead><tr><th>Intervalo</th><th class="num">Anterior</th><th class="num">+ Produção</th><th class="num">− Estourados</th><th class="num">− Saídas NF</th><th class="num">= Esperado</th><th class="num">Contado</th><th class="num">Diferença</th></tr></thead><tbody id="edEs"></tbody></table></div>
+    <h3 style="margin:22px 0 6px">Dias de estoque <span class="muted" style="font-size:13px;font-weight:500">no ritmo dos últimos 14 dias</span></h3>
+    <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Estoque</th><th class="num">Saída/dia (NF)</th><th class="num">Produção líq./dia</th><th class="num">Dias de estoque</th><th class="num">Saldo/dia</th></tr></thead><tbody id="edDias"></tbody></table></div>
+    <h3 style="margin:22px 0 6px">Comparação semanal <span class="muted" style="font-size:13px;font-weight:500">média das contagens, semana de sexta a quinta</span></h3>
+    <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num" id="edSemA">Esta semana</th><th class="num" id="edSemB">Semana anterior</th><th class="num">Variação</th><th class="num">Pico (30 dias)</th></tr></thead><tbody id="edSem"></tbody></table></div>`;
+  sec.addEventListener("click", e => {
+    const c = e.target.closest("[data-edmat]"); if (c){ edMat = c.dataset.edmat; renderEstDia(); $("edGraf").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    const b = e.target.closest("button[data-ebtn]"); if (!b) return; const op = b.dataset.ebtn;
+    if (op === "importar") $("edFile").click(); else if (op === "exportar") run(exportarEstDia); else if (op === "lancar") run(lancarContagem); else if (op === "limites") run(definirLimites);
+  });
+  $("edFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) run(() => importarEC(f)); });
+  $("edMatSel").addEventListener("change", e => { edMat = e.target.value; renderEstDia(); });
+  $("edJanSel").addEventListener("change", e => { edJan = e.target.value; renderEstDia(); });
+}
+function renderEstDia(){
+  const sec = $("v-estDia"); if (!sec || !$("edCards")) return;
+  $("edErro").innerHTML = estErro ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso aos dados de estoque.</b> <span class="muted">${esc(estErro)}</span></div>` : "";
+  const S = edSerie(), nb = $("navEd");
+  if (!S.length){ ["edCards", "edAlertas", "edKpis", "edGraf"].forEach(i => { $(i).innerHTML = ""; }); $("edInfo").textContent = "Nenhuma contagem ainda. Use Importar do Excel ou Lançar contagem."; ["edEs", "edDias", "edSem"].forEach(i => { $(i).innerHTML = vazio(8, "—"); }); if (nb) nb.classList.add("hide"); return; }
+  const D = xcDados(), ult = S[S.length - 1], ant = S[S.length - 2] || null, DE = edDiasEst(D, S);
+  $("edInfo").textContent = "Última contagem: " + fmtDiaKey(ult.data) + " · " + fmtNum(S.length) + " contagens";
+  const tot = edTotal(ult.v), totA = ant ? edTotal(ant.v) : null;
+  const dadosCards = ED_TODOS.filter(m => ult.v[m] != null);
+  const alertas = []; dadosCards.forEach(m => edStatus(m, ult.v[m], DE[m]).forEach(s => alertas.push({ m, ...s })));
+  let mv = null; if (ant) dadosCards.forEach(m => { if (ant.v[m] != null){ const d = ult.v[m] - ant.v[m]; if (!mv || Math.abs(d) > Math.abs(mv.d)) mv = { m, d }; } });
+  if (nb){ nb.textContent = alertas.length; nb.classList.toggle("hide", !alertas.length); }
+  $("edAlertas").innerHTML = alertas.length ? `<div class="panel" style="border-color:var(--warn);margin-bottom:14px"><b style="color:var(--warn)">${alertas.length} alerta(s)</b><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${alertas.map(a => `<span class="badge" style="border-color:var(--${a.c});color:var(--${a.c})">${esc(a.m)}: ${esc(a.x)}</span>`).join("")}</div></div>` : "";
+  const dias0 = Math.round((new Date(diaKey(new Date()) + "T12:00:00") - new Date(ult.data + "T12:00:00")) / 864e5);
+  $("edKpis").innerHTML = `<div class="kpi"><div class="l">Última contagem</div><div class="v" style="font-size:22px">${fmtDiaKey(ult.data)}</div><div class="s">${dias0 <= 0 ? "hoje" : dias0 === 1 ? "ontem" : "há " + dias0 + " dias"}</div></div>
+    <div class="kpi ok"><div class="l">Fardos em estoque</div><div class="v">${edF(tot)}</div><div class="s">${totA != null && tot != null ? (tot - totA >= 0 ? "▲ +" : "▼ ") + edF(tot - totA) + " desde " + fmtDiaKey(ant.data) : "&nbsp;"}</div></div>
+    <div class="kpi"><div class="l">Maior variação</div><div class="v" style="font-size:20px">${mv ? esc(mv.m) : "—"}</div><div class="s">${mv ? (mv.d >= 0 ? "+" : "") + edF(mv.d) + " desde a contagem anterior" : "&nbsp;"}</div></div>
+    <div class="kpi ${alertas.length ? "" : "ok"}"><div class="l">Alertas</div><div class="v">${alertas.length}</div><div class="s">${Object.keys(edLim).length ? "limites definidos" : "defina limites para ativar"}</div></div>`;
+  const spark = m => edSvg(S.slice(-14).map(c => ({ x: fmtDiaKey(c.data).slice(0, 5), y: c.v[m] == null ? null : c.v[m] })), 160, 40, { pad: 3 });
+  $("edCards").innerHTML = dadosCards.map(m => {
+    const q = ult.v[m], d = ant && ant.v[m] != null ? q - ant.v[m] : null, l = edLim[m] || {}, st = edStatus(m, q, DE[m]), cor = st.some(s => s.c === "err") ? "err" : st.length ? "warn" : null;
+    const pct = l.max ? Math.min(100, Math.round(q / l.max * 100)) : null, un = ED_FARDOS.includes(m) ? "fardos" : "";
+    return `<div class="matcard" data-edmat="${esc(m)}" style="cursor:pointer;${cor ? "border-color:var(--" + cor + ")" : ""}${edMat === m ? ";box-shadow:0 0 0 2px var(--blue)" : ""}"><div style="display:flex;justify-content:space-between;align-items:center"><span class="badge b-mat">${esc(m)}</span>${d != null ? `<span style="font-size:12.5px;font-weight:700;color:${d > 0 ? "var(--blue)" : d < 0 ? "var(--warn)" : "var(--muted)"}">${d > 0 ? "▲ +" : d < 0 ? "▼ " : "= "}${edF(d)}</span>` : ""}</div>
+      <div class="q"><b>${edF(q)}</b>${un}</div>${spark(m)}${pct != null ? `<div style="height:6px;border-radius:6px;background:#1c3a4a"><div style="height:6px;border-radius:6px;width:${pct}%;background:var(--${pct >= 100 ? "err" : pct >= 80 ? "warn" : "blue"})"></div></div><div class="muted" style="font-size:11.5px">${pct}% do máximo (${l.max})</div>` : ""}${st.length ? `<div style="font-size:12px;color:var(--${st[0].c});font-weight:700">${esc(st[0].x)}</div>` : ""}${DE[m] && DE[m].dias != null ? `<div class="muted" style="font-size:12px">≈ ${edF(DE[m].dias)} dia(s) de estoque</div>` : ""}</div>`;
+  }).join("");
+  const sel = $("edMatSel"), opcs = ["__total"].concat(dadosCards);
+  sel.innerHTML = opcs.map(m => `<option value="${esc(m)}" ${m === edMat ? "selected" : ""}>${m === "__total" ? "Total de fardos" : esc(m)}</option>`).join(""); if (!opcs.includes(edMat)){ edMat = "__total"; sel.value = edMat; }
+  $("edJanSel").value = edJan;
+  const fatia = edJan === "0" ? S : S.slice(-Number(edJan)), lm = edLim[edMat] || {};
+  $("edGraf").innerHTML = edSvg(fatia.map(c => ({ x: fmtDiaKey(c.data).slice(0, 5), y: edVal(c, edMat) })), 760, 240, { eixos: true, min: lm.min, max: lm.max });
+  /* entradas e saídas */
+  const emPV = PV_FARDOS.includes(edMat), ints = [];
+  for (let i = S.length - 1; i > 0 && ints.length < 12; i--) ints.push([S[i - 1], S[i]]);
+  $("edEsTit").textContent = "· " + (edMat === "__total" ? "total de fardos" : edMat);
+  $("edEs").innerHTML = (edMat === "__total" || !emPV) ? vazio(8, edMat === "__total" ? "Escolha um material no gráfico (clique no card) para ver entradas e saídas." : "Este material não tem produção da Veolia nem saídas por NF no sistema.") :
+    ints.map(([c0, c1]) => {
+      const a = c0.v[edMat], b = c1.v[edMat], rot = fmtDiaKey(c0.data).slice(0, 5) + " → " + fmtDiaKey(c1.data).slice(0, 5);
+      if (a == null || b == null) return `<tr><td>${rot}</td><td colspan="7" class="muted">sem contagem nas duas datas</td></tr>`;
+      if (!D.primV || c0.data < D.primV || c1.data > D.lim) return `<tr><td>${rot}</td><td class="num">${edF(a)}</td><td colspan="4" class="muted">sem dados da Veolia neste intervalo</td><td class="num">${edF(b)}</td><td class="num muted">—</td></tr>`;
+      const w = xcJanela(D, c0.data, c1.data), esp = a + w.P[edMat] - w.E[edMat] - w.SF[edMat], dif = b - esp, cor = Math.abs(dif) <= 2 ? "" : ` style="color:var(--${Math.abs(dif) >= 8 ? "err" : "warn"});font-weight:700"`;
+      return `<tr><td>${rot}</td><td class="num">${edF(a)}</td><td class="num">${edF(w.P[edMat])}</td><td class="num">${edF(w.E[edMat])}</td><td class="num">${edF(w.SF[edMat])}</td><td class="num">${edF(esp)}</td><td class="num">${edF(b)}</td><td class="num"${cor}>${dif > 0 ? "+" : ""}${edF(dif)}</td></tr>`;
+    }).join("") || vazio(8, "—");
+  /* dias de estoque */
+  $("edDias").innerHTML = PV_FARDOS.filter(m => DE[m] && DE[m].q != null).map(m => { const x = DE[m], saldo = x.prod - x.sai; return `<tr><td>${badgeMat(m)}</td><td class="num">${edF(x.q)}</td><td class="num">${edF(x.sai)}</td><td class="num">${edF(x.prod)}</td><td class="num"${x.dias != null && x.dias < 2 ? ' style="color:var(--warn);font-weight:700"' : ""}>${x.dias == null ? "—" : edF(x.dias)}</td><td class="num" style="color:var(--${saldo >= 0 ? "ok" : "warn"})">${saldo >= 0 ? "+" : ""}${edF(saldo)}</td></tr>`; }).join("") || vazio(6, "Sem dados da Veolia/NFs no período da última contagem.");
+  /* comparação semanal */
+  const sw = semanaIni(ult.data), swA = addDiasIso(sw, -7), med = (ini, m) => { const v = S.filter(c => semanaIni(c.data) === ini && c.v[m] != null).map(c => c.v[m]); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  $("edSemA").textContent = "Semana de " + fmtDiaKey(sw).slice(0, 5); $("edSemB").textContent = "Semana de " + fmtDiaKey(swA).slice(0, 5);
+  const lim30 = addDiasIso(ult.data, -30);
+  $("edSem").innerHTML = ED_FARDOS.filter(m => ult.v[m] != null).map(m => {
+    const a = med(sw, m), b = med(swA, m), d = a != null && b != null ? a - b : null; let pk = null; S.filter(c => c.data >= lim30 && c.v[m] != null).forEach(c => { if (!pk || c.v[m] > pk.q) pk = { q: c.v[m], d: c.data }; });
+    return `<tr><td>${badgeMat(m)}</td><td class="num">${edF(a)}</td><td class="num">${edF(b)}</td><td class="num" style="color:var(--${d == null ? "muted" : d > 0 ? "blue" : "warn"})">${d == null ? "—" : (d > 0 ? "+" : "") + edF(d)}</td><td class="num">${pk ? edF(pk.q) + ' <span class="muted">(' + fmtDiaKey(pk.d).slice(0, 5) + ")</span>" : "—"}</td></tr>`;
+  }).join("") || vazio(5, "—");
+}
+async function lancarContagem(){
+  const S = edSerie(), ult = S[S.length - 1], hoje = diaKey(new Date());
+  const campo1 = (m, i) => `<div><label>${esc(m)}</label><input class="input" type="text" inputmode="decimal" data-mf="c${i}" value="${ult && ult.v[m] != null ? String(ult.v[m]).replace(".", ",") : ""}"></div>`;
+  const r = await abrirModal({ titulo: "Lançar contagem do estoque", ok: "Gravar",
+    html: `<label>Data da contagem</label><input class="input" type="date" data-mf="data" value="${hoje}"><div class="txt" style="margin-top:8px">Os campos vêm com a última contagem. Altere o que mudou; se a data já existir, ela será substituída.</div>${grid(ED_ORDEM_XLS.map((m, i) => campo1(m, i)).join(""))}`,
+    validar: d => !d.data ? "Informe a data." : ED_ORDEM_XLS.some((m, i) => String(d["c" + i]).trim() !== "" && isNaN(lerNum(d["c" + i]))) ? "Há um valor inválido. Use números (vírgula para decimais)." : "" });
+  if (!r) return;
+  const v = []; ED_ORDEM_XLS.forEach((m, i) => { const t = String(r["c" + i]).trim(); if (t !== "") v.push({ m, q: lerNum(t) }); });
+  if (!v.length) throw new Error("Preencha ao menos um material.");
+  await setDoc(doc(db, COL_EC, r.data), { data: r.data, v, origem: "lançado no ERP", atualizado_em: serverTimestamp(), atualizado_por: (auth.currentUser || {}).email || "" });
+  aviso("Contagem de " + fmtDiaKey(r.data) + " gravada ✔");
+}
+async function definirLimites(){
+  const campo = (m, i) => `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center;margin-top:6px"><span>${esc(m)}</span><input class="input" type="text" inputmode="decimal" placeholder="mín." data-mf="mn${i}" value="${edLim[m] && edLim[m].min != null ? edLim[m].min : ""}"><input class="input" type="text" inputmode="decimal" placeholder="máx." data-mf="mx${i}" value="${edLim[m] && edLim[m].max != null ? edLim[m].max : ""}"></div>`;
+  const r = await abrirModal({ titulo: "Limites de estoque", ok: "Gravar",
+    html: `<div class="txt">Defina o mínimo e o máximo de cada material (deixe vazio para não alertar). O painel avisa quando a última contagem passa dos limites.</div>${ED_TODOS.map(campo).join("")}`,
+    validar: d => ED_TODOS.some((m, i) => ["mn", "mx"].some(p => String(d[p + i]).trim() !== "" && isNaN(lerNum(d[p + i])))) ? "Há um valor inválido." : "" });
+  if (!r) return;
+  const lim = {}; ED_TODOS.forEach((m, i) => { const a = String(r["mn" + i]).trim(), b = String(r["mx" + i]).trim(); if (a !== "" || b !== "") lim[m] = { min: a !== "" ? lerNum(a) : null, max: b !== "" ? lerNum(b) : null }; });
+  await setDoc(doc(db, COL_CFG, "limites"), { lim, atualizado_em: serverTimestamp() });
+  aviso("Limites gravados ✔");
+}
+async function exportarEstDia(){
+  await carregarXLSX();
+  const S = edSerie(); if (!S.length) throw new Error("Não há contagens para exportar.");
+  const MES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"], wb = XLSX.utils.book_new(), por = {};
+  S.forEach(c => { (por[c.data.slice(0, 7)] ||= []).push(c); });
+  Object.keys(por).sort().forEach(k => {
+    const aoa = [[null].concat(ED_ORDEM_XLS.map((m, i) => i === 0 ? "Estoque (Fardos)" : null)), ["Data"].concat(ED_ORDEM_XLS.map(m => ED_XLS[m]))];
+    por[k].forEach(c => { const serial = Math.round(new Date(c.data + "T12:00:00Z").getTime() / 864e5) + 25569; aoa.push([{ t: "n", v: serial, z: "d-mmm-yy" }].concat(ED_ORDEM_XLS.map(m => c.v[m] == null ? null : c.v[m]))); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), MES[Number(k.slice(5, 7)) - 1]);
+  });
+  XLSX.writeFile(wb, "Estoque_diario_" + diaKey(new Date()) + ".xlsx");
+}
+
 function xcDados(){
   const dv = pvDocs.map(d => d.data).sort(), primV = dv[0] || "", ultV = dv[dv.length - 1] || "";
   const lim = ultV ? new Date(new Date(ultV + "T12:00:00").getTime() + 864e5).toISOString().slice(0, 10) : "";
@@ -2366,6 +2631,7 @@ function xcJanela(D, a, b){
   return { P, E, SF, SK, semMat };
 }
 function renderXC(){
+  if (typeof renderEstDia === "function") renderEstDia();
   const tb = $("xcResumo"); if (!tb) return;
   $("xcErro").innerHTML = estErro ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso à coleção "${COL_EC}".</b><div class="txt mono" style="margin-top:6px">${esc(estErro)}</div><div class="muted" style="margin-top:6px">Adicione a coleção às regras do Firestore (arquivo regras_firestore.txt).</div></div>` : "";
   const D = xcDados(), cand = D.cand;
@@ -2463,7 +2729,7 @@ function renderPV(){
   }).join("") || vazio(5, "Nenhum dado neste período.");
 }
 
-montarViewsExp(); montarViewPrecos(); montarViewMateriais(); montarViewPrensaV(); montarViewCerts();
+montarViewsExp(); montarViewPrecos(); montarViewMateriais(); montarViewPrensaV(); montarViewCerts(); montarViewEstDia(); montarMenuMovel();
 // campos de busca: ficam somente-leitura até o foco, para o navegador não preencher o e-mail do login
 document.addEventListener("focusin", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined) el.removeAttribute("readonly"); });
 document.addEventListener("focusout", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined && !el.value) el.setAttribute("readonly", ""); });
@@ -2481,8 +2747,29 @@ function irPara(v){
   viewAtual = v;
   document.querySelectorAll(".view").forEach(s => s.classList.toggle("on", s.id === "v-" + v));
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  document.querySelectorAll("#mbar button[data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  document.querySelectorAll("#msBody .ms-btn").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  const mm = $("mMenuBtn"); if (mm) mm.classList.toggle("on", !["visao", "estDia", "carregamentos", "expNotas"].includes(v));
   window.scrollTo({ top: 0 });
   if (v === "visao") requestAnimationFrame(desenharGraficos);
+}
+
+/* ---------- menu do celular ---------- */
+function montarMenuMovel(){
+  const bar = $("mbar"), body = $("msBody"); if (!bar || !body) return;
+  const ico = v => { const n = document.querySelector('#nav button[data-v="' + v + '"]'); return n ? { svg: (n.querySelector("svg") || {}).outerHTML || "", rot: ((n.querySelector(".lg-m") || {}).textContent || n.textContent).trim() } : null; };
+  bar.innerHTML = ["visao", "estDia", "carregamentos", "expNotas"].map(v => { const i = ico(v); return i ? `<button data-v="${v}">${i.svg}<span>${esc(i.rot)}</span></button>` : ""; }).join("") +
+    `<button id="mMenuBtn"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>`;
+  let h = `<div class="ms-sep" style="margin-top:4px">Principal</div><div class="ms-grid">`;
+  document.querySelectorAll("#nav > *").forEach(n => {
+    if (n.classList.contains("nav-sep")) h += `</div><div class="ms-sep">${esc(n.textContent)}</div><div class="ms-grid">`;
+    else if (n.dataset && n.dataset.v) h += `<button class="ms-btn" data-v="${n.dataset.v}">${(n.querySelector("svg") || {}).outerHTML || ""}<span>${esc(((n.querySelector(".lg-d") || n).textContent || "").trim())}</span></button>`;
+  });
+  body.innerHTML = h + "</div>";
+  const abrir = o => $("msheet").classList.toggle("hide", !o);
+  bar.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; if (b.id === "mMenuBtn") abrir(true); else if (b.dataset.v) irPara(b.dataset.v); });
+  body.addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b){ abrir(false); irPara(b.dataset.v); } });
+  $("msClose").addEventListener("click", () => abrir(false)); $("msBg").addEventListener("click", () => abrir(false));
 }
 $("nav").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) irPara(b.dataset.v); });
 $("segDias").addEventListener("click", e => {
@@ -2630,6 +2917,16 @@ function iniciarListeners(){
     renderPV();
   }, err => { console.error("Erro " + COL_PV + ":", err); pvErro = err && err.message ? err.message : String(err); renderPV(); }));
 
+  unsubs.push(onSnapshot(collection(db, COL_CFG), snap => {
+    edLim = {}; snap.forEach(dc => { if (dc.id === "limites") edLim = (dc.data() || {}).lim || {}; }); renderEstDia();
+  }, err => { console.error("Erro " + COL_CFG + ":", err); }));
+
+  unsubs.push(onSnapshot(collection(db, COL_MTR), snap => {
+    mtrDocs = {};
+    snap.forEach(dc => { const d = dc.data(); mtrDocs[dc.id] = { qtd_kg: d.qtd_kg || 0, placa: d.placa || "", residuo: d.residuo || "", destinador: d.destinador || "" }; });
+    renderCerts();
+  }, err => { console.error("Erro " + COL_MTR + ":", err); }));
+
   unsubs.push(onSnapshot(collection(db, COL_CDF), snap => {
     cdfDocs = {}; cdfErro = "";
     snap.forEach(dc => { const d = dc.data(); cdfDocs[dc.id] = { cdf: d.cdf || "", data: d.data || "" }; });
@@ -2675,7 +2972,7 @@ onAuthStateChanged(auth, user => {
     iniciarListeners(); irPara(viewAtual);
   } else {
     unsubs.forEach(u => u()); unsubs = [];
-    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = []; expPrecos = []; pvDocs = []; estContagens = []; cdfDocs = {}; syncFlags.car = syncFlags.info = syncFlags.exp = false;
+    estoque = []; estoqueMapa = {}; movs = []; logs = []; confs = []; cargasMovs = []; prensaMovs = []; infoCargas = {}; expNotas = []; expPrecos = []; pvDocs = []; estContagens = []; cdfDocs = {}; mtrDocs = {}; edLim = {}; syncFlags.car = syncFlags.info = syncFlags.exp = false;
     $("telaErp").style.display = "none"; $("telaLogin").style.display = "flex";
     $("senhaInput").value = "";
   }
