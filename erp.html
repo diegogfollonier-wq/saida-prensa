@@ -341,6 +341,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 .pgbat-f{position:absolute;left:0;top:0;bottom:0;transition:width .2s;background:var(--blue)}
 .pgbat.ok .pgbat-f{background:var(--ok)}.pgbat.warn .pgbat-f{background:var(--warn)}.pgbat.err .pgbat-f{background:var(--err)}.pgbat.blue .pgbat-f{background:var(--blue)}
 .pgbat-f::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 3px),rgba(6,20,30,.55) calc(10% - 3px) 10%)}
+.pgbat-p.need{font-size:17px;color:var(--warn)}.input.need{border-color:var(--warn)!important;box-shadow:0 0 0 2px rgba(232,176,75,.35)}
 .pgbat-p{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7)}
 .pgcab .pgtot{font-size:15px;margin-bottom:8px}.pgcab .pgtot b{font-size:20px}.pgbarra{height:14px;border-radius:8px;background:#1c3a4a;overflow:hidden;margin-bottom:6px}.pgbarra div{height:14px;border-radius:8px;transition:width .15s}.pgbarra .ok{background:var(--ok)}.pgbarra .warn{background:var(--warn)}.pgbarra .err{background:var(--err)}.pgbarra .blue{background:var(--blue)}
 td.err{color:var(--err);font-weight:700}
@@ -2575,6 +2576,7 @@ function pgClientes(){
   return [...s].filter(c => !pgIgn(c)).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 const pgCapCliente = c => { const p = progs.filter(x => x.cliente === c && x.cap > 0).sort((a, b) => b.ts - a.ts)[0]; return p ? String(p.cap) : ""; };
+const pgCapUltima = () => { const p = progs.filter(x => x.cap > 0).sort((a, b) => b.ts - a.ts)[0]; return p ? String(p.cap) : ""; };
 function pgCalc(){
   const PMX = pesoMedios(), med = xcDados().med, S = edSerie(), ult = S[S.length - 1] || null, linhas = []; let fd = 0, kg = 0;
   PG_MATS.forEach(m => {
@@ -2598,13 +2600,13 @@ function pgTilesHtml(c){
 function pgResumoHtml(c){
   const pct = c.cap ? Math.round(c.kg / c.cap * 100) : 0, cor = !c.cap ? "blue" : pct > 100 ? "err" : pct >= 90 ? "warn" : "ok", resta = c.cap - c.kg;
   const linhas = c.sel.map(l => `<tr><td>${badgeMat(l.m)}</td><td class="num">${fmtNum(l.q)}</td><td class="num">${nf2.format(l.kf)}</td><td class="num">${fmtNum(Math.round(l.kg))}</td><td class="num ${l.disp != null && l.q > l.disp ? "err" : "muted"}">${l.disp == null ? "—" : l.q > l.disp ? "falta " + edF(l.q - l.disp) : "sobra " + edF(l.disp - l.q)}</td></tr>`).join("");
-  return `<div class="pgcab"><div class="pgbat ${cor}"><div class="pgbat-c"><div class="pgbat-f" style="width:${Math.min(100, pct)}%"></div><span class="pgbat-p">${c.cap ? pct + "%" : "—"}</span></div></div>
+  return `<div class="pgcab"><div class="pgbat ${cor}"><div class="pgbat-c"><div class="pgbat-f" style="width:${Math.min(100, pct)}%"></div><span class="pgbat-p ${c.cap ? "" : "need"}">${c.cap ? pct + "%" : "Informe a capacidade do caminhão ↑"}</span></div></div>
       <div class="pgtot"><b>${fmtNum(c.fd)}</b> fardos/bags · <b>${fmtNum(Math.round(c.kg))}</b> kg ${c.cap ? "de " + fmtNum(c.cap) + " kg" : "· informe a capacidade"}</div>
       <div class="muted" style="font-size:12.5px">${!c.cap ? "&nbsp;" : resta >= 0 ? "Cabe ainda ≈ " + fmtNum(Math.round(resta)) + " kg" : '<b style="color:var(--err)">Passou ≈ ' + fmtNum(Math.round(-resta)) + " kg da capacidade</b>"}</div></div>
     <div class="table-wrap" style="margin-top:10px;overflow-x:auto"><table style="font-size:13px"><thead><tr><th>Material</th><th class="num">Qtd</th><th class="num">kg/fd</th><th class="num">Peso (kg)</th><th class="num">Estoque</th></tr></thead><tbody>${linhas || vazio(5, "Clique nos quadrados para montar a carga.")}</tbody>${c.sel.length ? `<tfoot><tr class="total"><td>Total</td><td class="num">${fmtNum(c.fd)}</td><td></td><td class="num">${fmtNum(Math.round(c.kg))}</td><td></td></tr></tfoot>` : ""}</table></div>
     <div class="toolbar" style="margin-top:10px"><select class="input" id="pgFillMat" style="max-width:190px">${PG_MATS.map(m => `<option>${esc(m)}</option>`).join("")}</select><button class="btn sm" data-pgop="fill" title="Soma o que falta para chegar na capacidade">Completar a capacidade</button></div>`;
 }
-function pgAtualiza(){ const c = pgCalc(); $("pgTiles").innerHTML = pgTilesHtml(c); $("pgResumo").innerHTML = pgResumoHtml(c); }
+function pgAtualiza(){ const c = pgCalc(); const ci = $("pgCap"); if (ci) ci.classList.toggle("need", !(c.cap > 0)); $("pgTiles").innerHTML = pgTilesHtml(c); $("pgResumo").innerHTML = pgResumoHtml(c); }
 function renderProg(){
   const box = $("carProg"); if (!box) return;
   const ae = document.activeElement; if (ae && box.contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT") && $("pgForm")) return;   // não atrapalha quem está digitando
@@ -2613,7 +2615,7 @@ function renderProg(){
   box.innerHTML = `<div class="panel" id="pgForm"><div class="pgform">
       <div><label>Cliente</label><select class="input" id="pgCli"><option value="">— escolha —</option>${clis.map(x => `<option ${x === pg.cliente ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div>
       <div><label>Placa</label><input class="input" id="pgPlaca" name="pg_placa" autocomplete="off" readonly data-ro value="${esc(pg.placa)}" placeholder="ABC1D23" style="text-transform:uppercase"></div>
-      <div><label>Capacidade do caminhão (kg)</label><input class="input" id="pgCap" name="pg_cap" autocomplete="off" readonly data-ro inputmode="decimal" value="${esc(pg.cap)}" placeholder="ex.: 14500"></div>
+      <div><label>Capacidade do caminhão (kg)</label><input class="input ${lerBR(pg.cap) > 0 ? "" : "need"}" id="pgCap" name="pg_cap" autocomplete="off" readonly data-ro inputmode="decimal" value="${esc(pg.cap)}" placeholder="ex.: 14500"></div>
       <div><label>Data</label><input class="input" type="date" id="pgData" value="${esc(pg.data)}"></div>
       <div class="pgobs"><label>Observação</label><input class="input" id="pgObs" name="pg_obs" autocomplete="off" readonly data-ro value="${esc(pg.obs)}" placeholder="opcional"></div></div>
     <div class="muted" style="font-size:12.5px;margin-top:8px">${pg.id ? "Editando uma programação salva. " : ""}${c.ult ? "Estoque disponível: contagem de " + fmtDiaKey(c.ult.data) + "." : "Sem contagem de estoque ainda."} A capacidade é lembrada por cliente, mas você pode alterá-la aqui antes de simular.</div></div>
@@ -2676,12 +2678,12 @@ document.addEventListener("click", e => {
 document.addEventListener("change", e => {
   if (!e.target.closest("#carProg")) return;
   const q = e.target.dataset.pgq; if (q){ pg.it[q] = Math.max(0, Math.floor(Number(e.target.value) || 0)); pgAtualiza(); return; }
-  if (e.target.id === "pgCli"){ pg.cliente = e.target.value; const cp = pgCapCliente(pg.cliente); if (cp){ pg.cap = cp; $("pgCap").value = cp; } pgAtualiza(); }
+  if (e.target.id === "pgCli"){ pg.cliente = e.target.value; const cp = pgCapCliente(pg.cliente) || (lerBR(pg.cap) > 0 ? "" : pgCapUltima()); if (cp){ pg.cap = cp; $("pgCap").value = cp; } pgAtualiza(); }
   if (e.target.id === "pgData") pg.data = e.target.value;
 });
 document.addEventListener("input", e => {
   if (!e.target.closest("#carProg")) return;
-  if (e.target.id === "pgCap"){ pg.cap = e.target.value; $("pgResumo").innerHTML = pgResumoHtml(pgCalc()); }
+  if (e.target.id === "pgCap"){ pg.cap = e.target.value; e.target.classList.toggle("need", !(lerBR(pg.cap) > 0)); $("pgResumo").innerHTML = pgResumoHtml(pgCalc()); }
   else if (e.target.id === "pgPlaca"){ pg.placa = e.target.value.toUpperCase(); }
   else if (e.target.id === "pgObs"){ pg.obs = e.target.value; }
 });
