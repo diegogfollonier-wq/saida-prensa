@@ -327,7 +327,7 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 
 /* programar carregamento */
 .car-tabs{margin-top:4px}.car-tabs button{padding:8px 16px;font-size:13.5px}
-.pgform{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px}.pgform .pgobs{grid-column:1/-1}.pgform label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:4px}
+.pgform{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px}.pgform .pgobs{grid-column:1/-1}.pgform .input{width:100%}.pgform textarea.input{color:var(--txt);resize:vertical;min-height:84px;font-family:inherit;line-height:1.4}.pgform label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:4px}
 .pggrid{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:16px;margin-top:14px;align-items:start}.pgside{position:sticky;top:12px}
 .pgtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:12px}
 .pgtile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;transition:border-color .12s}
@@ -2631,11 +2631,11 @@ function renderProg(){
       <div><label>Placa</label><input class="input" id="pgPlaca" name="pg_placa" autocomplete="off" readonly data-ro value="${esc(pg.placa)}" placeholder="ABC1D23" style="text-transform:uppercase"></div>
       <div><label>Capacidade do caminhão (kg)</label><input class="input ${lerBR(pg.cap) > 0 ? "" : "need"}" id="pgCap" name="pg_cap" autocomplete="off" readonly data-ro inputmode="decimal" value="${esc(pg.cap)}" placeholder="ex.: 14500"></div>
       <div><label>Data</label><input class="input" type="date" id="pgData" value="${esc(pg.data)}"></div>
-      <div class="pgobs"><label>Observação</label><input class="input" id="pgObs" name="pg_obs" autocomplete="off" readonly data-ro value="${esc(pg.obs)}" placeholder="opcional"></div></div>
+      <div class="pgobs"><label>Observação</label><textarea class="input" id="pgObs" name="pg_obs" autocomplete="off" readonly data-ro rows="3" placeholder="Anotações da carga: motorista, horário, cuidados, o que separar primeiro… (opcional)">${esc(pg.obs)}</textarea></div></div>
     <div class="muted" style="font-size:12.5px;margin-top:8px">${pg.id ? "Editando uma programação salva. " : ""}${c.ult ? "Estoque disponível: contagem de " + fmtDiaKey(c.ult.data) + "." : "Sem contagem de estoque ainda."} A capacidade é lembrada por cliente, mas você pode alterá-la aqui antes de simular.</div></div>
     <div class="pggrid"><div><div class="pgtiles" id="pgTiles">${pgTilesHtml(c)}</div></div>
       <div class="pgside"><div class="panel" id="pgResumo">${pgResumoHtml(c)}</div>
-        <div class="toolbar" style="margin-top:10px"><button class="btn pri" data-pgop="print">Imprimir</button><button class="btn" data-pgop="save" data-eadm="1">${pg.id ? "Atualizar programação" : "Salvar programação"}</button><button class="btn" data-pgop="clear">${pg.id ? "Nova programação" : "Limpar"}</button></div></div></div>
+        <div class="toolbar" style="margin-top:10px"><button class="btn pri" data-pgop="print">Imprimir</button><button class="btn" data-pgop="save" data-eadm="1">${pg.id ? "Atualizar programação" : "Salvar programação"}</button><button class="btn danger" data-pgop="clear" title="Limpa cliente, placa, capacidade, observação e todos os materiais para começar de novo">Zerar tudo</button></div></div></div>
     <h3 style="margin:22px 0 6px">Programações salvas</h3>
     <div class="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>Placa</th><th class="num">Fardos</th><th class="num">Peso est. (kg)</th><th class="num">Capacidade (kg)</th><th></th></tr></thead><tbody>${salvas.map(p => `<tr><td>${p.data ? fmtDiaKey(p.data) : "—"}</td><td>${esc(p.cliente)}</td><td class="mono">${esc(p.placa) || "—"}</td><td class="num">${fmtNum(p.fardos || 0)}</td><td class="num">${fmtNum(p.kg || 0)}</td><td class="num">${fmtNum(p.cap || 0)}</td><td class="ac"><button class="btn xs" data-pgop="open" data-id="${esc(p.id)}">Abrir</button> <button class="btn xs" data-pgop="printsalva" data-id="${esc(p.id)}">Imprimir</button> <button class="btn xs danger" data-pgop="del" data-id="${esc(p.id)}" data-eadm="1">Excluir</button></td></tr>`).join("") || vazio(7, "Nenhuma programação salva ainda.")}</tbody></table></div>`;
 }
@@ -2683,7 +2683,7 @@ document.addEventListener("click", e => {
   if (tile && !op && !e.target.closest("input") && !pgExige()) return;
   if (op === "inc" || op === "inc5" || op === "dec"){ pgSet(m, (Number(pg.it[m]) || 0) + (op === "dec" ? -1 : op === "inc" ? 1 : 5)); pgAtualiza(); return; }
   if (op === "fill"){ const mm = $("pgFillMat").value, c = pgCalc(), l = c.linhas.find(x => x.m === mm); if (!(c.cap > 0)){ aviso("Informe a capacidade do caminhão."); return; } const n = Math.floor((c.cap - c.kg) / l.kf); if (n > 0){ const antes = Number(pg.it[mm]) || 0, dep = pgSet(mm, antes + n); pgAtualiza(); $("pgFillMat").value = mm; if (dep === antes) aviso("Sem estoque disponível de " + mm + "."); } else aviso("Já está na capacidade."); return; }
-  if (op === "clear"){ pg = pgNovo(); renderProg(); return; }
+  if (op === "clear"){ pg = pgNovo(); renderProg(); aviso("Programação zerada. Escolha o cliente e a capacidade para começar."); return; }
   if (op === "print"){ const p = pgAtual(); if (!p.it.length){ aviso("Escolha ao menos um material."); return; } pgImprimir(p); return; }
   if (op === "save"){ run(pgSalvar); return; }
   if (op === "open"){ const p = progs.find(x => x.id === bt.dataset.id); if (p){ pg = { id: p.id, cliente: p.cliente, placa: p.placa || "", cap: String(p.cap || ""), data: p.data || diaKey(new Date()), obs: p.obs || "", it: {} }; (p.it || []).forEach(x => { pg.it[x.m] = x.q; }); renderProg(); window.scrollTo({ top: 0, behavior: "smooth" }); } return; }
