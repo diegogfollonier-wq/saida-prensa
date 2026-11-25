@@ -117,7 +117,7 @@ input,select{font:inherit;color:var(--txt)}
 .btn.danger{background:rgba(229,115,107,.16);border-color:rgba(229,115,107,.5);color:#F5B3AE}
 .btn.danger:hover{background:rgba(229,115,107,.32)}
 .btn.xs{padding:4px 9px;font-size:12px}
-.nav-sep{margin:14px 6px 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.nav-sep{cursor:pointer;user-select:none;margin:14px 6px 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
 tr.dim td{opacity:.55}.panel.dim{opacity:.7}
 .qmenu{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:10px;margin-bottom:16px}
 .qbtn{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-weight:800;font-size:16px;cursor:pointer;transition:.15s}
@@ -130,6 +130,7 @@ tr.dim td{opacity:.55}.panel.dim{opacity:.7}
 .lnk{background:transparent;border:0;border-bottom:1px dashed var(--blue);color:var(--blue);padding:0;cursor:pointer;font-size:inherit}.lnk:hover{color:#fff}
 .bar{height:8px;border-radius:6px;background:var(--blue)}
 .ficha{margin-bottom:12px}
+.nav-sep::before{content:"▾ ";font-size:10px}.nav-sep.fechado::before{content:"▸ "}.nav button.grp-off{display:none}
 @media (max-width:760px){.nav-sep{display:none}}
 td.ac{white-space:nowrap;text-align:right}
 .conf-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -339,6 +340,9 @@ body.leitura .carga-info .input{pointer-events:none;opacity:.7}
 .pgtab th,.pgtab td{padding:8px 6px}.pgtab .btn.xs{padding:3px 8px}
 
 .matgrupo{margin-bottom:18px}.matgrupo-t{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gc);margin:0 0 8px 2px}.matgrupo-t i{width:10px;height:10px;border-radius:50%;background:var(--gc)}
+.matlinha{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:6px;align-items:start}
+.matlinha .matgrupo{margin-bottom:12px;min-width:0}.matlinha .matcards{grid-template-columns:repeat(var(--n,6),minmax(0,1fr))!important}
+@media (max-width:1100px){.matlinha{display:block}.matvazio{display:none}.matlinha .matcards{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))!important}}
 .matgrupo .matcards{margin-bottom:0;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
 .matgrupo .matcard,.matgrupo .pgtile{border:2px solid var(--gc)}
 .matgrupo .pgtile:hover{border-color:var(--gc);filter:brightness(1.12)}.matgrupo .pgtile.on{border-color:var(--gc);box-shadow:0 0 0 3px var(--gc);background:#173f57}.matgrupo .pgtile.over{border-color:var(--warn);box-shadow:0 0 0 3px var(--warn)}
@@ -2528,6 +2532,22 @@ const GRUPOS_MAT = [
   { nome: "Bags", cor: "#F2B5C6", mats: ["Alum. bag", "Aero. bag", "Eletr. bag"] },
   { nome: "Outros", cor: "#BFD0D6", mats: ["Latas", "Flexíveis"] }
 ];
+/* Estoque diário: linhas de grupos (PP | vazio | PEAD, Bags | vazio | Outros) numa grade de 6 colunas */
+function matGruposLinhas(lista, fn){
+  const LIN = [[0], [1, -1, 2], [3], [4, -1, 5]], usados = new Set(); let h = "";
+  const bloco = g => { const it = g.mats.filter(m => lista.includes(m)); it.forEach(m => usados.add(m)); return { g, it }; };
+  LIN.forEach(l => {
+    const bl = l.map(i => i < 0 ? null : bloco(GRUPOS_MAT[i])); if (!bl.some(b => b && b.it.length)) return;
+    h += `<div class="matlinha">` + bl.map((b, k) => {
+      if (!b) return `<div class="matvazio"></div>`;
+      if (!b.it.length) return "";
+      return `<div class="matgrupo" style="--gc:${b.g.cor};grid-column:span ${Math.min(6, b.it.length)}"><div class="matgrupo-t"><i></i>${esc(b.g.nome)}</div><div class="matcards" style="--n:${Math.min(6, b.it.length)}">${b.it.map(fn).join("")}</div></div>`;
+    }).join("") + `</div>`;
+  });
+  const resto = lista.filter(m => !usados.has(m));
+  if (resto.length) h += `<div class="matlinha"><div class="matgrupo" style="--gc:#BFD0D6;grid-column:span ${Math.min(6, resto.length)}"><div class="matgrupo-t"><i></i>Outros</div><div class="matcards" style="--n:${Math.min(6, resto.length)}">${resto.map(fn).join("")}</div></div></div>`;
+  return h;
+}
 function matGrupos(lista, fn, cls){
   const usados = new Set(); let h = "";
   GRUPOS_MAT.forEach(g => {
@@ -2609,6 +2629,22 @@ function pgClientes(){
   const s = new Set(); ativas(expNotas).forEach(n => { if (n.cliente) s.add(CLI_ALIAS[n.cliente] || n.cliente); }); progs.forEach(p => { if (p.cliente) s.add(p.cliente); });
   return [...s].filter(c => !pgIgn(c)).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
+const PG_CLI_MATS = [
+  [/wise/, ["PP natural", "PP colorido", "PEAD natural", "PEAD colorido", "PP vol", "PEAD vol"]],
+  [/total\s*pet/, ["PET cristal", "PET misto", "PET óleo", "PET azul", "PET verde", "PET natural"]],
+  [/cyclereuse|cyclereus/, ["Aero. bag", "Eletr. bag"]],
+  [/cr\s*metais/, ["Alum. bag", "Ferroso", "Latas"]],
+  [/saturno/, ["Papelão"]],
+  [/\bmv\b/, ["Flexíveis"]],
+  [/recicla/, ["PEBD cristal", "PEBD cor"]],
+  [/latasa/, ["Aero. bag", "Latas", "Alum. bag"]]
+];
+function pgMatsCliente(cli){
+  if (!cli) return [];
+  const t = String(cli).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(), h = PG_CLI_MATS.find(x => x[0].test(t));
+  return h ? h[1] : PG_MATS.slice();   /* cliente sem regra: mostra todos */
+}
+const pgVisiveis = () => { const v = pgMatsCliente(pg.cliente); return PG_MATS.filter(m => v.includes(m) || (Number(pg.it[m]) || 0) > 0); };
 const pgCapCliente = c => { const p = progs.filter(x => x.cliente === c && x.cap > 0).sort((a, b) => b.ts - a.ts)[0]; return p ? String(p.cap) : ""; };
 const pgCapUltima = () => { const p = progs.filter(x => x.cap > 0).sort((a, b) => b.ts - a.ts)[0]; return p ? String(p.cap) : ""; };
 function pgCalc(){
@@ -2646,7 +2682,7 @@ function pgSet(m, v){
   pg.it[m] = v; return v;
 }
 function pgTilesHtml(c){
-  return (c.pronto ? "" : `<div class="pglock">Escolha o <b>cliente</b> e informe a <b>capacidade do caminhão</b> para começar a montar a carga.</div>`) + matGrupos(c.linhas.map(x => x.m), m => {
+  return (c.pronto ? "" : `<div class="pglock">Escolha o <b>cliente</b> e informe a <b>capacidade do caminhão</b> para começar a montar a carga.</div>`) + matGrupos(pgVisiveis(), m => {
     const l = c.linhas.find(x => x.m === m);
     const over = l.disp != null && l.q > l.disp, vazio = l.disp != null && l.disp <= 0 && !l.q;
     return `<div class="pgtile ${c.pronto ? "" : "lock"} ${l.q ? "on" : ""} ${over ? "over" : ""} ${vazio ? "dim" : ""}" data-pgmat="${esc(l.m)}">
@@ -2664,7 +2700,7 @@ function pgResumoHtml(c){
       <div class="pgtot"><b>${fmtNum(c.fd)}</b> fardos/bags · <b>${fmtNum(Math.round(c.kg))}</b> kg ${c.cap ? "de " + fmtNum(c.cap) + " kg" : "· informe a capacidade"}</div>
       <div class="muted" style="font-size:12.5px">${!c.cap ? "&nbsp;" : resta >= 0 ? "Cabe ainda ≈ " + fmtNum(Math.round(resta)) + " kg" : '<b style="color:var(--err)">Passou ≈ ' + fmtNum(Math.round(-resta)) + " kg da capacidade</b>"}</div></div>
     <div class="table-wrap" style="margin-top:10px;overflow-x:auto"><table class="pgtab" style="font-size:13px"><thead><tr><th>Material</th><th class="num">Qtd</th><th class="num">kg/fd</th><th class="num">Peso (kg)</th><th class="num">Estoque</th><th></th></tr></thead><tbody>${linhas || vazio(6, "Clique nos quadrados para montar a carga.")}</tbody>${c.sel.length ? `<tfoot><tr class="total"><td>Total</td><td class="num">${fmtNum(c.fd)}</td><td></td><td class="num">${fmtNum(Math.round(c.kg))}</td><td></td><td></td></tr></tfoot>` : ""}</table></div>
-    <div class="toolbar" style="margin-top:10px"><select class="input" id="pgFillMat" style="max-width:190px">${PG_MATS.map(m => `<option value="${esc(m)}">${esc(rotMat(m))}</option>`).join("")}</select><button class="btn sm" data-pgop="fill" title="Soma o que falta para chegar na capacidade">Completar a capacidade</button></div>`;
+    <div class="toolbar" style="margin-top:10px"><select class="input" id="pgFillMat" style="max-width:190px">${pgVisiveis().map(m => `<option value="${esc(m)}">${esc(rotMat(m))}</option>`).join("")}</select><button class="btn sm" data-pgop="fill" title="Soma o que falta para chegar na capacidade">Completar a capacidade</button></div>`;
 }
 function pgAtualiza(){ const c = pgCalc(); const ci = $("pgCap"); if (ci) ci.classList.toggle("need", !(c.cap > 0)); $("pgTiles").innerHTML = pgTilesHtml(c); $("pgResumo").innerHTML = pgResumoHtml(c); }
 function renderProg(forcar){
@@ -2812,9 +2848,9 @@ function montarViewEstDia(){
   sec.innerHTML = `<div class="page-head"><div><h1>Estoque diário</h1><p>Contagem diária do pátio: painel por material, evolução, entradas e saídas do dia, dias de estoque e alertas. Lance a contagem aqui ou importe o Excel; o botão Exportar gera o Excel no mesmo layout.</p></div></div>
     <div id="edErro"></div>
     <div class="toolbar"><button class="btn sm pri" data-ebtn="lancar" data-eadm="1">Lançar contagem</button><button class="btn sm" data-ebtn="importar" data-eadm="1">Importar: Acompanhamento Estoque Diario.xlsx</button><input type="file" id="edFile" accept=".xlsx,.xlsm" class="hide"><button class="btn sm" data-ebtn="exportar">Exportar para Excel</button><button class="btn sm" data-ebtn="limites" data-eadm="1">Definir limites</button><button class="btn sm" data-vinc="estoque" data-eadm="1" title="Escolha uma vez a planilha Acompanhamento Estoque Diario.xlsx; o ERP passa a importar sozinho as novas contagens">Vincular Acompanhamento Estoque Diario.xlsx (automático)</button><button class="btn xs" data-vincdel="estoque" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="estoque"></span><span class="muted" id="edInfo"></span></div>
-    <div id="edAlertas"></div>
     <div class="kpis" id="edKpis"></div>
     <div id="edCards"></div>
+    <div id="edAlertas" style="margin-top:6px"></div>
     <div class="panel"><div class="toolbar" style="margin-bottom:6px"><b>Evolução</b><select class="input" id="edMatSel" style="max-width:220px"></select><select class="input" id="edJanSel" style="max-width:170px"><option value="14">Últimas 14 contagens</option><option value="30">Últimas 30 contagens</option><option value="0">Todas</option></select></div><div id="edGraf"></div></div>
     <h3 style="margin:22px 0 6px">Entradas e saídas do dia <span class="muted" style="font-size:13px;font-weight:500" id="edEsTit"></span></h3>
     <p class="muted" style="margin:0 0 8px">Entre uma contagem e a seguinte: estoque anterior + produção da Veolia − estourados − saídas por NF = esperado. A diferença mostra o que a contagem não explica.</p>
@@ -2854,12 +2890,12 @@ function renderEstDia(){
     <div class="kpi"><div class="l">Maior variação</div><div class="v" style="font-size:20px">${mv ? esc(mv.m) : "—"}</div><div class="s">${mv ? (mv.d >= 0 ? "+" : "") + edF(mv.d) + " desde a contagem anterior" : "&nbsp;"}</div></div>
     <div class="kpi ${alertas.length ? "" : "ok"}"><div class="l">Alertas</div><div class="v">${alertas.length}</div><div class="s">${Object.keys(edLim).length ? "limites definidos" : "defina limites para ativar"}</div></div>`;
   const spark = m => edSvg(S.slice(-14).map(c => ({ x: fmtDiaKey(c.data).slice(0, 5), y: c.v[m] == null ? null : c.v[m] })), 160, 40, { pad: 3 });
-  $("edCards").innerHTML = matGrupos(dadosCards, m => {
+  $("edCards").innerHTML = matGruposLinhas(dadosCards, m => {
     const q = ult.v[m], d = ant && ant.v[m] != null ? q - ant.v[m] : null, l = edLim[m] || {}, st = edStatus(m, q, DE[m]), cor = st.some(s => s.c === "err") ? "err" : st.length ? "warn" : null;
     const pct = l.max ? Math.min(100, Math.round(q / l.max * 100)) : null, un = ED_FARDOS.includes(m) ? "fardos" : "";
     return `<div class="matcard" data-edmat="${esc(m)}" style="cursor:pointer;${cor ? "border-color:var(--" + cor + ")" : ""}${edMat === m ? ";box-shadow:0 0 0 2px var(--blue)" : ""}"><div style="display:flex;justify-content:space-between;align-items:center"><span class="badge b-mat">${esc(rotMat(m))}</span>${d != null ? `<span style="font-size:12.5px;font-weight:700;color:${d > 0 ? "var(--blue)" : d < 0 ? "var(--warn)" : "var(--muted)"}">${d > 0 ? "▲ +" : d < 0 ? "▼ " : "= "}${edF(d)}</span>` : ""}</div>
       <div class="q"><b>${edF(q)}</b>${un}</div>${kgEst(m, q) != null ? `<div style="font-size:13px;color:var(--blue);font-weight:700">≈ ${fmtNum(Math.round(kgEst(m, q)))} kg <span class="muted" style="font-weight:500;font-size:11.5px">(${nf2.format(pmDe(m, PMX).med)} kg/fardo)</span></div>` : ""}${spark(m)}${pct != null ? `<div style="height:6px;border-radius:6px;background:#1c3a4a"><div style="height:6px;border-radius:6px;width:${pct}%;background:var(--${pct >= 100 ? "err" : pct >= 80 ? "warn" : "blue"})"></div></div><div class="muted" style="font-size:11.5px">${pct}% do máximo (${l.max})</div>` : ""}${st.length ? `<div style="font-size:12px;color:var(--${st[0].c});font-weight:700">${esc(st[0].x)}</div>` : ""}${DE[m] && DE[m].dias != null ? `<div class="muted" style="font-size:12px">≈ ${edF(DE[m].dias)} dia(s) de estoque</div>` : ""}</div>`;
-  }, "matcards");
+  });
   const sel = $("edMatSel"), opcs = ["__total"].concat(dadosCards);
   sel.innerHTML = opcs.map(m => `<option value="${esc(m)}" ${m === edMat ? "selected" : ""}>${m === "__total" ? "Total de fardos" : esc(rotMat(m))}</option>`).join(""); if (!opcs.includes(edMat)){ edMat = "__total"; sel.value = edMat; }
   $("edJanSel").value = edJan;
@@ -3041,7 +3077,7 @@ function renderPV(){
   }).join("") || vazio(5, "Nenhum dado neste período.");
 }
 
-montarViewsExp(); montarViewPrecos(); montarViewMateriais(); montarViewPrensaV(); montarViewCerts(); montarViewEstDia(); montarMenuMovel();
+montarViewsExp(); montarViewPrecos(); montarViewMateriais(); montarViewPrensaV(); montarViewCerts(); montarViewEstDia(); reorganizarMenu(); montarMenuMovel();
 // campos de busca: ficam somente-leitura até o foco, para o navegador não preencher o e-mail do login
 document.addEventListener("focusin", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined) el.removeAttribute("readonly"); });
 document.addEventListener("focusout", e => { const el = e.target; if (el && el.dataset && el.dataset.ro !== undefined && !el.value) el.setAttribute("readonly", ""); });
@@ -3056,7 +3092,7 @@ document.addEventListener("click", e => {
   const l = e.target.closest("[data-nf]"); if (l) abrirNota(l.dataset.nf);
 });
 function irPara(v){
-  viewAtual = v;
+  viewAtual = v; menuAbreGrupo(v);
   document.querySelectorAll(".view").forEach(s => s.classList.toggle("on", s.id === "v-" + v));
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
   document.querySelectorAll("#mbar button[data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === v));
@@ -3139,6 +3175,39 @@ vincInit();
 /* campos de data: abrem o calendário ao clicar em qualquer ponto */
 document.addEventListener("click", e => { const el = e.target; if (el && el.tagName === "INPUT" && el.type === "date" && !el.disabled && !el.readOnly && typeof el.showPicker === "function"){ try { el.showPicker(); } catch (x) {} } });
 /* ---------- menu do celular ---------- */
+/* menu lateral: grupos por tipo (todos abertos; clique no título para recolher) */
+function reorganizarMenu(){
+  const nav = $("nav"); if (!nav) return;
+  const MENU_GRUPOS = [
+    [null, ["visao"]],
+    ["Estoque", ["estoque", "estDia", "conferencia"]],
+    ["Produção", ["prensa", "prensaV"]],
+    ["Expedição", ["carregamentos", "expPatio", "expCarga"]],
+    ["Notas e documentos", ["expNotas", "expFat", "certs"]],
+    ["Cadastros", ["expMateriais", "expPrecos"]],
+    ["Controle", ["log", "historico"]]
+  ];
+
+  const bt = {}; nav.querySelectorAll("button[data-v]").forEach(b => { bt[b.dataset.v] = b; });
+  const rot = (id, txt) => { const b = bt[id]; if (!b) return; const d = b.querySelector(".lg-d"); if (d) d.textContent = txt; else { const sp = b.querySelector("span"); if (sp) sp.textContent = txt; } };
+  rot("estoque", "Estoque atual (RFID)"); rot("prensa", "Saída da Prensa (RFID)");
+  const usados = new Set(); nav.innerHTML = "";
+  const add = (tit, ids) => {
+    if (tit){ const d = document.createElement("div"); d.className = "nav-sep"; d.textContent = tit; d.dataset.grp = tit; nav.appendChild(d); }
+    ids.forEach(id => { if (bt[id]){ bt[id].dataset.grp = tit || ""; nav.appendChild(bt[id]); usados.add(id); } });
+  };
+  MENU_GRUPOS.forEach(([t, ids]) => add(t, ids));
+  const sobra = Object.keys(bt).filter(id => !usados.has(id)); if (sobra.length) add("Outros", sobra);
+  nav.addEventListener("click", e => {
+    const sep = e.target.closest(".nav-sep"); if (!sep) return;
+    const fechar = !sep.classList.contains("fechado"); sep.classList.toggle("fechado", fechar);
+    nav.querySelectorAll('button[data-grp="' + sep.dataset.grp + '"]').forEach(b => b.classList.toggle("grp-off", fechar));
+  });
+}
+function menuAbreGrupo(v){
+  const b = document.querySelector('#nav button[data-v="' + v + '"]'); if (!b || !b.classList.contains("grp-off")) return;
+  const sep = document.querySelector('#nav .nav-sep[data-grp="' + b.dataset.grp + '"]'); if (sep) sep.click();
+}
 function montarMenuMovel(){
   const bar = $("mbar"), body = $("msBody"); if (!bar || !body) return;
   const ico = v => { const n = document.querySelector('#nav button[data-v="' + v + '"]'); return n ? { svg: (n.querySelector("svg") || {}).outerHTML || "", rot: ((n.querySelector(".lg-m") || {}).textContent || n.textContent).trim() } : null; };
