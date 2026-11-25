@@ -2442,6 +2442,7 @@ function ecNum(v){
 }
 function ecLer(wb){
   const out = {};
+  if (wb.SheetNames.some(n => /BASE\s*DI/.test(pvNorm(n)))) throw new Error("Esta é a planilha de VENDAS (DADOS_COLETAS_GERAL), não a de contagem de estoque. Escolha o arquivo “Acompanhamento Estoque Diario”.");
   const abas = wb.SheetNames.map(n => ({ n, mes: EC_MESES[pvNorm(n).replace(/[^A-Z]/g, "")] })).filter(a => a.mes).sort((a, b) => a.mes - b.mes);
   abas.forEach(a => {
     const linhas = XLSX.utils.sheet_to_json(wb.Sheets[a.n], { header: 1, raw: true, defval: "" });
@@ -2840,7 +2841,13 @@ async function vincAcao(k){
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-vinc]"); if (b){ run(() => vincAcao(b.dataset.vinc)); return; }
-  const d = e.target.closest("[data-vincdel]"); if (d){ run(async () => { await vincDel(d.dataset.vincdel); await vincRender(d.dataset.vincdel); aviso("Planilha desvinculada"); }); }
+  const d = e.target.closest("[data-vincdel]"); if (d){ run(async () => {
+    const k = d.dataset.vincdel, v = await vincGet(k), nome = v && v.nome;
+    await vincDel(k); await vincRender(k); aviso("Planilha desvinculada");
+    if (k === "estoque" && nome){
+      const ori = "planilha " + nome + " (automático)", lixo = estContagens.filter(c => c.origem === ori);
+      if (lixo.length){ const r = await abrirModal({ titulo: "Apagar contagens vindas desta planilha?", ok: "Apagar " + fmtNum(lixo.length), html: `<div class="txt">${fmtNum(lixo.length)} contagem(ns) foram gravadas automaticamente a partir de <b>${esc(nome)}</b>.<br>Se esse arquivo não era o de estoque, apague-as. Contagens lançadas ou importadas de outra forma não serão tocadas.</div>` }); if (r){ await gravarLote(lixo, (b, x) => b.delete(doc(db, COL_EC, x.id))); aviso("Contagens apagadas ✔"); } }
+    } }); }
 });
 function vincInit(){ Object.keys(VINC).forEach(k => vincRender(k)); setTimeout(vincTick, 8000); setInterval(vincTick, 300000); document.addEventListener("visibilitychange", () => { if (!document.hidden) vincTick(); }); }
 vincInit();
@@ -3028,7 +3035,7 @@ function iniciarListeners(){
 
   unsubs.push(onSnapshot(collection(db, COL_EC), snap => {
     estContagens = []; estErro = ""; ecPronto = true;
-    snap.forEach(dc => { const d = dc.data(); estContagens.push({ id: dc.id, data: d.data || dc.id, v: d.v || [] }); });
+    snap.forEach(dc => { const d = dc.data(); estContagens.push({ id: dc.id, data: d.data || dc.id, v: d.v || [], origem: d.origem || "" }); });
     renderXC();
   }, err => { console.error("Erro " + COL_EC + ":", err); estErro = err && err.message ? err.message : String(err); renderXC(); }));
 
