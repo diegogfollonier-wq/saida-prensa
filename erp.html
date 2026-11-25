@@ -1924,22 +1924,23 @@ function montarViewMateriais(){
     <div class="toolbar"><button class="btn pri" data-mbtn="novo" style="width:auto;padding:12px 22px;font-size:15px">+ Incluir Material</button>
       <input class="input grow" id="expMatQ" name="busca_cadastro_mat" autocomplete="off" readonly data-ro placeholder="Buscar material, código ou observação…"></div>
     <div class="sub" id="expMatInfo" style="margin-bottom:10px"></div>
-    <div class="table-wrap"><table><thead><tr><th>Material</th><th>Código / NCM</th><th>Unidade</th><th class="num">R$ por kg</th><th>Observação</th><th></th></tr></thead><tbody id="tbMateriais"></tbody></table></div>`;
+    <div class="table-wrap"><table><thead><tr><th>Material</th><th>Código / NCM</th><th>Unidade</th><th class="num">R$ por kg</th><th class="num" title="Média de kg por fardo nas últimas 100 fardos carregadas (calculada pelas NFs)">Peso médio (kg/fardo)</th><th>Observação</th><th></th></tr></thead><tbody id="tbMateriais"></tbody></table></div>`;
   sec.addEventListener("click", e => { if (e.target.closest("button[data-mbtn]")) run(() => editarMaterial(null)); });
   $("expMatQ").addEventListener("input", renderMateriais);
 }
 function renderMateriais(){
   const tb = $("tbMateriais"); if (!tb) return;
-  const q = $("expMatQ").value.trim().toLowerCase(), uso = {};
+  const q = $("expMatQ").value.trim().toLowerCase(), uso = {}, PM = pesoMedios();
+  const pmCel = nome => { const x = PM[chaveMat(nome)]; return x ? `<td class="num"><b>${nf2.format(x.med)}</b><div class="muted" style="font-size:11px">${x.fd >= PM_N ? "últimas " + PM_N + " fardos" : "só " + fmtNum(Math.round(x.fd)) + " fardos"} · até ${fmtDiaKey(x.ate).slice(0, 5)}</div></td>` : `<td class="num muted">—</td>`; };
   ativas(expNotas).forEach(n => (n.mats || []).forEach(m => { const k = chaveMat(m.m); const o = (uso[k] ||= { nome: m.m, notas: new Set(), kg: 0 }); o.notas.add(n.id); if (m.u === "kg") o.kg += m.q; }));
   const cad = new Set(expPrecos.map(p => chaveMat(p.material)));
   const linhas = expPrecos.map(p => ({ p, u: uso[chaveMat(p.material)] })).filter(x => !q || `${x.p.material} ${x.p.codigo} ${x.p.obs}`.toLowerCase().includes(q))
     .sort((a, b) => a.p.material.localeCompare(b.p.material, "pt-BR"));
   const livres = Object.keys(uso).filter(k => !cad.has(k)).map(k => uso[k]).filter(o => !q || o.nome.toLowerCase().includes(q)).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   $("expMatInfo").textContent = `${fmtNum(expPrecos.length)} material(is) cadastrado(s)` + (livres.length ? ` · ${fmtNum(livres.length)} usado(s) em notas e ainda não cadastrado(s)` : "");
-  tb.innerHTML = linhas.map(({ p, u }) => `<tr><td>${badgeMat(p.material)}</td><td class="mono">${esc(p.codigo) || "—"}</td><td>${esc(p.unidade || "kg")}</td><td class="num">${nf2.format(p.preco)}</td><td class="muted">${esc(p.obs)}</td><td class="ac"><button class="btn xs" data-act="mat-edit" data-id="${esc(p.id)}">Editar</button> <button class="btn xs danger" data-act="mat-del" data-id="${esc(p.id)}">Excluir</button></td></tr>`).join("")
-    + livres.map(o => `<tr><td>${badgeMat(o.nome)} <span class="badge b-warn">não cadastrado</span></td><td>—</td><td>—</td><td class="num">—</td><td class="muted">usado nas notas, sem cadastro</td><td class="ac"><button class="btn xs pri" data-act="mat-cad" data-nome="${esc(o.nome)}">Cadastrar</button></td></tr>`).join("")
-    || vazio(6, "Nenhum material. Use “Incluir Material” ou importe os preços da planilha na aba Preços.");
+  tb.innerHTML = linhas.map(({ p, u }) => `<tr><td>${badgeMat(p.material)}</td><td class="mono">${esc(p.codigo) || "—"}</td><td>${esc(p.unidade || "kg")}</td><td class="num">${nf2.format(p.preco)}</td>${pmCel(p.material)}<td class="muted">${esc(p.obs)}</td><td class="ac"><button class="btn xs" data-act="mat-edit" data-id="${esc(p.id)}">Editar</button> <button class="btn xs danger" data-act="mat-del" data-id="${esc(p.id)}">Excluir</button></td></tr>`).join("")
+    + livres.map(o => `<tr><td>${badgeMat(o.nome)} <span class="badge b-warn">não cadastrado</span></td><td>—</td><td>—</td><td class="num">—</td>${pmCel(o.nome)}<td class="muted">usado nas notas, sem cadastro</td><td class="ac"><button class="btn xs pri" data-act="mat-cad" data-nome="${esc(o.nome)}">Cadastrar</button></td></tr>`).join("")
+    || vazio(7, "Nenhum material. Use “Incluir Material” ou importe os preços da planilha na aba Preços.");
 }
 async function editarMaterial(p, nomeInicial){
   const novo = !p;
@@ -2481,6 +2482,61 @@ const COL_CFG = "estoque_config";
 const ED_FARDOS = ["PET cristal", "PET misto", "PET óleo", "PET azul", "PET verde", "PET natural", "Latas", "PP natural", "PP colorido", "PEAD natural", "PEAD colorido", "Flexíveis"];
 const ED_OUTROS = ["Ferroso", "Alum. bag", "Aero. bag", "Eletr. bag", "Papelão", "PEBD cristal", "PEBD cor", "PP vol", "PEAD vol"];
 const ED_TODOS = ED_FARDOS.concat(ED_OUTROS);
+/* ---------- peso médio por fardo: últimos 100 fardos carregados (casando fardos e kg de cada NF) ---------- */
+const PM_N = 100;
+const PM_NOMES = { "PET cristal": "PET Cristal", "PET misto": "PET Misto", "PET óleo": "PET Oleo", "PET azul": "PET Azul", "PET verde": "PET Verde", "PET natural": "PET Natural", "Latas": "Lata", "PP natural": "PP Natural", "PP colorido": "PP Cor", "PEAD natural": "PEAD Branco", "PEAD colorido": "PEAD Cor", "Flexíveis": "Flexíveis", "Alum. bag": "Alumínio", "Aero. bag": "Aerosol" };
+function pmMatTexto(t){
+  t = String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const k = n => chaveMat(n);
+  if (/pp\s*(cor|colorid)/.test(t)) return k("PP Cor");
+  if (/pp\s*(natural|canela|bandeja)/.test(t)) return k("PP Natural");
+  if (/pead.*(\bbr|branc|natural)/.test(t)) return k("PEAD Branco");
+  if (/pead.*cor/.test(t)) return k("PEAD Cor");
+  if (/lata/.test(t)) return k("Lata");
+  if (/flex/.test(t)) return k("Flexíveis");
+  if (/alumin/.test(t)) return k("Alumínio");
+  if (/aeros/.test(t)) return k("Aerosol");
+  if (/bandeja/.test(t)) return k("PET Natural");
+  if (/cristal/.test(t)) return k("PET Cristal");
+  if (/azul/.test(t)) return k("PET Azul");
+  if (/verd/.test(t)) return k("PET Verde");
+  if (/oleo/.test(t)) return k("PET Oleo");
+  if (/\bcor\b|misto/.test(t)) return k("PET Misto");
+  return "";
+}
+function pmFardosNota(n){
+  const mats = n.mats || [], fd = {}, kg = {}, ch = new Set();
+  mats.forEach(x => { const c = chaveMat(x.m); ch.add(c); if (x.u === "fardos") fd[c] = (fd[c] || 0) + x.q; else if (x.u === "kg") kg[c] = (kg[c] || 0) + x.q; });
+  const obsFd = {}; let semMat = 0;
+  String(n.obs || "").split(/[-–\/+,;·|=]/).forEach(seg => {
+    const m = /(?<![\d.,])(\d{1,3})(?![\d.,]\d)\s*(fd|fds|fardos?|bags?|bigbags?|big bags?)?(?![a-z])\s*(?:de\s+)?(.*)$/i.exec(seg.trim()); if (!m) return;
+    const q = Number(m[1]), un = m[2], resto = m[3] || "", c = pmMatTexto(resto || seg);
+    if (c){ if (obsFd[c] == null) obsFd[c] = q; ch.add(c); }
+    else if (un && !/[a-z]/i.test(resto.replace(/^\W+/, "")) && semMat === 0) semMat = q;
+  });
+  Object.keys(obsFd).forEach(c => { if (fd[c] == null) fd[c] = obsFd[c]; });
+  if (semMat && Object.keys(fd).length === 0 && ch.size === 1) fd[[...ch][0]] = semMat;
+  const unico = Object.keys(fd).length === 1 && ch.size === 1 ? Object.keys(fd)[0] : "";
+  const out = [];
+  Object.keys(fd).forEach(c => { const f = fd[c], k = kg[c] != null ? kg[c] : (c === unico && n.peso > 0 ? n.peso : null); if (f > 0 && k > 0 && k / f >= 30 && k / f <= 1000) out.push({ c, f, k }); });
+  return out;
+}
+function pesoMedios(){
+  const por = {};
+  ativas(expNotas).slice().sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : String(b.nf).localeCompare(String(a.nf)))).forEach(n => {
+    pmFardosNota(n).forEach(x => (por[x.c] ||= []).push({ f: x.f, k: x.k, d: n.data }));
+  });
+  const res = {};
+  Object.keys(por).forEach(c => {
+    let f = 0, k = 0, ate = "", de = "";
+    por[c].forEach(x => { if (f >= PM_N) return; const u = Math.min(x.f, PM_N - f); f += u; k += x.k * u / x.f; if (!ate) ate = x.d; de = x.d; });
+    res[c] = { med: k / f, fd: f, ate, de };
+  });
+  return res;
+}
+const pmDe = (m, pm) => pm[chaveMat(PM_NOMES[m] || m)] || null;
+const fmtKgT = kg => kg >= 10000 ? fmt1.format(Math.round(kg / 100) / 10) + " t" : fmtNum(Math.round(kg)) + " kg";
+
 const ED_XLS = { "PET cristal": "PET Cristal", "PET misto": "PET Cor", "PET óleo": "PET Oleo", "PET azul": "PET Azul", "PET verde": "PET Verde", "Latas": "Latas", "PP natural": "PP Natural", "PET natural": "PET Natural", "PP colorido": "PP Cor", "PEAD natural": "PEAD Branco", "PEAD colorido": "PEAD Cor", "Ferroso": "Ferroso", "Alum. bag": "Alum. bag", "Aero. bag": "Aero. bag", "Eletr. bag": "Eletr. bag", "Flexíveis": "Flexíveis", "Papelão": "Papelão", "PEBD cristal": "PEBD Cris", "PEBD cor": "PEBD Cor", "PP vol": "PP VOL", "PEAD vol": "PEAD VOL" };
 const ED_ORDEM_XLS = ["PET cristal", "PET misto", "PET óleo", "PET azul", "PET verde", "Latas", "PP natural", "PET natural", "PP colorido", "PEAD natural", "PEAD colorido", "Ferroso", "Alum. bag", "Aero. bag", "Eletr. bag", "Flexíveis", "Papelão", "PEBD cristal", "PEBD cor", "PP vol", "PEAD vol"];
 let edLim = {}, edMat = "PET cristal", edJan = "30";
@@ -2532,14 +2588,14 @@ function montarViewEstDia(){
     <div id="edErro"></div>
     <div class="toolbar"><button class="btn sm pri" data-ebtn="lancar" data-eadm="1">Lançar contagem</button><button class="btn sm" data-ebtn="importar" data-eadm="1">Importar: Acompanhamento Estoque Diario.xlsx</button><input type="file" id="edFile" accept=".xlsx,.xlsm" class="hide"><button class="btn sm" data-ebtn="exportar">Exportar para Excel</button><button class="btn sm" data-ebtn="limites" data-eadm="1">Definir limites</button><button class="btn sm" data-vinc="estoque" data-eadm="1" title="Escolha uma vez a planilha Acompanhamento Estoque Diario.xlsx; o ERP passa a importar sozinho as novas contagens">Vincular Acompanhamento Estoque Diario.xlsx (automático)</button><button class="btn xs" data-vincdel="estoque" data-eadm="1" style="display:none">Desvincular</button><span class="muted" data-vincinfo="estoque"></span><span class="muted" id="edInfo"></span></div>
     <div id="edAlertas"></div>
-    <div class="kpis k4" id="edKpis"></div>
+    <div class="kpis" id="edKpis"></div>
     <div class="matcards" id="edCards"></div>
     <div class="panel"><div class="toolbar" style="margin-bottom:6px"><b>Evolução</b><select class="input" id="edMatSel" style="max-width:220px"></select><select class="input" id="edJanSel" style="max-width:170px"><option value="14">Últimas 14 contagens</option><option value="30">Últimas 30 contagens</option><option value="0">Todas</option></select></div><div id="edGraf"></div></div>
     <h3 style="margin:22px 0 6px">Entradas e saídas do dia <span class="muted" style="font-size:13px;font-weight:500" id="edEsTit"></span></h3>
     <p class="muted" style="margin:0 0 8px">Entre uma contagem e a seguinte: estoque anterior + produção da Veolia − estourados − saídas por NF = esperado. A diferença mostra o que a contagem não explica.</p>
     <div class="table-wrap"><table><thead><tr><th>Intervalo</th><th class="num">Anterior</th><th class="num">+ Produção</th><th class="num">− Estourados</th><th class="num">− Saídas NF</th><th class="num">= Esperado</th><th class="num">Contado</th><th class="num">Diferença</th></tr></thead><tbody id="edEs"></tbody></table></div>
     <h3 style="margin:22px 0 6px">Dias de estoque <span class="muted" style="font-size:13px;font-weight:500">no ritmo dos últimos 14 dias</span></h3>
-    <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Estoque</th><th class="num">Saída/dia (NF)</th><th class="num">Produção líq./dia</th><th class="num">Dias de estoque</th><th class="num">Saldo/dia</th></tr></thead><tbody id="edDias"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">Estoque</th><th class="num">Peso estimado (kg)</th><th class="num">Saída/dia (NF)</th><th class="num">Produção líq./dia</th><th class="num">Dias de estoque</th><th class="num">Saldo/dia</th></tr></thead><tbody id="edDias"></tbody></table></div>
     <h3 style="margin:22px 0 6px">Comparação semanal <span class="muted" style="font-size:13px;font-weight:500">média das contagens, semana de sexta a quinta</span></h3>
     <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num" id="edSemA">Esta semana</th><th class="num" id="edSemB">Semana anterior</th><th class="num">Variação</th><th class="num">Pico (30 dias)</th></tr></thead><tbody id="edSem"></tbody></table></div>`;
   sec.addEventListener("click", e => {
@@ -2556,7 +2612,8 @@ function renderEstDia(){
   $("edErro").innerHTML = estErro ? `<div class="panel" style="border-color:var(--err);margin-bottom:14px"><b style="color:var(--err)">Sem acesso aos dados de estoque.</b> <span class="muted">${esc(estErro)}</span></div>` : "";
   const S = edSerie(), nb = $("navEd");
   if (!S.length){ ["edCards", "edAlertas", "edKpis", "edGraf"].forEach(i => { $(i).innerHTML = ""; }); $("edInfo").textContent = "Nenhuma contagem ainda. Use Importar do Excel ou Lançar contagem."; ["edEs", "edDias", "edSem"].forEach(i => { $(i).innerHTML = vazio(8, "—"); }); if (nb) nb.classList.add("hide"); return; }
-  const D = xcDados(), ult = S[S.length - 1], ant = S[S.length - 2] || null, DE = edDiasEst(D, S);
+  const D = xcDados(), ult = S[S.length - 1], ant = S[S.length - 2] || null, DE = edDiasEst(D, S), PMX = pesoMedios();
+  const kgEst = (m, q) => { const x = pmDe(m, PMX); return x && q != null ? q * x.med : null; };
   $("edInfo").textContent = "Última contagem: " + fmtDiaKey(ult.data) + " · " + fmtNum(S.length) + " contagens";
   const tot = edTotal(ult.v), totA = ant ? edTotal(ant.v) : null;
   const dadosCards = ED_TODOS.filter(m => ult.v[m] != null);
@@ -2564,9 +2621,11 @@ function renderEstDia(){
   let mv = null; if (ant) dadosCards.forEach(m => { if (ant.v[m] != null){ const d = ult.v[m] - ant.v[m]; if (!mv || Math.abs(d) > Math.abs(mv.d)) mv = { m, d }; } });
   if (nb){ nb.textContent = alertas.length; nb.classList.toggle("hide", !alertas.length); }
   $("edAlertas").innerHTML = alertas.length ? `<div class="panel" style="border-color:var(--warn);margin-bottom:14px"><b style="color:var(--warn)">${alertas.length} alerta(s)</b><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${alertas.map(a => `<span class="badge" style="border-color:var(--${a.c});color:var(--${a.c})">${esc(a.m)}: ${esc(a.x)}</span>`).join("")}</div></div>` : "";
+  const kgTot = { kg: 0, n: 0 }; dadosCards.forEach(m => { const k = kgEst(m, ult.v[m]); if (k != null){ kgTot.kg += k; kgTot.n++; } });
   const dias0 = Math.round((new Date(diaKey(new Date()) + "T12:00:00") - new Date(ult.data + "T12:00:00")) / 864e5);
   $("edKpis").innerHTML = `<div class="kpi"><div class="l">Última contagem</div><div class="v" style="font-size:22px">${fmtDiaKey(ult.data)}</div><div class="s">${dias0 <= 0 ? "hoje" : dias0 === 1 ? "ontem" : "há " + dias0 + " dias"}</div></div>
     <div class="kpi ok"><div class="l">Fardos em estoque</div><div class="v">${edF(tot)}</div><div class="s">${totA != null && tot != null ? (tot - totA >= 0 ? "▲ +" : "▼ ") + edF(tot - totA) + " desde " + fmtDiaKey(ant.data) : "&nbsp;"}</div></div>
+    <div class="kpi ok"><div class="l">Peso estimado</div><div class="v">${kgTot.n ? fmtKgT(kgTot.kg) : "—"}</div><div class="s">${kgTot.n ? "fardos × peso médio das últimas " + PM_N + " fardos carregadas" : "sem peso médio calculado"}</div></div>
     <div class="kpi"><div class="l">Maior variação</div><div class="v" style="font-size:20px">${mv ? esc(mv.m) : "—"}</div><div class="s">${mv ? (mv.d >= 0 ? "+" : "") + edF(mv.d) + " desde a contagem anterior" : "&nbsp;"}</div></div>
     <div class="kpi ${alertas.length ? "" : "ok"}"><div class="l">Alertas</div><div class="v">${alertas.length}</div><div class="s">${Object.keys(edLim).length ? "limites definidos" : "defina limites para ativar"}</div></div>`;
   const spark = m => edSvg(S.slice(-14).map(c => ({ x: fmtDiaKey(c.data).slice(0, 5), y: c.v[m] == null ? null : c.v[m] })), 160, 40, { pad: 3 });
@@ -2574,7 +2633,7 @@ function renderEstDia(){
     const q = ult.v[m], d = ant && ant.v[m] != null ? q - ant.v[m] : null, l = edLim[m] || {}, st = edStatus(m, q, DE[m]), cor = st.some(s => s.c === "err") ? "err" : st.length ? "warn" : null;
     const pct = l.max ? Math.min(100, Math.round(q / l.max * 100)) : null, un = ED_FARDOS.includes(m) ? "fardos" : "";
     return `<div class="matcard" data-edmat="${esc(m)}" style="cursor:pointer;${cor ? "border-color:var(--" + cor + ")" : ""}${edMat === m ? ";box-shadow:0 0 0 2px var(--blue)" : ""}"><div style="display:flex;justify-content:space-between;align-items:center"><span class="badge b-mat">${esc(m)}</span>${d != null ? `<span style="font-size:12.5px;font-weight:700;color:${d > 0 ? "var(--blue)" : d < 0 ? "var(--warn)" : "var(--muted)"}">${d > 0 ? "▲ +" : d < 0 ? "▼ " : "= "}${edF(d)}</span>` : ""}</div>
-      <div class="q"><b>${edF(q)}</b>${un}</div>${spark(m)}${pct != null ? `<div style="height:6px;border-radius:6px;background:#1c3a4a"><div style="height:6px;border-radius:6px;width:${pct}%;background:var(--${pct >= 100 ? "err" : pct >= 80 ? "warn" : "blue"})"></div></div><div class="muted" style="font-size:11.5px">${pct}% do máximo (${l.max})</div>` : ""}${st.length ? `<div style="font-size:12px;color:var(--${st[0].c});font-weight:700">${esc(st[0].x)}</div>` : ""}${DE[m] && DE[m].dias != null ? `<div class="muted" style="font-size:12px">≈ ${edF(DE[m].dias)} dia(s) de estoque</div>` : ""}</div>`;
+      <div class="q"><b>${edF(q)}</b>${un}</div>${kgEst(m, q) != null ? `<div style="font-size:13px;color:var(--blue);font-weight:700">≈ ${fmtNum(Math.round(kgEst(m, q)))} kg <span class="muted" style="font-weight:500;font-size:11.5px">(${nf2.format(pmDe(m, PMX).med)} kg/fardo)</span></div>` : ""}${spark(m)}${pct != null ? `<div style="height:6px;border-radius:6px;background:#1c3a4a"><div style="height:6px;border-radius:6px;width:${pct}%;background:var(--${pct >= 100 ? "err" : pct >= 80 ? "warn" : "blue"})"></div></div><div class="muted" style="font-size:11.5px">${pct}% do máximo (${l.max})</div>` : ""}${st.length ? `<div style="font-size:12px;color:var(--${st[0].c});font-weight:700">${esc(st[0].x)}</div>` : ""}${DE[m] && DE[m].dias != null ? `<div class="muted" style="font-size:12px">≈ ${edF(DE[m].dias)} dia(s) de estoque</div>` : ""}</div>`;
   }).join("");
   const sel = $("edMatSel"), opcs = ["__total"].concat(dadosCards);
   sel.innerHTML = opcs.map(m => `<option value="${esc(m)}" ${m === edMat ? "selected" : ""}>${m === "__total" ? "Total de fardos" : esc(m)}</option>`).join(""); if (!opcs.includes(edMat)){ edMat = "__total"; sel.value = edMat; }
@@ -2594,7 +2653,7 @@ function renderEstDia(){
       return `<tr><td>${rot}</td><td class="num">${edF(a)}</td><td class="num">${edF(w.P[edMat])}</td><td class="num">${edF(w.E[edMat])}</td><td class="num">${edF(w.SF[edMat])}</td><td class="num">${edF(esp)}</td><td class="num">${edF(b)}</td><td class="num"${cor}>${dif > 0 ? "+" : ""}${edF(dif)}</td></tr>`;
     }).join("") || vazio(8, "—");
   /* dias de estoque */
-  $("edDias").innerHTML = PV_FARDOS.filter(m => DE[m] && DE[m].q != null).map(m => { const x = DE[m], saldo = x.prod - x.sai; return `<tr><td>${badgeMat(m)}</td><td class="num">${edF(x.q)}</td><td class="num">${edF(x.sai)}</td><td class="num">${edF(x.prod)}</td><td class="num"${x.dias != null && x.dias < 2 ? ' style="color:var(--warn);font-weight:700"' : ""}>${x.dias == null ? "—" : edF(x.dias)}</td><td class="num" style="color:var(--${saldo >= 0 ? "ok" : "warn"})">${saldo >= 0 ? "+" : ""}${edF(saldo)}</td></tr>`; }).join("") || vazio(6, "Sem dados da Veolia/NFs no período da última contagem.");
+  $("edDias").innerHTML = PV_FARDOS.filter(m => DE[m] && DE[m].q != null).map(m => { const x = DE[m], saldo = x.prod - x.sai; return `<tr><td>${badgeMat(m)}</td><td class="num">${edF(x.q)}</td><td class="num">${kgEst(m, x.q) != null ? fmtNum(Math.round(kgEst(m, x.q))) : "—"}</td><td class="num">${edF(x.sai)}</td><td class="num">${edF(x.prod)}</td><td class="num"${x.dias != null && x.dias < 2 ? ' style="color:var(--warn);font-weight:700"' : ""}>${x.dias == null ? "—" : edF(x.dias)}</td><td class="num" style="color:var(--${saldo >= 0 ? "ok" : "warn"})">${saldo >= 0 ? "+" : ""}${edF(saldo)}</td></tr>`; }).join("") || vazio(7, "Sem dados da Veolia/NFs no período da última contagem.");
   /* comparação semanal */
   const sw = semanaIni(ult.data), swA = addDiasIso(sw, -7), med = (ini, m) => { const v = S.filter(c => semanaIni(c.data) === ini && c.v[m] != null).map(c => c.v[m]); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   $("edSemA").textContent = "Semana de " + fmtDiaKey(sw).slice(0, 5); $("edSemB").textContent = "Semana de " + fmtDiaKey(swA).slice(0, 5);
