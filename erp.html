@@ -1852,7 +1852,7 @@ async function importarSeed(){
 
 /* ---------- Preços, sincronização automática com o Carregamento e pendências ---------- */
 const COL_PRECOS = "expedicao_precos";
-const PRECOS_SEED = [["PET Cristal",4.97],["PET Verde",4.71],["PET Azul",4.71],["PET Misto/Cor",3.42],["PET Óleo",3.42],["PP Natural",4.2273],["PP Cor",2.4886],["PEAD Branco",5.7159],["PEAD Cor",4.3523],["Alumínio",12.62],["Aerossol",10.24],["Papelão",0.2975],["Ferroso",0.70],["Flexíveis",0.12]];
+const PRECOS_SEED = [["PET Cristal",4.97],["PET Verde",4.71],["PET Azul",4.71],["PET Misto/Cor",0.43],["PET Óleo",3.42],["PP Natural",4.23],["PP Cor",2.49],["PEAD Branco",5.72],["PEAD Cor",4.35],["Alumínio",11.00],["Latas",11.00],["Aerossol",5.30],["Papelão",0.2975],["Ferroso",0.70],["Flexíveis",0.12],["Eletrônicos",11.00],["Sucata Alumínio",10.00],["PEBD Cristal",1.95],["PEBD Cor",0.65]];
 let expPrecos = [];
 const syncFlags = { car: false, info: false, exp: false };
 let syncTimer = null, syncBusy = false;
@@ -1936,7 +1936,7 @@ function montarViewPrecos(){
   const sec = $("v-expPrecos");
   sec.innerHTML = `<div class="page-head"><div><h1>Preços por material</h1><p>Valor em R$ por kg. Usado para calcular o valor da nota automaticamente quando o carregamento é sincronizado (só quando todos os materiais têm preço). Aqui só é possível editar o preço. Para incluir ou excluir um material, use a aba Materiais.</p></div></div>
     <div id="expPrecosErro"></div>
-    <div class="toolbar"><button class="btn sm" data-prbtn="importar">Importar preços da planilha</button></div>
+    <div class="toolbar"><button class="btn sm" data-prbtn="importar" data-eadm="1">Atualizar preços pela planilha</button></div>
     <div class="table-wrap"><table><thead><tr><th>Material</th><th class="num">R$ por kg</th><th class="num">R$ por tonelada</th><th></th></tr></thead><tbody id="tbPrecos"></tbody></table></div>`;
   sec.addEventListener("click", e => { const b = e.target.closest("button[data-prbtn]"); if (b) run(importarPrecos); });
 }
@@ -2013,11 +2013,17 @@ async function excluirMaterial(p){
   await deleteDoc(doc(db, COL_PRECOS, p.id)); aviso("Exclusão concluída ✔");
 }
 async function importarPrecos(){
-  const novos = PRECOS_SEED.filter(s => !expPrecos.some(p => p.id === chaveMat(s[0])));
-  const r = await abrirModal({ titulo: "Importar preços da planilha", ok: "Importar", html: `<div class="txt">A planilha tem <b>${PRECOS_SEED.length}</b> preços (R$ por kg). <b>${novos.length}</b> ainda não estão no sistema; os que já existem são mantidos.</div>` });
+  const ex = id => expPrecos.find(p => p.id === id);
+  const novos = PRECOS_SEED.filter(x => !ex(chaveMat(x[0])));
+  const mudam = PRECOS_SEED.filter(x => { const p = ex(chaveMat(x[0])); return p && Math.abs(Number(p.preco) - x[1]) > 0.00005; });
+  if (!novos.length && !mudam.length){ aviso("Os preços já estão iguais aos da planilha ✔"); return; }
+  const l4 = x => x[1].toFixed(4).replace(/0+$/, "").replace(/\.$/, "").replace(".", ",");
+  const lista = novos.map(x => `<li>${esc(x[0])}: <b>R$ ${l4(x)}</b> <span class="muted">(novo)</span></li>`).concat(mudam.map(x => `<li>${esc(x[0])}: R$ ${String(ex(chaveMat(x[0])).preco).replace(".", ",")} → <b>R$ ${l4(x)}</b></li>`)).join("");
+  const r = await abrirModal({ titulo: "Atualizar preços pela planilha", ok: "Aplicar", html: `<div class="txt"><b>${novos.length}</b> novo(s) e <b>${mudam.length}</b> alterado(s) (R$ por kg). Preços que não estão na planilha (ex.: Fluffy, PET Natural) não são mexidos. Notas já lançadas mantêm o valor que tinham.<ul style="margin:8px 0 0 18px">${lista}</ul></div>` });
   if (!r) return;
-  await gravarLote(novos, (b, s) => b.set(doc(db, COL_PRECOS, chaveMat(s[0])), { material: s[0], preco: s[1], origem: "planilha", criado_em: serverTimestamp() }));
-  aviso("Importados " + novos.length + " preço(s) ✔");
+  await gravarLote(novos, (b, x) => b.set(doc(db, COL_PRECOS, chaveMat(x[0])), { material: x[0], preco: x[1], origem: "planilha", criado_em: serverTimestamp() }));
+  await gravarLote(mudam, (b, x) => b.update(doc(db, COL_PRECOS, chaveMat(x[0])), { preco: x[1], origem: "planilha" }));
+  aviso("Preços atualizados ✔ (" + novos.length + " novo(s), " + mudam.length + " alterado(s))");
 }
 
 /* ---------- Consultas (menu da aba Notas / Coletas) ---------- */
